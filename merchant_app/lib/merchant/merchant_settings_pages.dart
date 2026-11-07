@@ -75,10 +75,15 @@ class _MerchantStoreSettingsPageState
     try {
       final chosen = await ImagePicker().pickImage(
         source: ImageSource.gallery, maxWidth: 900, imageQuality: 85);
-      if (chosen != null && mounted) setState(() => _logo = chosen);
+      if (chosen != null && mounted) {
+        setState(() => _logo = chosen);
+      }
     } catch (_) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('تعذر اختيار صورة شعار المتجر.')));
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('تعذر اختيار صورة شعار المتجر.')),
+        );
+      }
     }
   }
 
