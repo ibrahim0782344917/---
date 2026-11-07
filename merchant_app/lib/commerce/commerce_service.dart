@@ -74,6 +74,7 @@ class CommerceService {
         stockQuantity: (row['stock_quantity'] as num).toInt(),
         description: row['description'] as String? ?? '',
         imageUrl: row['image_url'] as String?,
+        isActive: row['is_active'] as bool? ?? true,
       );
 
   static Future<List<MarketplaceProduct>> storeProducts(String storeId) async {
@@ -87,7 +88,7 @@ class CommerceService {
   static Future<List<MarketplaceProduct>> merchantProducts(String storeId) async {
     if (_myUserId.isEmpty) throw StateError('LOGIN_REQUIRED');
     final rows = await _db.from('products')
-        .select('id,store_id,name,price_iqd,stock_quantity,description,image_url')
+        .select('id,store_id,name,price_iqd,stock_quantity,description,image_url,is_active')
         .eq('store_id', storeId).order('name');
     return rows.map(_product).toList(growable: false);
   }
@@ -95,7 +96,7 @@ class CommerceService {
   static Future<List<Map<String, dynamic>>> myStores() async {
     final userId = _myUserId;
     return _db.from('stores')
-        .select('id,name,area,category,status,address,latitude,longitude')
+        .select('id,name,area,category,status,address,phone,latitude,longitude')
         .eq('owner_id', userId).order('created_at', ascending: false);
   }
 
@@ -147,6 +148,61 @@ class CommerceService {
     await _db.from('products').update({
       'stock_quantity': stockQuantity,
     }).eq('id', productId);
+  }
+
+  /// Editable merchant fields only; approval status remains admin-only.
+  static Future<void> updateStore({
+    required String storeId,
+    required String name,
+    required String area,
+    required String category,
+    required String address,
+    String? phone,
+    double? latitude,
+    double? longitude,
+  }) async {
+    if (_myUserId.isEmpty) throw StateError('LOGIN_REQUIRED');
+    final result = await _db.from('stores').update({
+      'name': name.trim(),
+      'area': area.trim(),
+      'category': category.trim(),
+      'address': address.trim(),
+      'phone': phone?.trim(),
+      'latitude': latitude,
+      'longitude': longitude,
+    }).eq('id', storeId).select('id');
+    if (result.isEmpty) throw StateError('STORE_NOT_EDITABLE');
+  }
+
+  static Future<void> updateProduct({
+    required MarketplaceProduct original,
+    required String name,
+    required String description,
+    required int priceIqd,
+    required int stockQuantity,
+    String? imageUrl,
+  }) async {
+    if (_myUserId.isEmpty) throw StateError('LOGIN_REQUIRED');
+    final result = await _db.from('products').update({
+      'name': name.trim(),
+      'description': description.trim(),
+      'price_iqd': priceIqd,
+      'stock_quantity': stockQuantity,
+      'image_url': imageUrl ?? original.imageUrl,
+    }).eq('id', original.id).eq('store_id', original.storeId).select('id');
+    if (result.isEmpty) throw StateError('PRODUCT_NOT_EDITABLE');
+  }
+
+  /// Archive instead of physical delete so existing order history remains valid.
+  static Future<void> setProductVisibility(
+      MarketplaceProduct product, bool active) async {
+    if (_myUserId.isEmpty) throw StateError('LOGIN_REQUIRED');
+    final result = await _db.from('products')
+        .update({'is_active': active})
+        .eq('id', product.id)
+        .eq('store_id', product.storeId)
+        .select('id');
+    if (result.isEmpty) throw StateError('PRODUCT_NOT_EDITABLE');
   }
 
   /// Public product photos, upload restricted to store owner by Storage RLS.
