@@ -201,6 +201,24 @@ class _CustomerHomeState extends State<CustomerHome> {
       SnackBar(content: Text(value)));
   }
 
+  Future<void> openMerchant() async {
+    if (!MarketplaceBackend.configured) {
+      message('حسابات التجار تحتاج قاعدة بيانات شتريد.');
+      return;
+    }
+    if (MarketplaceBackend.currentUser == null) {
+      final login = await Navigator.of(context).push<bool>(
+        MaterialPageRoute(builder: (_) => const CustomerAuthPage()),
+      );
+      if (!mounted || login != true) return;
+    }
+    if (!mounted) return;
+    await Navigator.of(context).push<void>(
+      MaterialPageRoute(builder: (_) => const MerchantDashboardPage()),
+    );
+    if (mounted) await _loadRealStores();
+  }
+
   void add(int index) {
     setState(() => cart[index] = (cart[index] ?? 0) + 1);
     message('انضاف للسلة التجريبية');
@@ -331,70 +349,101 @@ class _CustomerHomeState extends State<CustomerHome> {
           ),
         ),
         const SizedBox(height: 17),
-        Container(
-          height: 130, padding: const EdgeInsets.all(18),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(22),
-            gradient: const LinearGradient(colors: [
-              Color(0xFFE85FAD), orange, purple])),
-          child: const Row(children: [
-            Icon(Icons.local_offer, size: 55, color: Colors.white),
-            SizedBox(width: 18),
-            Expanded(child: Text('أحدث العروض\nفي بغداد',
-              style: TextStyle(color: Colors.white,
-                fontWeight: FontWeight.w900, fontSize: 22))),
-          ]),
+        InkWell(
+          onTap: openMerchant,
+          borderRadius: BorderRadius.circular(22),
+          child: Container(
+            height: 130, padding: const EdgeInsets.all(18),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(22),
+              gradient: const LinearGradient(colors: [
+                Color(0xFFE85FAD), orange, purple])),
+            child: const Row(children: [
+              Icon(Icons.storefront_rounded, size: 55, color: Colors.white),
+              SizedBox(width: 18),
+              Expanded(child: Text('عندك محل ببغداد؟\nسجّله وانشر منتجاتك',
+                style: TextStyle(color: Colors.white,
+                  fontWeight: FontWeight.w900, fontSize: 21))),
+              Icon(Icons.chevron_left_rounded, color: Colors.white),
+            ]),
+          ),
         ),
         const SizedBox(height: 22),
         title(MarketplaceBackend.configured
           ? 'منتجات منشورة' : 'منتجات تجريبية'),
-        if (MarketplaceBackend.configured)
+        if (MarketplaceBackend.configured && remoteLoading)
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: 18),
+            child: Center(child: CircularProgressIndicator()),
+          ),
+        if (MarketplaceBackend.configured &&
+            remoteProducts.isEmpty && !remoteLoading)
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF2E9FB),
+              borderRadius: BorderRadius.circular(18),
+            ),
+            child: Column(children: [
+              const Icon(Icons.inventory_2_outlined,
+                color: purple, size: 38),
+              const SizedBox(height: 8),
+              const Text('ماكو منتجات منشورة بعد',
+                style: TextStyle(fontWeight: FontWeight.w800)),
+              const SizedBox(height: 5),
+              const Text('أول ما نتحقق من المتاجر، منتجاتهم تظهر هنا.',
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 12, color: Colors.black54)),
+              const SizedBox(height: 9),
+              OutlinedButton.icon(
+                onPressed: openMerchant,
+                icon: const Icon(Icons.storefront_outlined),
+                label: const Text('سجّل متجرك'),
+              ),
+            ]),
+          ),
+        if (MarketplaceBackend.configured && remoteProducts.isNotEmpty)
           SizedBox(
-            height: 205,
-            child: remoteProducts.isEmpty
-              ? Center(child: Text(remoteLoading
-                  ? 'جاري تحميل المنتجات...'
-                  : 'ماكو منتجات منشورة بعد. أول ما يسجل أصحاب المتاجر تظهر هنا.'))
-              : ListView(
-                  scrollDirection: Axis.horizontal,
-                  children: [
-                    for (final p in remoteProducts)
-                      Container(
-                        width: 158,
-                        margin: const EdgeInsets.only(left: 10),
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(20)),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            const Icon(Icons.inventory_2_outlined,
-                              size: 49, color: purple),
-                            const SizedBox(height: 10),
-                            Text(p.name, maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
-                                fontWeight: FontWeight.bold)),
-                            const SizedBox(height: 10),
-                            Text(dinars(p.priceIqd),
-                              style: const TextStyle(color: purple,
-                                fontWeight: FontWeight.w800)),
-                            const Spacer(),
-                            FilledButton.tonal(
-                              onPressed: p.stockQuantity < 1 ? null : () {
-                                final added = CommerceCart.instance.add(p);
-                                if (added) setState(() {});
-                                message(added
-                                  ? 'انضافت السلعة للسلة'
-                                  : 'السلة لمتجر واحد أو المخزون انتهى.');
-                              },
-                              child: const Text('+ للسلة'),
-                            ),
-                          ]),
-                      ),
-                  ],
-                ),
+            height: 255,
+            child: ListView(
+              scrollDirection: Axis.horizontal,
+              children: [
+                for (final p in remoteProducts)
+                  Container(
+                    width: 174,
+                    margin: const EdgeInsets.only(left: 10),
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(20)),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(10),
+                          child: productPhoto(p.imageUrl, height: 90)),
+                        const SizedBox(height: 8),
+                        Text(p.name, maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(fontWeight: FontWeight.bold)),
+                        const SizedBox(height: 7),
+                        Text(dinars(p.priceIqd),
+                          style: const TextStyle(color: purple,
+                            fontWeight: FontWeight.w800)),
+                        const Spacer(),
+                        FilledButton.tonal(
+                          onPressed: p.stockQuantity < 1 ? null : () {
+                            final added = CommerceCart.instance.add(p);
+                            if (added) setState(() {});
+                            message(added ? 'انضافت السلعة للسلة'
+                              : 'السلة لمتجر واحد أو المخزون انتهى.');
+                          },
+                          child: const Text('+ للسلة'),
+                        ),
+                      ]),
+                  ),
+              ],
+            ),
           ),
         if (!MarketplaceBackend.configured)
           SizedBox(height: 258, child: ListView(
@@ -444,11 +493,12 @@ class _CustomerHomeState extends State<CustomerHome> {
           ),
         OutlinedButton(onPressed: () => setState(() => tab = 1),
           child: const Text('استكشف كل المحلات')),
-        const Padding(
-          padding: EdgeInsets.only(top: 8),
-          child: Text('العروض الحالية للتصميم والتجربة فقط. '
-            'الشراء المباشر ما زال قيد التطوير.',
-            style: TextStyle(fontSize: 12, color: Colors.black54)),
+        Padding(
+          padding: const EdgeInsets.only(top: 8),
+          child: Text(MarketplaceBackend.configured
+            ? 'الدفع عند الاستلام متاح للمتاجر المعتمدة. التوصيل الفعلي والدفع الإلكتروني قيد التجهيز.'
+            : 'المتاجر والأسعار المعروضة هنا تجريبية.',
+            style: const TextStyle(fontSize: 12, color: Colors.black54)),
         ),
       ]),
     ),
@@ -629,9 +679,14 @@ class _CustomerHomeState extends State<CustomerHome> {
       profilePage(),
     ];
     return Scaffold(
+      backgroundColor: tab == 0 ? darkPurple : canvas,
       appBar: tab == 0 ? null : AppBar(
         title: Text(['الرئيسية','البحث','الخريطة','السلة','الطلبات','حسابي'][tab])),
-      body: pages[tab],
+      body: SafeArea(
+        top: tab == 0,
+        bottom: false,
+        child: ColoredBox(color: canvas, child: pages[tab]),
+      ),
       bottomNavigationBar: NavigationBar(
         selectedIndex: tab,
         backgroundColor: Colors.white,
