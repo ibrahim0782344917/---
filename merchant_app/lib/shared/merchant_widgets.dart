@@ -7,9 +7,9 @@ const merchantDark = Color(0xFF2A0D55);
 
 String priceText(int value) {
   final formatted = value.toString().replaceAllMapped(
-    RegExp(r'(\d)(?=(\d{3})+(?!\d))'), (match) => match[1]! + ',',
+    RegExp(r'(\d)(?=(\d{3})+(?!\d))'), (match) => '${match[1]},',
   );
-  return formatted + ' د.ع';
+  return '$formatted د.ع';
 }
 
 Widget productPhoto(String? imageUrl, {double height = 100}) {
