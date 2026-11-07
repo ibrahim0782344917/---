@@ -10,5 +10,12 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.byType(NavigationBar), findsOneWidget);
     expect(find.text('شتريد؟'), findsOneWidget);
+    expect(
+      find.byWidgetPredicate(
+        (widget) => widget is SafeArea && widget.top && !widget.bottom,
+      ),
+      findsOneWidget,
+    );
+    expect(find.textContaining('سجّله وانشر منتجاتك'), findsOneWidget);
   });
 }
