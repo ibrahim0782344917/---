@@ -11,7 +11,7 @@ class MarketplaceBackend {
 
   static Future<void> initialize() async {
     if (!configured) return;
-    await Supabase.initialize(url: url, anonKey: publishableKey);
+    await Supabase.initialize(url: url, publishableKey: publishableKey);
   }
 
   static Future<List<MarketplaceStore>> approvedStores() async {
