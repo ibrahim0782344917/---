@@ -18,7 +18,7 @@ class MarketplaceBackend {
     if (!configured) return const [];
     final rows = await Supabase.instance.client
         .from('stores')
-        .select('id,name,area,category')
+        .select('id,name,area,category,latitude,longitude')
         .eq('status', 'approved')
         .order('name');
 
@@ -27,6 +27,8 @@ class MarketplaceBackend {
           name: row['name'] as String,
           area: row['area'] as String,
           category: row['category'] as String,
+          latitude: (row['latitude'] as num?)?.toDouble(),
+          longitude: (row['longitude'] as num?)?.toDouble(),
         )).toList(growable: false);
   }
 
@@ -62,12 +64,16 @@ class MarketplaceStore {
   final String name;
   final String area;
   final String category;
+  final double? latitude;
+  final double? longitude;
 
   const MarketplaceStore({
     required this.id,
     required this.name,
     required this.area,
     required this.category,
+    this.latitude,
+    this.longitude,
   });
 }
 
