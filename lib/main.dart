@@ -2,35 +2,108 @@ import 'package:flutter/material.dart';
 
 void main() => runApp(const ShitreedApp());
 
+const purple = Color(0xFF51159B);
+const darkPurple = Color(0xFF280B53);
+const orange = Color(0xFFFF811A);
+const canvas = Color(0xFFF9F6FC);
+
+class Store {
+  final String name, area, type, emoji;
+  const Store(this.name, this.area, this.type, this.emoji);
+}
+
+class Product {
+  final String title, emoji;
+  final int price;
+  const Product(this.title, this.emoji, this.price);
+}
+
+const stores = <Store>[
+  Store('موبايل بغداد - نموذج', 'المنصور', 'موبايلات', '📱'),
+  Store('سوبر ماركت - نموذج', 'الغزالية', 'مواد غذائية', '🛒'),
+  Store('أزياء بغداد - نموذج', 'الكرادة', 'ملابس', '👕'),
+  Store('مستلزمات البيت - نموذج', 'الأعظمية', 'أجهزة منزلية', '🏠'),
+  Store('مطعم بغداد - نموذج', 'زيونة', 'مطاعم', '🍔'),
+  Store('صيدلية - نموذج', 'الدورة', 'صيدليات', '💊'),
+  Store('مول تجريبي', 'بغداد الجديدة', 'مولات', '🏬'),
+];
+
+const products = <Product>[
+  Product('سماعة لاسلكية - نموذج', '🎧', 75000),
+  Product('هاتف ذكي - نموذج', '📱', 599000),
+  Product('حقيبة - نموذج', '👜', 28000),
+];
+
+String dinars(int value) {
+  final s = value.toString();
+  return '${s.replaceAllMapped(RegExp(r'(\d)(?=(\d{3})+(?!\d))'), (m) => '${m[1]},')} د.ع';
+}
+
 class ShitreedApp extends StatelessWidget {
   const ShitreedApp({super.key});
   @override
   Widget build(BuildContext context) => MaterialApp(
-    debugShowCheckedModeBanner: false,
-    title: 'شتريد؟ موجود!',
-    theme: ThemeData(
-      useMaterial3: true,
-      colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF5935A9)),
-      scaffoldBackgroundColor: const Color(0xFFF8F6FC),
-    ),
-    home: const Directionality(
-      textDirection: TextDirection.rtl,
-      child: CustomerHome(),
+        title: 'شتريد؟ موجود!',
+        debugShowCheckedModeBanner: false,
+        locale: const Locale('ar'),
+        builder: (context, child) => Directionality(
+          textDirection: TextDirection.rtl,
+          child: child ?? const SizedBox.shrink(),
+        ),
+        theme: ThemeData(
+          useMaterial3: true,
+          colorScheme: ColorScheme.fromSeed(seedColor: purple),
+          scaffoldBackgroundColor: canvas,
+          appBarTheme: const AppBarTheme(
+            backgroundColor: darkPurple, foregroundColor: Colors.white),
+        ),
+        home: const WelcomePage(),
+      );
+}
+
+class WelcomePage extends StatelessWidget {
+  const WelcomePage({super.key});
+
+  @override
+  Widget build(BuildContext context) => Scaffold(
+    body: Container(
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [darkPurple, purple, Color(0xFF1B113C)]),
+      ),
+      child: SafeArea(child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(children: [
+          const Spacer(),
+          const Icon(Icons.shopping_bag_rounded, color: orange, size: 104),
+          const Text('شتريد؟', style: TextStyle(
+            color: Colors.white, fontSize: 56, fontWeight: FontWeight.w900)),
+          const Text('موجود!', style: TextStyle(
+            color: orange, fontSize: 45, fontWeight: FontWeight.w900)),
+          const SizedBox(height: 14),
+          const Text('كل أسواق بغداد بين إيديك',
+            style: TextStyle(color: Colors.white, fontSize: 21)),
+          const Spacer(),
+          SizedBox(width: double.infinity, height: 55,
+            child: FilledButton(
+              style: FilledButton.styleFrom(backgroundColor: orange),
+              onPressed: () => Navigator.pushReplacement(context,
+                MaterialPageRoute<void>(builder: (_) => const CustomerHome())),
+              child: const Text('ابدأ الآن', style: TextStyle(
+                fontWeight: FontWeight.w900, fontSize: 19)),
+            ),
+          ),
+          const SizedBox(height: 18),
+          const Text('نموذج أولي - بيانات تجريبية فقط',
+            style: TextStyle(color: Colors.white70)),
+          const SizedBox(height: 15),
+        ]),
+      )),
     ),
   );
 }
-
-class Store {
-  final String name, area, type;
-  const Store(this.name, this.area, this.type);
-}
-
-const demoStores = [
-  Store('متجر موبايلات تجريبي', 'المنصور', 'إلكترونيات'),
-  Store('متجر ملابس تجريبي', 'الغزالية', 'أزياء'),
-  Store('متجر منزل تجريبي', 'الكرادة', 'منزل'),
-  Store('متجر أغذية تجريبي', 'الأعظمية', 'مواد غذائية'),
-];
 
 class CustomerHome extends StatefulWidget {
   const CustomerHome({super.key});
@@ -39,66 +112,357 @@ class CustomerHome extends StatefulWidget {
 }
 
 class _CustomerHomeState extends State<CustomerHome> {
+  int tab = 0;
   String query = '';
+  String district = 'كل بغداد';
   String category = 'الكل';
-  final categories = ['الكل', 'إلكترونيات', 'أزياء', 'منزل', 'مواد غذائية'];
+  final Map<int, int> cart = {};
+
+  static const districts = [
+    'كل بغداد', 'الغزالية', 'المنصور', 'الكرادة', 'الأعظمية',
+    'زيونة', 'الدورة', 'الكاظمية', 'بغداد الجديدة', 'السيدية',
+  ];
+
+  static const categories = <(String, String)>[
+    ('المتاجر','🏪'), ('الخدمات','🛠️'), ('المولات','🏬'),
+    ('العروض','🏷️'), ('موبايلات','📱'), ('ملابس','👕'),
+    ('أجهزة منزلية','🧺'), ('مطاعم','🍔'), ('صيدليات','💊'),
+    ('مواد غذائية','🛒'), ('قطع غيار','⚙️'), ('المزيد','•••')
+  ];
+
+  List<Store> get filtered => stores.where((s) {
+    return (district == 'كل بغداد' || s.area == district) &&
+      (category == 'الكل' || s.type == category) &&
+      '${s.name} ${s.area} ${s.type}'.toLowerCase()
+        .contains(query.trim().toLowerCase());
+  }).toList();
+
+  int get cartCount => cart.values.fold<int>(0, (s, value) => s + value);
+
+  void message(String value) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(value)));
+  }
+
+  void add(int index) {
+    setState(() => cart[index] = (cart[index] ?? 0) + 1);
+    message('انضاف للسلة التجريبية');
+  }
+
+  Widget title(String value) => Padding(
+    padding: const EdgeInsets.only(bottom: 12),
+    child: Text(value, style: const TextStyle(
+      fontSize: 21, fontWeight: FontWeight.w900)),
+  );
+
+  Widget storeTile(Store s) => Card(
+    color: Colors.white,
+    margin: const EdgeInsets.only(bottom: 9),
+    child: ListTile(
+      leading: CircleAvatar(
+        radius: 26, backgroundColor: const Color(0xFFEAD8FF),
+        child: Text(s.emoji, style: const TextStyle(fontSize: 26))),
+      title: Text(s.name, style: const TextStyle(fontWeight: FontWeight.w800)),
+      subtitle: Text('${s.area} • ${s.type} • بيانات تجريبية'),
+      trailing: const Icon(Icons.chevron_left, color: purple),
+      onTap: () => Navigator.push(context, MaterialPageRoute<void>(
+        builder: (_) => StorePage(store: s))),
+    ),
+  );
+
+  Widget coloredHeader() => Container(
+    padding: const EdgeInsets.fromLTRB(16, 16, 16, 22),
+    decoration: const BoxDecoration(
+      gradient: LinearGradient(colors: [darkPurple, purple, Color(0xFF8626B9)]),
+      borderRadius: BorderRadius.vertical(bottom: Radius.circular(26))),
+    child: Column(children: [
+      Row(children: [
+        const Icon(Icons.shopping_bag_rounded, color: orange, size: 40),
+        const SizedBox(width: 7),
+        const Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text('شتريد؟', style: TextStyle(color: Colors.white,
+            fontSize: 24, fontWeight: FontWeight.w900)),
+          Text('موجود!', style: TextStyle(color: orange,
+            fontSize: 16, fontWeight: FontWeight.w900)),
+        ]),
+        const Spacer(),
+        PopupMenuButton<String>(
+          icon: const Icon(Icons.location_on, color: Colors.white),
+          tooltip: 'اختيار منطقة بغداد',
+          onSelected: (value) => setState(() => district = value),
+          itemBuilder: (_) => [
+            for (final d in districts) PopupMenuItem(value: d, child: Text(d))
+          ],
+        ),
+        Flexible(child: Text(district, maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: const TextStyle(color: Colors.white))),
+      ]),
+      const SizedBox(height: 15),
+      TextField(
+        onChanged: (v) => setState(() => query = v),
+        onTap: () => setState(() => tab = 1),
+        decoration: InputDecoration(
+          hintText: 'شتريد اليوم؟ ابحث عن متجر أو منتج',
+          hintStyle: const TextStyle(fontSize: 13),
+          filled: true, fillColor: Colors.white,
+          prefixIcon: const Icon(Icons.search, color: purple),
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(28),
+            borderSide: BorderSide.none),
+        ),
+      ),
+    ]),
+  );
+
+  Widget categoryTile((String, String) c) => InkWell(
+    onTap: () {
+      setState(() {
+        tab = 1;
+        category = ['المتاجر','العروض','الخدمات','المزيد','قطع غيار']
+          .contains(c.$1) ? 'الكل' : c.$1;
+      });
+    },
+    child: Container(
+      width: 82, constraints: const BoxConstraints(minHeight: 92),
+      padding: const EdgeInsets.all(8),
+      decoration: BoxDecoration(
+        color: Colors.white, borderRadius: BorderRadius.circular(16)),
+      child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+        Text(c.$2, style: const TextStyle(fontSize: 28)),
+        const SizedBox(height: 8),
+        Text(c.$1, textAlign: TextAlign.center, maxLines: 2,
+          style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+      ]),
+    ),
+  );
+
+  Widget home() => ListView(children: [
+    coloredHeader(),
+    Padding(padding: const EdgeInsets.all(14), child: Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+        Wrap(alignment: WrapAlignment.spaceBetween, spacing: 6, runSpacing: 8,
+          children: [for (final c in categories) categoryTile(c)]),
+        const SizedBox(height: 17),
+        Container(
+          height: 130, padding: const EdgeInsets.all(18),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(22),
+            gradient: const LinearGradient(colors: [
+              Color(0xFFE85FAD), orange, purple])),
+          child: const Row(children: [
+            Icon(Icons.local_offer, size: 55, color: Colors.white),
+            SizedBox(width: 18),
+            Expanded(child: Text('أحدث العروض\nفي بغداد',
+              style: TextStyle(color: Colors.white,
+                fontWeight: FontWeight.w900, fontSize: 22))),
+          ]),
+        ),
+        const SizedBox(height: 22),
+        title('منتجات تجريبية'),
+        SizedBox(height: 219, child: ListView(
+          scrollDirection: Axis.horizontal,
+          children: [
+            for (var i = 0; i < products.length; i++)
+              Container(width: 150,
+                margin: const EdgeInsets.only(left: 10),
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(color: Colors.white,
+                  borderRadius: BorderRadius.circular(20)),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+                    Text(products[i].emoji,
+                      style: const TextStyle(fontSize: 46),
+                      textAlign: TextAlign.center),
+                    const SizedBox(height: 10),
+                    Text(products[i].title, maxLines: 2,
+                      style: const TextStyle(fontSize: 12,
+                        fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 7),
+                    Text(dinars(products[i].price),
+                      style: const TextStyle(color: purple,
+                        fontWeight: FontWeight.bold)),
+                    const Spacer(),
+                    FilledButton.tonal(onPressed: () => add(i),
+                      child: const Text('+ للسلة')),
+                  ]),
+              ),
+          ],
+        )),
+        const SizedBox(height: 21),
+        title('متاجر من مناطق بغداد'),
+        for (final s in filtered.take(5)) storeTile(s),
+        if (filtered.isEmpty) const Text('ماكو نتائج تجريبية مطابقة'),
+        OutlinedButton(onPressed: () => setState(() => tab = 1),
+          child: const Text('استكشف كل المحلات')),
+        const Padding(
+          padding: EdgeInsets.only(top: 8),
+          child: Text('تنبيه: المتاجر والعروض والأسعار للتصميم والتجربة فقط.',
+            style: TextStyle(fontSize: 12, color: Colors.black54)),
+        ),
+      ]),
+    ),
+  ]);
+
+  Widget searchPage() => ListView(
+    padding: const EdgeInsets.all(15),
+    children: [
+      title('دور على أي متجر في بغداد'),
+      TextField(
+        onChanged: (v) => setState(() => query = v),
+        decoration: const InputDecoration(
+          filled: true, fillColor: Colors.white,
+          prefixIcon: Icon(Icons.search), labelText: 'محل، خدمة أو منطقة',
+          border: OutlineInputBorder()),
+      ),
+      const SizedBox(height: 12),
+      Wrap(spacing: 6, runSpacing: 5, children: [
+        for (final d in districts)
+          ChoiceChip(label: Text(d), selected: district == d,
+            onSelected: (_) => setState(() => district = d)),
+      ]),
+      const SizedBox(height: 18),
+      title('النتائج: ${filtered.length}'),
+      for (final s in filtered) storeTile(s),
+      if (filtered.isEmpty) const Text('لا توجد نتائج تجريبية مطابقة'),
+      const SizedBox(height: 20),
+      Container(padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(color: const Color(0xFFEEDFFF),
+          borderRadius: BorderRadius.circular(20)),
+        child: const Column(children: [
+          Icon(Icons.map_outlined, size: 52, color: purple),
+          SizedBox(height: 9),
+          Text('خريطة بغداد والموقع التلقائي',
+            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 17)),
+          Text('بانتظار ربط الخرائط وموافقة المستخدم على إذن الموقع. '
+            'الخرائط والملاحة الحقيقية غير متوفرة بهالنسخة.',
+            textAlign: TextAlign.center),
+        ]),
+      ),
+    ],
+  );
+
+  Widget cartPage() {
+    var total = 0;
+    for (final e in cart.entries) {
+      total += products[e.key].price * e.value;
+    }
+    return ListView(padding: const EdgeInsets.all(15), children: [
+      title('سلتي'),
+      if (cart.isEmpty)
+        const Padding(padding: EdgeInsets.all(30),
+          child: Center(child: Text('السلة فارغة حالياً 🛒'))),
+      for (final e in cart.entries)
+        Card(child: ListTile(
+          leading: Text(products[e.key].emoji,
+            style: const TextStyle(fontSize: 28)),
+          title: Text(products[e.key].title),
+          subtitle: Text(dinars(products[e.key].price)),
+          trailing: Row(mainAxisSize: MainAxisSize.min, children: [
+            IconButton(icon: const Icon(Icons.remove_circle_outline),
+              onPressed: () => setState(() {
+                final n = (cart[e.key] ?? 0) - 1;
+                if (n < 1) {
+                  cart.remove(e.key);
+                } else {
+                  cart[e.key] = n;
+                }
+              })),
+            Text('${e.value}'),
+            IconButton(icon: const Icon(Icons.add_circle_outline),
+              onPressed: () => add(e.key)),
+          ]),
+        )),
+      const SizedBox(height: 12),
+      Text('المجموع التجريبي: ${dinars(total)}',
+        style: const TextStyle(fontSize: 19, fontWeight: FontWeight.bold)),
+      const SizedBox(height: 12),
+      FilledButton(
+        onPressed: cart.isEmpty ? null :
+          () => message('هذه سلة تجريبية؛ إرسال الطلبات غير مفعّل بعد'),
+        child: const Text('إتمام الطلب (قريباً)')),
+    ]);
+  }
+
+  Widget emptyPage(String heading, String detail, IconData icon) => Center(
+    child: Padding(padding: const EdgeInsets.all(24), child: Column(
+      mainAxisSize: MainAxisSize.min, children: [
+        Icon(icon, color: purple, size: 65),
+        const SizedBox(height: 12),
+        Text(heading, style: const TextStyle(
+          fontSize: 24, fontWeight: FontWeight.bold)),
+        const SizedBox(height: 10),
+        Text(detail, textAlign: TextAlign.center),
+      ]),
+    )),
+  );
+
   @override
   Widget build(BuildContext context) {
-    final filtered = demoStores.where((s) =>
-      (category == 'الكل' || s.type == category) &&
-      ('${s.name} ${s.area} ${s.type}'.contains(query.trim()))).toList();
+    final pages = [
+      home(),
+      searchPage(),
+      cartPage(),
+      emptyPage('طلباتي', 'الطلبات الحقيقية تتفعل بعد ربط المتاجر وقاعدة البيانات.',
+        Icons.receipt_long_outlined),
+      emptyPage('حسابي', 'تسجيل الحساب الآمن والملف الشخصي قيد التطوير.',
+        Icons.person_outline),
+    ];
     return Scaffold(
-      appBar: AppBar(title: const Text('شتريد؟ موجود!'), centerTitle: true),
-      body: ListView(padding: const EdgeInsets.all(16), children: [
-        const Text('شتريد اليوم؟', style: TextStyle(fontSize: 29, fontWeight: FontWeight.bold)),
-        const Text('كل بغداد بجيبك • نسخة أولية تجريبية'),
-        const SizedBox(height: 18),
-        TextField(
-          decoration: const InputDecoration(
-            hintText: 'دور على محل، منتج أو منطقة',
-            prefixIcon: Icon(Icons.search),
-            border: OutlineInputBorder(),
-          ),
-          onChanged: (value) => setState(() => query = value),
-        ),
-        const SizedBox(height: 14),
-        Wrap(spacing: 8, children: [
-          for (final c in categories)
-            ChoiceChip(label: Text(c), selected: category == c,
-              onSelected: (_) => setState(() => category = c)),
-        ]),
-        const SizedBox(height: 22),
-        Text('المتاجر (${filtered.length})', style: Theme.of(context).textTheme.titleLarge),
-        for (final store in filtered)
-          Card(child: ListTile(
-            leading: const CircleAvatar(child: Icon(Icons.store)),
-            title: Text(store.name),
-            subtitle: Text('${store.area} • ${store.type}'),
-            trailing: const Icon(Icons.chevron_left),
-            onTap: () => Navigator.push(context, MaterialPageRoute(
-              builder: (_) => Directionality(
-                textDirection: TextDirection.rtl,
-                child: Scaffold(
-                  appBar: AppBar(title: Text(store.name)),
-                  body: Padding(padding: const EdgeInsets.all(20),
-                    child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                      Text(store.name, style: Theme.of(context).textTheme.headlineSmall),
-                      const SizedBox(height: 12),
-                      Text('المنطقة: ${store.area}'),
-                      Text('القسم: ${store.type}'),
-                      const SizedBox(height: 20),
-                      const Text('هذا متجر تجريبي. سيتم إضافة بيانات المتاجر الحقيقية بعد الربط المصرح به.'),
-                    ])),
-                ),
-              ),
-            )),
-          )),
-        if (filtered.isEmpty) const Padding(
-          padding: EdgeInsets.all(24), child: Text('ماكو نتائج مطابقة')),
-        const SizedBox(height: 12),
-        const Text('تنبيه: جميع المتاجر المعروضة تجريبية وليست بيانات حقيقية.',
-          style: TextStyle(fontSize: 12)),
-      ]),
+      appBar: tab == 0 ? null : AppBar(
+        title: Text(['الرئيسية','البحث','السلة','الطلبات','حسابي'][tab])),
+      body: pages[tab],
+      bottomNavigationBar: NavigationBar(
+        selectedIndex: tab,
+        backgroundColor: Colors.white,
+        indicatorColor: const Color(0xFFEEE1FC),
+        onDestinationSelected: (value) => setState(() => tab = value),
+        destinations: [
+          const NavigationDestination(icon: Icon(Icons.home_outlined),
+            selectedIcon: Icon(Icons.home, color: purple), label: 'الرئيسية'),
+          const NavigationDestination(icon: Icon(Icons.search), label: 'البحث'),
+          NavigationDestination(icon: const Icon(Icons.shopping_cart_outlined),
+            label: cartCount == 0 ? 'السلة' : 'السلة ($cartCount)'),
+          const NavigationDestination(icon: Icon(Icons.receipt_long_outlined),
+            label: 'الطلبات'),
+          const NavigationDestination(icon: Icon(Icons.person_outline),
+            label: 'حسابي'),
+        ],
+      ),
     );
   }
+}
+
+class StorePage extends StatelessWidget {
+  final Store store;
+  const StorePage({super.key, required this.store});
+
+  @override
+  Widget build(BuildContext context) => Scaffold(
+    appBar: AppBar(title: const Text('تفاصيل المتجر')),
+    body: ListView(padding: const EdgeInsets.all(17), children: [
+      Container(height: 170, alignment: Alignment.center,
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(colors: [darkPurple, purple]),
+          borderRadius: BorderRadius.circular(20)),
+        child: Text(store.emoji, style: const TextStyle(fontSize: 78))),
+      const SizedBox(height: 18),
+      Text(store.name, style: const TextStyle(
+        fontSize: 25, fontWeight: FontWeight.w900)),
+      const SizedBox(height: 10),
+      Text('بغداد • ${store.area} • ${store.type}'),
+      const SizedBox(height: 14),
+      const Chip(label: Text('متجر تجريبي غير موثق')),
+      const SizedBox(height: 17),
+      const Text('معلومات المتجر، الصور، أوقات الدوام والتقييمات '
+        'راح تنعرض بعد الربط المصرح به والتحقق من البيانات.'),
+      const SizedBox(height: 22),
+      const Text('المنتجات والأسعار والتوصيل راح يضيفها صاحب المتجر '
+        'بعد تأكيد الملكية.'),
+      const SizedBox(height: 17),
+      FilledButton(onPressed: () =>
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text('مطالبة ملكية المتجر قيد التطوير'))),
+        child: const Text('هل أنت صاحب هذا المتجر؟')),
+    ]),
+  );
 }
