@@ -30,6 +30,24 @@ class MarketplaceBackend {
         )).toList(growable: false);
   }
 
+  /// Only active products in approved stores are visible via RLS.
+  static Future<List<MarketplaceProduct>> publishedProducts() async {
+    if (!configured) return const [];
+    final rows = await Supabase.instance.client
+        .from('products')
+        .select('id,name,price_iqd,store_id')
+        .eq('is_active', true)
+        .order('name')
+        .limit(60);
+
+    return rows.map((row) => MarketplaceProduct(
+      id: row['id'] as String,
+      name: row['name'] as String,
+      priceIqd: (row['price_iqd'] as num).toInt(),
+      storeId: row['store_id'] as String,
+    )).toList(growable: false);
+  }
+
   static User? get currentUser => configured
       ? Supabase.instance.client.auth.currentUser
       : null;
@@ -50,5 +68,19 @@ class MarketplaceStore {
     required this.name,
     required this.area,
     required this.category,
+  });
+}
+
+class MarketplaceProduct {
+  final String id;
+  final String name;
+  final int priceIqd;
+  final String storeId;
+
+  const MarketplaceProduct({
+    required this.id,
+    required this.name,
+    required this.priceIqd,
+    required this.storeId,
   });
 }
