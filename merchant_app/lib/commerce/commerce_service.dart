@@ -96,7 +96,7 @@ class CommerceService {
   static Future<List<Map<String, dynamic>>> myStores() async {
     final userId = _myUserId;
     return _db.from('stores')
-        .select('id,name,area,category,status,address,phone,latitude,longitude')
+        .select('id,name,area,category,status,address,phone,latitude,longitude,description,opening_hours,logo_url')
         .eq('owner_id', userId).order('created_at', ascending: false);
   }
 
@@ -105,6 +105,8 @@ class CommerceService {
     required String area,
     required String category,
     required String address,
+    String description = '',
+    String openingHours = '',
     double? latitude,
     double? longitude,
   }) async {
@@ -115,6 +117,8 @@ class CommerceService {
       'area': area.trim(),
       'category': category.trim(),
       'address': address.trim(),
+      'description': description.trim(),
+      'opening_hours': openingHours.trim(),
       'latitude': latitude,
       'longitude': longitude,
     }).select('id').single();
@@ -158,19 +162,27 @@ class CommerceService {
     required String category,
     required String address,
     String? phone,
+    String description = '',
+    String openingHours = '',
+    String? logoUrl,
     double? latitude,
     double? longitude,
   }) async {
     if (_myUserId.isEmpty) throw StateError('LOGIN_REQUIRED');
-    final result = await _db.from('stores').update({
+    final values = <String, dynamic>{
       'name': name.trim(),
       'area': area.trim(),
       'category': category.trim(),
       'address': address.trim(),
       'phone': phone?.trim(),
+      'description': description.trim(),
+      'opening_hours': openingHours.trim(),
       'latitude': latitude,
       'longitude': longitude,
-    }).eq('id', storeId).select('id');
+    };
+    if (logoUrl != null) values['logo_url'] = logoUrl;
+    final result = await _db.from('stores').update(values)
+        .eq('id', storeId).select('id');
     if (result.isEmpty) throw StateError('STORE_NOT_EDITABLE');
   }
 
