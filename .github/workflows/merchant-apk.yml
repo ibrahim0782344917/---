@@ -1,0 +1,55 @@
+name: Shitreed Merchant Android APK
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'merchant_app/**'
+      - '.github/workflows/merchant-apk.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  merchant_android:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    defaults:
+      run:
+        working-directory: merchant_app
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Create Android project
+        run: flutter create --org com.shitreed --project-name shitreed_merchant --platforms android .
+
+      - name: Configure Android manifest
+        run: python3 scripts/configure_android.py
+
+      - name: Install packages
+        run: flutter pub get
+
+      - name: Analyze merchant app
+        run: flutter analyze
+
+      - name: Test merchant app
+        run: flutter test
+
+      - name: Build merchant debug APK
+        run: |
+          flutter build apk --debug \
+            --dart-define=SUPABASE_URL=https://ltwncrewggdrjevakwpb.supabase.co \
+            --dart-define=SUPABASE_PUBLISHABLE_KEY=sb_publishable_Tao4VcnXR93Ne9KUBJ76tg_o-Pmd75_
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Shitreed-Merchant-APK
+          path: merchant_app/build/app/outputs/flutter-apk/app-debug.apk
+          if-no-files-found: error
+          retention-days: 30
