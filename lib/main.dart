@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:shitreed_customer/auth/customer_auth_page.dart';
 import 'package:shitreed_customer/backend/marketplace_backend.dart';
+import 'package:shitreed_customer/maps/baghdad_map_page.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -104,7 +105,7 @@ class WelcomePage extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 18),
-          const Text('نموذج أولي - بيانات تجريبية فقط',
+          const Text('نسخة اختبار — الطلبات والدفع غير مفعّلين بعد',
             style: TextStyle(color: Colors.white70)),
           const SizedBox(height: 15),
         ]),
@@ -293,6 +294,33 @@ class _CustomerHomeState extends State<CustomerHome> {
       crossAxisAlignment: CrossAxisAlignment.stretch, children: [
         Wrap(alignment: WrapAlignment.spaceBetween, spacing: 6, runSpacing: 8,
           children: [for (final c in categories) categoryTile(c)]),
+        const SizedBox(height: 13),
+        InkWell(
+          onTap: () => setState(() => tab = 2),
+          borderRadius: BorderRadius.circular(17),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 13),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF0E1FF),
+              borderRadius: BorderRadius.circular(17),
+            ),
+            child: const Row(children: [
+              Icon(Icons.map_rounded, color: purple, size: 31),
+              SizedBox(width: 12),
+              Expanded(child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('استكشف محلات بغداد على الخريطة',
+                    style: TextStyle(color: darkPurple,
+                      fontWeight: FontWeight.w900, fontSize: 14)),
+                  Text('الموقع اختياري • الاتجاهات عبر خرائط Google',
+                    style: TextStyle(fontSize: 11, color: Colors.black54)),
+                ],
+              )),
+              Icon(Icons.chevron_left, color: purple),
+            ]),
+          ),
+        ),
         const SizedBox(height: 17),
         Container(
           height: 130, padding: const EdgeInsets.all(18),
@@ -438,19 +466,22 @@ class _CustomerHomeState extends State<CustomerHome> {
           ? 'ماكو متاجر منشورة مطابقة حالياً'
           : 'لا توجد نتائج تجريبية مطابقة'),
       const SizedBox(height: 20),
-      Container(padding: const EdgeInsets.all(20),
+      InkWell(
+      onTap: () => setState(() => tab = 2),
+      borderRadius: BorderRadius.circular(20),
+      child: Container(padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(color: const Color(0xFFEEDFFF),
           borderRadius: BorderRadius.circular(20)),
         child: const Column(children: [
           Icon(Icons.map_outlined, size: 52, color: purple),
           SizedBox(height: 9),
-          Text('خريطة بغداد والموقع التلقائي',
+          Text('خريطة محلات بغداد',
             style: TextStyle(fontWeight: FontWeight.bold, fontSize: 17)),
-          Text('بانتظار ربط الخرائط وموافقة المستخدم على إذن الموقع. '
-            'الخرائط والملاحة الحقيقية غير متوفرة بهالنسخة.',
+          Text('استكشف المحلات المعتمدة ومواقعها. '
+            'موقعك ينطلب فقط بعد موافقتك.',
             textAlign: TextAlign.center),
         ]),
-      ),
+      )),
     ],
   );
 
@@ -565,6 +596,7 @@ class _CustomerHomeState extends State<CustomerHome> {
     final pages = [
       home(),
       searchPage(),
+      const BaghdadMapPage(),
       cartPage(),
       emptyPage('طلباتي', 'الطلبات الحقيقية تتفعل بعد ربط المتاجر وقاعدة البيانات.',
         Icons.receipt_long_outlined),
@@ -572,7 +604,7 @@ class _CustomerHomeState extends State<CustomerHome> {
     ];
     return Scaffold(
       appBar: tab == 0 ? null : AppBar(
-        title: Text(['الرئيسية','البحث','السلة','الطلبات','حسابي'][tab])),
+        title: Text(['الرئيسية','البحث','الخريطة','السلة','الطلبات','حسابي'][tab])),
       body: pages[tab],
       bottomNavigationBar: NavigationBar(
         selectedIndex: tab,
@@ -583,6 +615,10 @@ class _CustomerHomeState extends State<CustomerHome> {
           const NavigationDestination(icon: Icon(Icons.home_outlined),
             selectedIcon: Icon(Icons.home, color: purple), label: 'الرئيسية'),
           const NavigationDestination(icon: Icon(Icons.search), label: 'البحث'),
+          const NavigationDestination(
+            icon: Icon(Icons.map_outlined),
+            selectedIcon: Icon(Icons.map, color: purple),
+            label: 'الخريطة'),
           NavigationDestination(icon: const Icon(Icons.shopping_cart_outlined),
             label: cartCount == 0 ? 'السلة' : 'السلة ($cartCount)'),
           const NavigationDestination(icon: Icon(Icons.receipt_long_outlined),
