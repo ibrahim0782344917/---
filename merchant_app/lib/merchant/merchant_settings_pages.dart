@@ -21,6 +21,9 @@ class _MerchantStoreSettingsPageState
   late final TextEditingController _category;
   late final TextEditingController _address;
   late final TextEditingController _phone;
+  late final TextEditingController _description;
+  late final TextEditingController _openingHours;
+  XFile? _logo;
   late final TextEditingController _latitude;
   late final TextEditingController _longitude;
   bool _busy = false;
@@ -36,6 +39,8 @@ class _MerchantStoreSettingsPageState
     _address = TextEditingController(
       text: store['address'] as String? ?? '');
     _phone = TextEditingController(text: store['phone'] as String? ?? '');
+    _description = TextEditingController(text: store['description'] as String? ?? '');
+    _openingHours = TextEditingController(text: store['opening_hours'] as String? ?? '');
     _latitude = TextEditingController(
       text: store['latitude']?.toString() ?? '');
     _longitude = TextEditingController(
@@ -45,7 +50,8 @@ class _MerchantStoreSettingsPageState
   @override
   void dispose() {
     for (final controller in [
-      _name, _area, _category, _address, _phone, _latitude, _longitude
+      _name, _area, _category, _address, _phone, _description,
+      _openingHours, _latitude, _longitude
     ]) {
       controller.dispose();
     }
@@ -65,6 +71,17 @@ class _MerchantStoreSettingsPageState
     ),
   );
 
+  Future<void> _chooseLogo() async {
+    try {
+      final chosen = await ImagePicker().pickImage(
+        source: ImageSource.gallery, maxWidth: 900, imageQuality: 85);
+      if (chosen != null && mounted) setState(() => _logo = chosen);
+    } catch (_) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('تعذر اختيار صورة شعار المتجر.')));
+    }
+  }
+
   Future<void> _save() async {
     if (_busy || !_form.currentState!.validate()) return;
     final latString = _latitude.text.trim();
@@ -79,6 +96,11 @@ class _MerchantStoreSettingsPageState
     }
     setState(() => _busy = true);
     try {
+      String? newLogo;
+      if (_logo != null) {
+        newLogo = await CommerceService.uploadProductImage(
+          widget.store['id'] as String, _logo!);
+      }
       await CommerceService.updateStore(
         storeId: widget.store['id'] as String,
         name: _name.text,
@@ -86,6 +108,9 @@ class _MerchantStoreSettingsPageState
         category: _category.text,
         address: _address.text,
         phone: _phone.text.trim().isEmpty ? null : _phone.text,
+        description: _description.text,
+        openingHours: _openingHours.text,
+        logoUrl: newLogo,
         latitude: lat,
         longitude: lng,
       );
@@ -115,6 +140,19 @@ class _MerchantStoreSettingsPageState
           'من صلاحيات الإدارة فقط.',
           style: TextStyle(color: Colors.black54),
         ),
+        const SizedBox(height: 16),
+        ClipRRect(
+          borderRadius: BorderRadius.circular(18),
+          child: productPhoto(widget.store['logo_url'] as String?,
+            height: 115)),
+        const SizedBox(height: 8),
+        OutlinedButton.icon(
+          onPressed: _chooseLogo,
+          icon: const Icon(Icons.add_photo_alternate),
+          label: Text(_logo == null
+              ? 'اختيار شعار المتجر'
+              : 'الشعار المختار: ' + _logo!.name),
+        ),
         const SizedBox(height: 20),
         Form(key: _form, child: Column(children: [
           _field(_name, 'اسم المحل'),
@@ -123,6 +161,9 @@ class _MerchantStoreSettingsPageState
           _field(_address, 'العنوان', minLength: 8),
           _field(_phone, 'هاتف المحل (اختياري)',
             optional: true, keyboard: TextInputType.phone),
+          _field(_description, 'وصف المحل (اختياري)', optional: true),
+          _field(_openingHours, 'أوقات الدوام (مثلاً 9 ص - 10 م)',
+            optional: true),
           _field(_latitude, 'خط العرض (اختياري)',
             optional: true, keyboard: TextInputType.number),
           _field(_longitude, 'خط الطول (اختياري)',
