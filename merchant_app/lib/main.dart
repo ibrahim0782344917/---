@@ -142,20 +142,28 @@ class _MerchantLoginPageState extends State<MerchantLoginPage> {
           password: _password.text,
         );
         if (!mounted) return;
-        if (result.session != null) widget.onSuccess();
+        if (result.session != null) {
+          widget.onSuccess();
+        }
       }
     } on AuthException catch (error) {
-      if (mounted) setState(() {
-        _error = true;
-        _message = error.message;
-      });
+      if (mounted) {
+        setState(() {
+          _error = true;
+          _message = error.message;
+        });
+      }
     } catch (_) {
-      if (mounted) setState(() {
-        _error = true;
-        _message = 'تعذر الاتصال بخدمة شتريد. حاول مرة ثانية.';
-      });
+      if (mounted) {
+        setState(() {
+          _error = true;
+          _message = 'تعذر الاتصال بخدمة شتريد. حاول مرة ثانية.';
+        });
+      }
     } finally {
-      if (mounted) setState(() => _busy = false);
+      if (mounted) {
+        setState(() => _busy = false);
+      }
     }
   }
 
