@@ -5,6 +5,7 @@ import 'package:shitreed_merchant/backend/marketplace_backend.dart';
 import 'package:shitreed_merchant/commerce/commerce_service.dart';
 import 'package:shitreed_merchant/shared/merchant_widgets.dart';
 import 'package:shitreed_merchant/reports/merchant_reports.dart';
+import 'package:shitreed_merchant/merchant/merchant_settings_pages.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 const _purple = Color(0xFF51159B);
@@ -139,6 +140,18 @@ class _MerchantDashboardPageState extends State<MerchantDashboardPage> {
                                 storeId: store['id'] as String))),
                           icon: const Icon(Icons.receipt_long),
                           label: const Text('طلبات المتجر'),
+                        ),
+                        OutlinedButton.icon(
+                          onPressed: () async {
+                            final result = await Navigator.of(context)
+                                .push<bool>(MaterialPageRoute(
+                              builder: (_) =>
+                                MerchantStoreSettingsPage(store: store),
+                            ));
+                            if (result == true && mounted) _refresh();
+                          },
+                          icon: const Icon(Icons.settings_outlined),
+                          label: const Text('إعدادات المحل'),
                         ),
                       ]),
                     ],
@@ -306,6 +319,35 @@ class _MerchantProductsPageState extends State<MerchantProductsPage> {
     }
   }
 
+  Future<void> _onProductAction(
+      MarketplaceProduct product, String action) async {
+    if (action == 'stock') {
+      await _updateStock(product);
+      return;
+    }
+    if (action == 'edit') {
+      final changed = await Navigator.of(context).push<bool>(
+        MaterialPageRoute(builder: (_) =>
+          MerchantEditProductPage(product: product)),
+      );
+      if (changed == true && mounted) _refresh();
+      return;
+    }
+    if (action == 'visibility') {
+      try {
+        await CommerceService.setProductVisibility(
+          product, !product.isActive);
+        if (mounted) _refresh();
+      } catch (_) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+            content: Text('تعذر تغيير نشر المنتج. تحقق من حسابك.'),
+          ));
+        }
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) => Scaffold(
     appBar: AppBar(title: Text('منتجات ' + widget.storeName)),
@@ -346,11 +388,23 @@ class _MerchantProductsPageState extends State<MerchantProductsPage> {
                   child: productPhoto(p.imageUrl, height: 65)),
                 title: Text(p.name),
                 subtitle: Text(priceText(p.priceIqd) +
-                    ' • مخزون ' + p.stockQuantity.toString()),
-                trailing: IconButton(
-                  onPressed: () => _updateStock(p),
-                  tooltip: 'تعديل المخزون',
-                  icon: const Icon(Icons.edit_outlined, color: _purple)),
+                    ' • مخزون ' + p.stockQuantity.toString() +
+                    (p.isActive ? ' • ظاهر' : ' • مخفي')),
+                trailing: PopupMenuButton<String>(
+                  tooltip: 'خيارات المنتج',
+                  onSelected: (choice) => _onProductAction(p, choice),
+                  itemBuilder: (_) => [
+                    const PopupMenuItem(
+                      value: 'edit', child: Text('تعديل المنتج والصورة')),
+                    const PopupMenuItem(
+                      value: 'stock', child: Text('تعديل المخزون')),
+                    PopupMenuItem(
+                      value: 'visibility',
+                      child: Text(p.isActive ? 'إخفاء المنتج' :
+                        'إعادة نشر المنتج')),
+                  ],
+                  icon: const Icon(Icons.more_vert, color: _purple),
+                ),
               ),
             ),
           ]);
