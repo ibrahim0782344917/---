@@ -154,6 +154,47 @@ class _BaghdadMapPageState extends State<BaghdadMapPage> {
     'www.google.com', '/maps/search/', {'api':'1', 'query':'بغداد العراق'},
   ));
 
+  void _showMapHelp() {
+    showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      builder: (sheetContext) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(22, 12, 22, 24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const Text('الخريطة ما تعرض الشوارع؟',
+                style: TextStyle(
+                  fontSize: 19, fontWeight: FontWeight.w900,
+                  color: _darkPurple)),
+              const SizedBox(height: 12),
+              const Text('إذا يظهر شعار Google والخلفية فارغة، '
+                'قد يكون السبب تفعيل Maps SDK for Android أو '
+                'الفوترة أو قيود مفتاح Google Cloud وبصمة توقيع التطبيق. '
+                'جرب الإنترنت أيضاً. ظهور الشعار وحده لا يعني '
+                'أن بيانات الخريطة تحمّلت.'),
+              const SizedBox(height: 12),
+              const Text('تگدر تفتح خريطة بغداد في تطبيق Google Maps '
+                'الخارجي مؤقتاً.',
+                style: TextStyle(color: Colors.black54)),
+              const SizedBox(height: 14),
+              FilledButton.icon(
+                onPressed: () {
+                  Navigator.pop(sheetContext);
+                  _openBaghdad();
+                },
+                icon: const Icon(Icons.open_in_new),
+                label: const Text('افتح خرائط Google'),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   Future<void> _directions(MarketplaceStore store) async {
     if (store.latitude == null || store.longitude == null) {
       _toast('صاحب المتجر ما حدد الموقع الدقيق بعد.');
@@ -216,16 +257,33 @@ class _BaghdadMapPageState extends State<BaghdadMapPage> {
       borderRadius: BorderRadius.circular(20),
       border: Border.all(color: const Color(0xFFD8C7EF))),
     child: _mapsEnabled
-      ? GoogleMap(
-          initialCameraPosition: const CameraPosition(target: _baghdad, zoom: 11),
-          markers: _markers,
-          myLocationEnabled: _position != null,
-          myLocationButtonEnabled: false,
-          zoomControlsEnabled: false,
-          mapToolbarEnabled: false,
-          onMapCreated: (c) => _controller = c,
-          onTap: (_) => setState(() => _selected = null),
-        )
+      ? Stack(children: [
+          Positioned.fill(child: GoogleMap(
+            initialCameraPosition: const CameraPosition(
+              target: _baghdad, zoom: 11),
+            markers: _markers,
+            mapType: MapType.normal,
+            myLocationEnabled: _position != null,
+            myLocationButtonEnabled: false,
+            zoomControlsEnabled: false,
+            mapToolbarEnabled: false,
+            onMapCreated: (c) => _controller = c,
+            onTap: (_) => setState(() => _selected = null),
+          )),
+          Positioned(
+            top: 9, right: 9,
+            child: Material(
+              color: Colors.white,
+              elevation: 2,
+              borderRadius: BorderRadius.circular(14),
+              child: TextButton.icon(
+                onPressed: _showMapHelp,
+                icon: const Icon(Icons.help_outline, size: 19),
+                label: const Text('الخريطة فارغة؟'),
+              ),
+            ),
+          ),
+        ])
       : Column(mainAxisAlignment: MainAxisAlignment.center, children: [
           const Icon(Icons.map_outlined, size: 62, color: _purple),
           const SizedBox(height: 8),
