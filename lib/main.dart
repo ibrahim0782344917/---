@@ -393,7 +393,7 @@ class _CustomerHomeState extends State<CustomerHome> {
         const SizedBox(height: 10),
         Text(detail, textAlign: TextAlign.center),
       ]),
-    )),
+    ),
   );
 
   @override
