@@ -259,7 +259,7 @@ class _CustomerHomeState extends State<CustomerHome> {
         ),
         const SizedBox(height: 22),
         title('منتجات تجريبية'),
-        SizedBox(height: 219, child: ListView(
+        SizedBox(height: 258, child: ListView(
           scrollDirection: Axis.horizontal,
           children: [
             for (var i = 0; i < products.length; i++)
