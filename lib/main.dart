@@ -1,6 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:shitreed_customer/auth/customer_auth_page.dart';
+import 'package:shitreed_customer/backend/marketplace_backend.dart';
 
-void main() => runApp(const ShitreedApp());
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await MarketplaceBackend.initialize();
+  runApp(const ShitreedApp());
+}
 
 const purple = Color(0xFF51159B);
 const darkPurple = Color(0xFF280B53);
@@ -9,7 +15,9 @@ const canvas = Color(0xFFF9F6FC);
 
 class Store {
   final String name, area, type, emoji;
-  const Store(this.name, this.area, this.type, this.emoji);
+  final bool isDemo;
+  const Store(this.name, this.area, this.type, this.emoji,
+      {this.isDemo = true});
 }
 
 class Product {
@@ -117,6 +125,43 @@ class _CustomerHomeState extends State<CustomerHome> {
   String district = 'كل بغداد';
   String category = 'الكل';
   final Map<int, int> cart = {};
+  List<Store> remoteStores = [];
+  bool remoteLoading = false;
+  String? remoteError;
+
+  @override
+  void initState() {
+    super.initState();
+    if (MarketplaceBackend.configured) {
+      _loadRealStores();
+    }
+  }
+
+  Future<void> _loadRealStores() async {
+    setState(() {
+      remoteLoading = true;
+      remoteError = null;
+    });
+    try {
+      final results = await MarketplaceBackend.approvedStores();
+      if (!mounted) return;
+      setState(() {
+        remoteStores = results.map((store) => Store(
+          store.name,
+          store.area,
+          store.category,
+          '🏪',
+          isDemo: false,
+        )).toList();
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => remoteError =
+        'تعذّر تحميل المحلات. تأكد من الإنترنت وقاعدة البيانات.');
+    } finally {
+      if (mounted) setState(() => remoteLoading = false);
+    }
+  }
 
   static const districts = [
     'كل بغداد', 'الغزالية', 'المنصور', 'الكرادة', 'الأعظمية',
@@ -130,7 +175,8 @@ class _CustomerHomeState extends State<CustomerHome> {
     ('مواد غذائية','🛒'), ('قطع غيار','⚙️'), ('المزيد','•••')
   ];
 
-  List<Store> get filtered => stores.where((s) {
+  List<Store> get filtered =>
+    (MarketplaceBackend.configured ? remoteStores : stores).where((s) {
     return (district == 'كل بغداد' || s.area == district) &&
       (category == 'الكل' || s.type == category) &&
       '${s.name} ${s.area} ${s.type}'.toLowerCase()
@@ -163,7 +209,9 @@ class _CustomerHomeState extends State<CustomerHome> {
         radius: 26, backgroundColor: const Color(0xFFEAD8FF),
         child: Text(s.emoji, style: const TextStyle(fontSize: 26))),
       title: Text(s.name, style: const TextStyle(fontWeight: FontWeight.w800)),
-      subtitle: Text('${s.area} • ${s.type} • بيانات تجريبية'),
+      subtitle: Text(s.isDemo
+        ? '${s.area} • ${s.type} • بيانات تجريبية'
+        : '${s.area} • ${s.type} • متجر منشور'),
       trailing: const Icon(Icons.chevron_left, color: purple),
       onTap: () => Navigator.push(context, MaterialPageRoute<void>(
         builder: (_) => StorePage(store: s))),
@@ -290,8 +338,20 @@ class _CustomerHomeState extends State<CustomerHome> {
         )),
         const SizedBox(height: 21),
         title('متاجر من مناطق بغداد'),
+        if (remoteLoading) const Center(child: CircularProgressIndicator()),
+        if (remoteError != null)
+          Text(remoteError!, style: const TextStyle(color: Colors.red)),
         for (final s in filtered.take(5)) storeTile(s),
-        if (filtered.isEmpty) const Text('ماكو نتائج تجريبية مطابقة'),
+        if (filtered.isEmpty && !remoteLoading && remoteError == null)
+          Text(MarketplaceBackend.configured
+            ? 'ماكو متاجر منشورة بهالمنطقة لحد الآن'
+            : 'ماكو نتائج تجريبية مطابقة'),
+        if (MarketplaceBackend.configured)
+          OutlinedButton.icon(
+            onPressed: _loadRealStores,
+            icon: const Icon(Icons.refresh),
+            label: const Text('تحديث المحلات'),
+          ),
         OutlinedButton(onPressed: () => setState(() => tab = 1),
           child: const Text('استكشف كل المحلات')),
         const Padding(
@@ -322,8 +382,14 @@ class _CustomerHomeState extends State<CustomerHome> {
       ]),
       const SizedBox(height: 18),
       title('النتائج: ${filtered.length}'),
+      if (remoteLoading) const Center(child: CircularProgressIndicator()),
+      if (remoteError != null)
+        Text(remoteError!, style: const TextStyle(color: Colors.red)),
       for (final s in filtered) storeTile(s),
-      if (filtered.isEmpty) const Text('لا توجد نتائج تجريبية مطابقة'),
+      if (filtered.isEmpty && !remoteLoading && remoteError == null)
+        Text(MarketplaceBackend.configured
+          ? 'ماكو متاجر منشورة مطابقة حالياً'
+          : 'لا توجد نتائج تجريبية مطابقة'),
       const SizedBox(height: 20),
       Container(padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(color: const Color(0xFFEEDFFF),
@@ -383,6 +449,57 @@ class _CustomerHomeState extends State<CustomerHome> {
     ]);
   }
 
+  Widget profilePage() {
+    if (!MarketplaceBackend.configured) {
+      return emptyPage('الحساب الحقيقي',
+        'تسجيل الدخول جاهز برمجياً، لكنه يحتاج ربط Supabase '
+        'بمشروع مستقل قبل ما نفعّله على نسختك.',
+        Icons.lock_outline);
+    }
+    final user = MarketplaceBackend.currentUser;
+    if (user == null) {
+      return Center(child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(Icons.account_circle_outlined, size: 75, color: purple),
+          const SizedBox(height: 15),
+          const Text('سجّل حتى تحفظ حسابك',
+            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 14),
+          FilledButton(
+            onPressed: () async {
+              await Navigator.of(context).push<bool>(
+                MaterialPageRoute(builder: (_) => const CustomerAuthPage()));
+              if (mounted) setState(() {});
+            },
+            child: const Text('دخول / إنشاء حساب'),
+          ),
+        ],
+      ));
+    }
+    return ListView(padding: const EdgeInsets.all(20), children: [
+      const Icon(Icons.verified_user, color: purple, size: 75),
+      const SizedBox(height: 14),
+      const Text('حسابك متصل', textAlign: TextAlign.center,
+        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 22)),
+      const SizedBox(height: 9),
+      Text(user.email ?? 'بريد غير متوفر', textAlign: TextAlign.center),
+      const SizedBox(height: 20),
+      OutlinedButton.icon(
+        onPressed: () async {
+          try {
+            await MarketplaceBackend.signOut();
+            if (mounted) setState(() {});
+          } catch (_) {
+            if (mounted) message('تعذّر تسجيل الخروج، حاول مرة ثانية');
+          }
+        },
+        icon: const Icon(Icons.logout),
+        label: const Text('تسجيل الخروج'),
+      ),
+    ]);
+  }
+
   Widget emptyPage(String heading, String detail, IconData icon) => Center(
     child: Padding(padding: const EdgeInsets.all(24), child: Column(
       mainAxisSize: MainAxisSize.min, children: [
@@ -404,8 +521,7 @@ class _CustomerHomeState extends State<CustomerHome> {
       cartPage(),
       emptyPage('طلباتي', 'الطلبات الحقيقية تتفعل بعد ربط المتاجر وقاعدة البيانات.',
         Icons.receipt_long_outlined),
-      emptyPage('حسابي', 'تسجيل الحساب الآمن والملف الشخصي قيد التطوير.',
-        Icons.person_outline),
+      profilePage(),
     ];
     return Scaffold(
       appBar: tab == 0 ? null : AppBar(
@@ -451,7 +567,8 @@ class StorePage extends StatelessWidget {
       const SizedBox(height: 10),
       Text('بغداد • ${store.area} • ${store.type}'),
       const SizedBox(height: 14),
-      const Chip(label: Text('متجر تجريبي غير موثق')),
+      Chip(label: Text(store.isDemo
+        ? 'متجر تجريبي غير موثق' : 'متجر منشور في شتريد')),
       const SizedBox(height: 17),
       const Text('معلومات المتجر، الصور، أوقات الدوام والتقييمات '
         'راح تنعرض بعد الربط المصرح به والتحقق من البيانات.'),
