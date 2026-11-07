@@ -37,7 +37,7 @@ class MarketplaceBackend {
     if (!configured) return const [];
     final rows = await Supabase.instance.client
         .from('products')
-        .select('id,name,price_iqd,store_id')
+        .select('id,name,description,price_iqd,store_id,stock_quantity,image_url')
         .eq('is_active', true)
         .order('name')
         .limit(60);
@@ -47,6 +47,9 @@ class MarketplaceBackend {
       name: row['name'] as String,
       priceIqd: (row['price_iqd'] as num).toInt(),
       storeId: row['store_id'] as String,
+      description: row['description'] as String? ?? '',
+      stockQuantity: (row['stock_quantity'] as num).toInt(),
+      imageUrl: row['image_url'] as String?,
     )).toList(growable: false);
   }
 
@@ -82,11 +85,17 @@ class MarketplaceProduct {
   final String name;
   final int priceIqd;
   final String storeId;
+  final String description;
+  final int stockQuantity;
+  final String? imageUrl;
 
   const MarketplaceProduct({
     required this.id,
     required this.name,
     required this.priceIqd,
     required this.storeId,
+    this.description = '',
+    this.stockQuantity = 0,
+    this.imageUrl,
   });
 }
