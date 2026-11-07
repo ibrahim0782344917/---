@@ -1,0 +1,8 @@
+.dart_tool/
+build/
+.idea/
+*.iml
+android/local.properties
+android/key.properties
+*.jks
+.env
