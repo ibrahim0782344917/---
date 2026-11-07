@@ -76,7 +76,7 @@ class _BaghdadMapPageState extends State<BaghdadMapPage> {
     final keyword = _search.text.trim().toLowerCase();
     final result = _stores.where((s) {
       return (_area == 'كل بغداد' || s.area == _area) &&
-        (s.name + ' ' + s.area + ' ' + s.category)
+        '${s.name} ${s.area} ${s.category}'
             .toLowerCase().contains(keyword);
     }).toList();
     if (_position != null) {
@@ -161,7 +161,7 @@ class _BaghdadMapPageState extends State<BaghdadMapPage> {
     }
     await _openUrl(Uri.https('www.google.com', '/maps/dir/', {
       'api': '1',
-      'destination': store.latitude.toString() + ',' + store.longitude.toString(),
+      'destination': '${store.latitude},${store.longitude}',
       'travelmode': 'driving',
     }));
   }
@@ -261,9 +261,8 @@ class _BaghdadMapPageState extends State<BaghdadMapPage> {
               child: Icon(Icons.storefront_outlined, color: _purple)),
             title: Text(store.name, style: const TextStyle(
                 fontWeight: FontWeight.bold)),
-            subtitle: Text(store.area + ' • ' + store.category +
-              (distance == null ? '' :
-                ' • ' + (distance / 1000).toStringAsFixed(1) + ' كم')),
+            subtitle: Text('${store.area} • ${store.category}'
+              '${distance == null ? '' : ' • ${(distance / 1000).toStringAsFixed(1)} كم'}'),
             trailing: Icon(hasPoint ? Icons.place : Icons.location_off,
               color: hasPoint ? _orange : Colors.grey),
             onTap: () => _focus(store),
@@ -343,7 +342,7 @@ class _BaghdadMapPageState extends State<BaghdadMapPage> {
           ]),
         ),
         Padding(padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: Text('المتاجر المعتمدة (' + visible.length.toString() + ')',
+          child: Text('المتاجر المعتمدة (${visible.length})',
             style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w900,
               color: _darkPurple))),
         if (_loading) const Padding(
