@@ -2,6 +2,12 @@ name: Shitreed Customer Connected APK
 on:
   push:
     branches: [main]
+    paths:
+      - 'lib/**'
+      - 'test/**'
+      - 'pubspec.yaml'
+      - 'scripts/**'
+      - '.github/workflows/android-apk.yml'
   workflow_dispatch:
 permissions:
   contents: read
