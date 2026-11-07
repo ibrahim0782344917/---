@@ -126,6 +126,7 @@ class _CustomerHomeState extends State<CustomerHome> {
   String category = 'الكل';
   final Map<int, int> cart = {};
   List<Store> remoteStores = [];
+  List<MarketplaceProduct> remoteProducts = [];
   bool remoteLoading = false;
   String? remoteError;
 
@@ -144,8 +145,10 @@ class _CustomerHomeState extends State<CustomerHome> {
     });
     try {
       final results = await MarketplaceBackend.approvedStores();
+      final published = await MarketplaceBackend.publishedProducts();
       if (!mounted) return;
       setState(() {
+        remoteProducts = published;
         remoteStores = results.map((store) => Store(
           store.name,
           store.area,
@@ -306,8 +309,51 @@ class _CustomerHomeState extends State<CustomerHome> {
           ]),
         ),
         const SizedBox(height: 22),
-        title('منتجات تجريبية'),
-        SizedBox(height: 258, child: ListView(
+        title(MarketplaceBackend.configured
+          ? 'منتجات منشورة' : 'منتجات تجريبية'),
+        if (MarketplaceBackend.configured)
+          SizedBox(
+            height: 205,
+            child: remoteProducts.isEmpty
+              ? Center(child: Text(remoteLoading
+                  ? 'جاري تحميل المنتجات...'
+                  : 'ماكو منتجات منشورة بعد. أول ما يسجل أصحاب المتاجر تظهر هنا.'))
+              : ListView(
+                  scrollDirection: Axis.horizontal,
+                  children: [
+                    for (final p in remoteProducts)
+                      Container(
+                        width: 158,
+                        margin: const EdgeInsets.only(left: 10),
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(20)),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            const Icon(Icons.inventory_2_outlined,
+                              size: 49, color: purple),
+                            const SizedBox(height: 10),
+                            Text(p.name, maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold)),
+                            const SizedBox(height: 10),
+                            Text(dinars(p.priceIqd),
+                              style: const TextStyle(color: purple,
+                                fontWeight: FontWeight.w800)),
+                            const Spacer(),
+                            const Text('الشراء قيد التجهيز',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(fontSize: 11)),
+                          ]),
+                      ),
+                  ],
+                ),
+          ),
+        if (!MarketplaceBackend.configured)
+          SizedBox(height: 258, child: ListView(
           scrollDirection: Axis.horizontal,
           children: [
             for (var i = 0; i < products.length; i++)
@@ -356,7 +402,8 @@ class _CustomerHomeState extends State<CustomerHome> {
           child: const Text('استكشف كل المحلات')),
         const Padding(
           padding: EdgeInsets.only(top: 8),
-          child: Text('تنبيه: المتاجر والعروض والأسعار للتصميم والتجربة فقط.',
+          child: Text('العروض الحالية للتصميم والتجربة فقط. '
+            'الشراء المباشر ما زال قيد التطوير.',
             style: TextStyle(fontSize: 12, color: Colors.black54)),
         ),
       ]),
