@@ -151,7 +151,7 @@ class _MerchantStoreSettingsPageState
           icon: const Icon(Icons.add_photo_alternate),
           label: Text(_logo == null
               ? 'اختيار شعار المتجر'
-              : 'الشعار المختار: ' + _logo!.name),
+              : 'الشعار المختار: ${_logo!.name}'),
         ),
         const SizedBox(height: 20),
         Form(key: _form, child: Column(children: [
@@ -317,7 +317,7 @@ class _MerchantEditProductPageState
           icon: const Icon(Icons.add_photo_alternate_outlined),
           label: Text(_selectedImage == null
               ? 'تغيير صورة المنتج'
-              : 'الصورة المختارة: ' + _selectedImage!.name),
+              : 'الصورة المختارة: ${_selectedImage!.name}'),
         ),
         const SizedBox(height: 17),
         FilledButton.icon(
