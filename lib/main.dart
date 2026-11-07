@@ -648,8 +648,8 @@ class _CustomerHomeState extends State<CustomerHome> {
           NavigationDestination(icon: const Icon(Icons.shopping_cart_outlined),
             label: MarketplaceBackend.configured
               ? (CommerceCart.instance.count == 0
-                ? 'السلة' : 'السلة (' + CommerceCart.instance.count.toString() + ')')
-              : (cartCount == 0 ? 'السلة' : 'السلة ($cartCount)'),
+                ? 'السلة' : 'السلة (${CommerceCart.instance.count})')
+              : (cartCount == 0 ? 'السلة' : 'السلة ($cartCount)')),
           const NavigationDestination(icon: Icon(Icons.receipt_long_outlined),
             label: 'الطلبات'),
           const NavigationDestination(icon: Icon(Icons.person_outline),
