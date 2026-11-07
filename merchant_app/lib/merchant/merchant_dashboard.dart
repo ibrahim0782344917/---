@@ -4,6 +4,8 @@ import 'package:image_picker/image_picker.dart';
 import 'package:shitreed_merchant/backend/marketplace_backend.dart';
 import 'package:shitreed_merchant/commerce/commerce_service.dart';
 import 'package:shitreed_merchant/shared/merchant_widgets.dart';
+import 'package:shitreed_merchant/reports/merchant_reports.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 const _purple = Color(0xFF51159B);
 const _dark = Color(0xFF280B53);
@@ -27,7 +29,44 @@ class _MerchantDashboardPageState extends State<MerchantDashboardPage> {
 
   @override
   Widget build(BuildContext context) => Scaffold(
-    appBar: AppBar(title: const Text('لوحة صاحب المتجر')),
+    appBar: AppBar(
+      title: const Text('شتريد تاجر'),
+      actions: [
+        IconButton(
+          icon: const Icon(Icons.bar_chart_rounded),
+          tooltip: 'الإحصائيات',
+          onPressed: () => Navigator.of(context).push(
+            MaterialPageRoute<void>(builder: (_) =>
+              const MerchantReportsPage())),
+        ),
+        IconButton(
+          icon: const Icon(Icons.logout),
+          tooltip: 'تسجيل الخروج',
+          onPressed: () async {
+            final shouldLogout = await showDialog<bool>(
+              context: context,
+              builder: (dialogContext) => AlertDialog(
+                title: const Text('تسجيل الخروج'),
+                content: const Text('تريد تطلع من حساب التاجر؟'),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.of(dialogContext).pop(false),
+                    child: const Text('إلغاء'),
+                  ),
+                  FilledButton(
+                    onPressed: () => Navigator.of(dialogContext).pop(true),
+                    child: const Text('خروج'),
+                  ),
+                ],
+              ),
+            );
+            if (shouldLogout == true && context.mounted) {
+              await Supabase.instance.client.auth.signOut();
+            }
+          },
+        ),
+      ],
+    ),
     floatingActionButton: FloatingActionButton.extended(
       onPressed: () async {
         final added = await Navigator.of(context).push<bool>(
