@@ -37,6 +37,25 @@ jobs:
             --dart-define=GOOGLE_MAPS_ENABLED=$MAPS_ENABLED \
             --dart-define=SUPABASE_URL=https://ltwncrewggdrjevakwpb.supabase.co \
             --dart-define=SUPABASE_PUBLISHABLE_KEY=sb_publishable_Tao4VcnXR93Ne9KUBJ76tg_o-Pmd75_
+      - name: Verify Google Maps key and Android signing fingerprint
+        env:
+          GOOGLE_MAPS_API_KEY: ${{ secrets.GOOGLE_MAPS_API_KEY }}
+        run: |
+          echo "### Shitreed Google Maps diagnostics" >> "$GITHUB_STEP_SUMMARY"
+          echo "Android package: com.shitreed.shitreed_customer" >> "$GITHUB_STEP_SUMMARY"
+          if [ -n "$GOOGLE_MAPS_API_KEY" ]; then
+            echo "Maps API key secret: PRESENT (value not logged)" | tee -a "$GITHUB_STEP_SUMMARY"
+          else
+            echo "Maps API key secret: MISSING (fallback external maps only)" | tee -a "$GITHUB_STEP_SUMMARY"
+          fi
+          if [ -f "$HOME/.android/debug.keystore" ]; then
+            FINGERPRINT=$(keytool -list -v -keystore "$HOME/.android/debug.keystore" \
+              -alias androiddebugkey -storepass android -keypass android \
+              | sed -n 's/^[[:space:]]*SHA1: //p' | head -n1)
+            echo "Android debug signing SHA-1: $FINGERPRINT" | tee -a "$GITHUB_STEP_SUMMARY"
+          else
+            echo "No ephemeral debug keystore found." | tee -a "$GITHUB_STEP_SUMMARY"
+          fi
       - uses: actions/upload-artifact@v4
         with:
           name: Shitreed-Customer-Connected-APK
