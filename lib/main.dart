@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:shitreed_customer/auth/customer_auth_page.dart';
 import 'package:shitreed_customer/backend/marketplace_backend.dart';
 import 'package:shitreed_customer/maps/baghdad_map_page.dart';
+import 'package:shitreed_customer/commerce/commerce_service.dart';
+import 'package:shitreed_customer/commerce/customer_commerce_pages.dart';
+import 'package:shitreed_customer/merchant/merchant_dashboard.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -17,8 +20,9 @@ const canvas = Color(0xFFF9F6FC);
 class Store {
   final String name, area, type, emoji;
   final bool isDemo;
+  final String? id;
   const Store(this.name, this.area, this.type, this.emoji,
-      {this.isDemo = true});
+      {this.isDemo = true, this.id});
 }
 
 class Product {
@@ -105,8 +109,10 @@ class WelcomePage extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 18),
-          const Text('نسخة اختبار — الطلبات والدفع غير مفعّلين بعد',
-            style: TextStyle(color: Colors.white70)),
+          Text(MarketplaceBackend.configured
+              ? 'متاجر حقيقية • الدفع عند الاستلام'
+              : 'نسخة تجريبية — بدون طلبات حقيقية',
+            style: const TextStyle(color: Colors.white70)),
           const SizedBox(height: 15),
         ]),
       )),
@@ -156,6 +162,7 @@ class _CustomerHomeState extends State<CustomerHome> {
           store.category,
           '🏪',
           isDemo: false,
+          id: store.id,
         )).toList();
       });
     } catch (_) {
@@ -218,7 +225,9 @@ class _CustomerHomeState extends State<CustomerHome> {
         : '${s.area} • ${s.type} • متجر منشور'),
       trailing: const Icon(Icons.chevron_left, color: purple),
       onTap: () => Navigator.push(context, MaterialPageRoute<void>(
-        builder: (_) => StorePage(store: s))),
+        builder: (_) => s.id != null
+          ? LiveStorePage(storeId: s.id!, name: s.name, area: s.area)
+          : StorePage(store: s))),
     ),
   );
 
@@ -372,9 +381,16 @@ class _CustomerHomeState extends State<CustomerHome> {
                               style: const TextStyle(color: purple,
                                 fontWeight: FontWeight.w800)),
                             const Spacer(),
-                            const Text('الشراء قيد التجهيز',
-                              textAlign: TextAlign.center,
-                              style: TextStyle(fontSize: 11)),
+                            FilledButton.tonal(
+                              onPressed: p.stockQuantity < 1 ? null : () {
+                                final added = CommerceCart.instance.add(p);
+                                if (added) setState(() {});
+                                message(added
+                                  ? 'انضافت السلعة للسلة'
+                                  : 'السلة لمتجر واحد أو المخزون انتهى.');
+                              },
+                              child: const Text('+ للسلة'),
+                            ),
                           ]),
                       ),
                   ],
@@ -563,6 +579,14 @@ class _CustomerHomeState extends State<CustomerHome> {
       const SizedBox(height: 9),
       Text(user.email ?? 'بريد غير متوفر', textAlign: TextAlign.center),
       const SizedBox(height: 20),
+      FilledButton.icon(
+        onPressed: () => Navigator.of(context).push(
+          MaterialPageRoute<void>(builder: (_) =>
+            const MerchantDashboardPage())),
+        icon: const Icon(Icons.storefront_outlined),
+        label: const Text('أنا صاحب متجر — إدارة متجري'),
+      ),
+      const SizedBox(height: 10),
       OutlinedButton.icon(
         onPressed: () async {
           try {
@@ -597,9 +621,11 @@ class _CustomerHomeState extends State<CustomerHome> {
       home(),
       searchPage(),
       const BaghdadMapPage(),
-      cartPage(),
-      emptyPage('طلباتي', 'الطلبات الحقيقية تتفعل بعد ربط المتاجر وقاعدة البيانات.',
-        Icons.receipt_long_outlined),
+      MarketplaceBackend.configured ? const LiveCartPage() : cartPage(),
+      MarketplaceBackend.configured
+        ? const OrderHistoryPage()
+        : emptyPage('طلباتي', 'الطلبات تحتاج ربط قاعدة البيانات.',
+          Icons.receipt_long_outlined),
       profilePage(),
     ];
     return Scaffold(
@@ -620,7 +646,10 @@ class _CustomerHomeState extends State<CustomerHome> {
             selectedIcon: Icon(Icons.map, color: purple),
             label: 'الخريطة'),
           NavigationDestination(icon: const Icon(Icons.shopping_cart_outlined),
-            label: cartCount == 0 ? 'السلة' : 'السلة ($cartCount)'),
+            label: MarketplaceBackend.configured
+              ? (CommerceCart.instance.count == 0
+                ? 'السلة' : 'السلة (' + CommerceCart.instance.count.toString() + ')')
+              : (cartCount == 0 ? 'السلة' : 'السلة ($cartCount)'),
           const NavigationDestination(icon: Icon(Icons.receipt_long_outlined),
             label: 'الطلبات'),
           const NavigationDestination(icon: Icon(Icons.person_outline),
