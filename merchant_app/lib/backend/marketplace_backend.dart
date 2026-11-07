@@ -88,6 +88,7 @@ class MarketplaceProduct {
   final String description;
   final int stockQuantity;
   final String? imageUrl;
+  final bool isActive;
 
   const MarketplaceProduct({
     required this.id,
@@ -97,5 +98,6 @@ class MarketplaceProduct {
     this.description = '',
     this.stockQuantity = 0,
     this.imageUrl,
+    this.isActive = true,
   });
 }
