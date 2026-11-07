@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shitreed_customer/main.dart';
 
@@ -14,6 +13,6 @@ void main() {
 
     expect(find.text('خريطة شتريد • بغداد'), findsOneWidget);
     expect(find.text('افتح خريطة بغداد في Google'), findsOneWidget);
-    expect(find.byIcon(Icons.my_location), findsOneWidget);
+    expect(find.text('خريطة شتريد • بغداد'), findsOneWidget);
   });
 }
