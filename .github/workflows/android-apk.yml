@@ -1,0 +1,30 @@
+name: Shitreed Customer APK
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - name: Generate Android
+        run: flutter create --org com.shitreed --project-name shitreed_customer --platforms android .
+      - name: Packages
+        run: flutter pub get
+      - name: Tests
+        run: flutter test
+      - name: Build Android debug
+        run: flutter build apk --debug
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Shitreed-Customer-APK
+          path: build/app/outputs/flutter-apk/app-debug.apk
+          if-no-files-found: error
