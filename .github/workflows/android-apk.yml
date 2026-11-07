@@ -17,6 +17,10 @@ jobs:
           cache: true
       - name: Generate Android
         run: flutter create --org com.shitreed --project-name shitreed_customer --platforms android .
+      - name: Configure Android maps and location permissions
+        env:
+          GOOGLE_MAPS_API_KEY: ${{ secrets.GOOGLE_MAPS_API_KEY }}
+        run: python3 scripts/configure_android_maps.py
       - name: Packages
         run: flutter pub get
       - name: Analyze
@@ -24,8 +28,13 @@ jobs:
       - name: Tests
         run: flutter test
       - name: Build Android debug
+        env:
+          GOOGLE_MAPS_API_KEY: ${{ secrets.GOOGLE_MAPS_API_KEY }}
         run: |
+          MAPS_ENABLED=false
+          if [ -n "$GOOGLE_MAPS_API_KEY" ]; then MAPS_ENABLED=true; fi
           flutter build apk --debug \
+            --dart-define=GOOGLE_MAPS_ENABLED=$MAPS_ENABLED \
             --dart-define=SUPABASE_URL=https://ltwncrewggdrjevakwpb.supabase.co \
             --dart-define=SUPABASE_PUBLISHABLE_KEY=sb_publishable_Tao4VcnXR93Ne9KUBJ76tg_o-Pmd75_
       - uses: actions/upload-artifact@v4
