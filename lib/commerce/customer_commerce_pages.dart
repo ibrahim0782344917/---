@@ -1,3 +1,4 @@
+// ignore_for_file: prefer_interpolation_to_compose_strings, curly_braces_in_flow_control_structures
 import 'package:flutter/material.dart';
 import 'package:shitreed_customer/auth/customer_auth_page.dart';
 import 'package:shitreed_customer/backend/marketplace_backend.dart';
@@ -20,7 +21,7 @@ Widget productPhoto(String? url, {double height = 115}) {
         Icons.inventory_2_outlined, color: _purple, size: 50)));
   }
   return Image.network(url, height: height, fit: BoxFit.cover,
-    errorBuilder: (_, _, _) => SizedBox(height: height,
+    errorBuilder: (context, error, stackTrace) => SizedBox(height: height,
       child: const Icon(Icons.broken_image_outlined, color: Colors.grey)));
 }
 
