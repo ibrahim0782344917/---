@@ -32,12 +32,19 @@ class MarketplaceBackend {
         )).toList(growable: false);
   }
 
-  /// Only active products in approved stores are visible via RLS.
+  /// Public marketplace listings must include approved stores only.
+  ///
+  /// Merchants are allowed by RLS to read their own pending products for
+  /// management, so RLS alone cannot filter the customer-facing catalog.
   static Future<List<MarketplaceProduct>> publishedProducts() async {
     if (!configured) return const [];
+    final approved = await approvedStores();
+    if (approved.isEmpty) return const [];
+    final approvedIds = approved.map((store) => store.id).toList();
     final rows = await Supabase.instance.client
         .from('products')
         .select('id,name,description,price_iqd,store_id,stock_quantity,image_url')
+        .inFilter('store_id', approvedIds)
         .eq('is_active', true)
         .order('name')
         .limit(60);
