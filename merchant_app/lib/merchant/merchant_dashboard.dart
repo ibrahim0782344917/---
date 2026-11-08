@@ -26,7 +26,11 @@ class _MerchantDashboardPageState extends State<MerchantDashboardPage> {
     _refresh();
   }
 
-  void _refresh() => setState(() => _stores = CommerceService.myStores());
+  void _refresh() {
+    setState(() {
+      _stores = CommerceService.myStores();
+    });
+  }
 
   @override
   Widget build(BuildContext context) => Scaffold(
