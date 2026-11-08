@@ -82,7 +82,11 @@ class _MerchantReportsPageState extends State<MerchantReportsPage> {
     _refresh();
   }
 
-  void _refresh() => setState(() => _report = loadMerchantReport());
+  void _refresh() {
+    setState(() {
+      _report = loadMerchantReport();
+    });
+  }
 
   Widget _stat(String label, String value, IconData icon) => Expanded(
     child: Container(
