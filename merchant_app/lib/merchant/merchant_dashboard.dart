@@ -432,6 +432,7 @@ class _MerchantNewProductPageState extends State<MerchantNewProductPage> {
   final _price = TextEditingController();
   final _stock = TextEditingController();
   XFile? _photo;
+  String? _uploadedPhotoUrl;
   bool _busy = false;
 
   @override
@@ -447,7 +448,12 @@ class _MerchantNewProductPageState extends State<MerchantNewProductPage> {
     try {
       final selected = await ImagePicker().pickImage(
         source: ImageSource.gallery, maxWidth: 1400, imageQuality: 82);
-      if (mounted && selected != null) setState(() => _photo = selected);
+      if (mounted && selected != null) {
+        setState(() {
+          _photo = selected;
+          _uploadedPhotoUrl = null;
+        });
+      }
     } catch (_) {
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
         content: Text('ما گدرنا نفتح معرض الصور.')));
@@ -466,21 +472,38 @@ class _MerchantNewProductPageState extends State<MerchantNewProductPage> {
       return;
     }
     setState(() => _busy = true);
+    var failedStage = _photo == null ? 'product' : 'photo';
     try {
-      String? photoUrl;
-      if (_photo != null) {
+      String? photoUrl = _uploadedPhotoUrl;
+      if (_photo != null && photoUrl == null) {
         photoUrl = await CommerceService.uploadProductImage(
           widget.storeId, _photo!);
+        _uploadedPhotoUrl = photoUrl;
       }
+      failedStage = 'product';
       await CommerceService.addProduct(
         storeId: widget.storeId, name: name,
         description: _description.text, priceIqd: price,
         stockQuantity: stock, imageUrl: photoUrl,
       );
       if (mounted) Navigator.of(context).pop(true);
-    } catch (_) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-        content: Text('فشل إضافة المنتج أو الصورة. تحقق من أذونات المتجر والحجم.')));
+    } catch (error) {
+      if (mounted) {
+        final explanation = failedStage == 'photo'
+            ? 'تعذر رفع الصورة. تحقق من اتصال الإنترنت '
+              'وحجم الصورة وصلاحية متجر التاجر.'
+            : 'رفع الصورة تم أو لم تكن مطلوبة، لكن حفظ بيانات '
+              'المنتج فشل. تحقق من صلاحية إضافة المنتجات.';
+        final status = error is StorageException
+            ? ' (Storage: ${error.statusCode ?? 'unknown'})'
+            : error is PostgrestException
+                ? ' (Database: ${error.code ?? 'unknown'})'
+                : '';
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          duration: const Duration(seconds: 7),
+          content: Text('$explanation$status'),
+        ));
+      }
     } finally {
       if (mounted) setState(() => _busy = false);
     }
