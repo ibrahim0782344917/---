@@ -38,8 +38,7 @@ class _BaghdadMapPageState extends State<BaghdadMapPage> {
   @override
   void initState() {
     super.initState();
-    _load();
-    _loadGoogle();
+    _load(); // Google requests only after an explicit user action.
   }
 
   @override
@@ -95,7 +94,8 @@ class _BaghdadMapPageState extends State<BaghdadMapPage> {
   }
 
   Future<void> _refreshAll() async {
-    await Future.wait([_load(), _loadGoogle()]);
+    // Do not issue billable Google requests from pull-to-refresh.
+    await _load();
   }
 
   List<String> get _areas {
@@ -532,7 +532,7 @@ class _BaghdadMapPageState extends State<BaghdadMapPage> {
               label: const Text('المحلات القريبة مني'))),
             const SizedBox(width: 9),
             IconButton.filledTonal(
-              tooltip: 'تحديث المحلات',
+              tooltip: 'تحديث المتاجر المعتمدة',
               onPressed: _refreshAll,
               icon: const Icon(Icons.refresh)),
           ]),
@@ -549,7 +549,7 @@ class _BaghdadMapPageState extends State<BaghdadMapPage> {
             child: Text(_googleError!, textAlign: TextAlign.center)),
         if (!_googleLoading && _googleError == null && _googleVisible.isEmpty)
           const Padding(padding: EdgeInsets.all(16),
-            child: Text('لا توجد نتائج بهذه المنطقة حالياً. حرّك الخريطة واضغط بحث.',
+            child: Text('اضغط «ابحث بهذه المنطقة» لعرض المحلات من Google. لا يتم إجراء بحث تلقائي.',
               textAlign: TextAlign.center)),
         Padding(padding: const EdgeInsets.symmetric(horizontal: 14),
           child: Column(children: [
