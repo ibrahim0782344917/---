@@ -34,7 +34,8 @@ Deno.serve(async (request: Request) => {
   const key = Deno.env.get('GOOGLE_PLACES_API_KEY')
   const supabaseUrl = Deno.env.get('SUPABASE_URL')
   const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
-  if (!key || !supabaseUrl || !serviceKey) {
+  const rateSalt = Deno.env.get('GOOGLE_PLACES_RATE_SALT')
+  if (!key || !supabaseUrl || !serviceKey || !rateSalt || rateSalt.length < 16) {
     return json({ error: 'Google Places is not configured' }, 503)
   }
 
@@ -55,13 +56,14 @@ Deno.serve(async (request: Request) => {
   try {
     // Rate limits apply BEFORE sending a billable Google request. The hashed
     // bucket changes daily. Do not trust an app-provided rate-limit identifier.
+    // IP headers are not a trusted authorization boundary. The RPC also
+    // enforces an independent, global 100-request/day upper bound.
     const ip = (request.headers.get('x-forwarded-for') ??
       request.headers.get('cf-connecting-ip') ??
       'unidentified').split(',')[0].trim()
     const day = new Date().toISOString().slice(0, 10)
-    const salt = Deno.env.get('GOOGLE_PLACES_RATE_SALT') ?? ''
     const digest = await crypto.subtle.digest(
-      'SHA-256', new TextEncoder().encode(ip + ':' + day + ':' + salt),
+      'SHA-256', new TextEncoder().encode(ip + ':' + day + ':' + rateSalt),
     )
     const bucket = Array.from(new Uint8Array(digest))
       .map(b => b.toString(16).padStart(2, '0')).join('')
