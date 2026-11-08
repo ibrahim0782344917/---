@@ -171,6 +171,25 @@ class CommerceService {
     return _db.storage.from('store-images').getPublicUrl(path);
   }
 
+  /// Do not allow checkout of pending/unverified stores from a stale cart.
+  /// The database RPC still performs the authoritative approval check.
+  static Future<bool> isStoreApproved(String storeId) async {
+    final result = await _db.from('stores')
+        .select('id')
+        .eq('id', storeId)
+        .eq('status', 'approved')
+        .maybeSingle();
+    return result != null;
+  }
+
+  /// User-facing messages for known, sanitized backend checkout errors.
+  static String checkoutErrorMessage(Object error) {
+    if (error is PostgrestException) {
+      return checkoutFailureText(error.message);
+    }
+    return 'ما گدرنا نتصل بالخادم. تأكد من الإنترنت وحاول مرة ثانية.';
+  }
+
   static Future<String> placeCashOrder({
     required String storeId,
     required List<CommerceCartItem> items,
@@ -215,4 +234,29 @@ class CommerceService {
     });
     return result.toString();
   }
+}
+
+/// Never display internal SQL exception details or personal information.
+String checkoutFailureText(String serverMessage) {
+  if (serverMessage.contains('STORE_NOT_AVAILABLE')) {
+    return 'المتجر بعده بانتظار موافقة الإدارة، لذلك الطلبات مو مفعلة إله.';
+  }
+  if (serverMessage.contains('OUT_OF_STOCK')) {
+    return 'الكمية المطلوبة نفدت. حدث المنتجات وعدّل السلة.';
+  }
+  if (serverMessage.contains('PRODUCT_UNAVAILABLE')) {
+    return 'أحد المنتجات ما عاد متوفر. حدث السلة وحاول مرة ثانية.';
+  }
+  if (serverMessage.contains('LOGIN_REQUIRED')) {
+    return 'لازم تسجّل دخولك حتى تكمل الطلب.';
+  }
+  if (serverMessage.contains('INVALID_DELIVERY_DETAILS')) {
+    return 'تأكد من عنوان التوصيل ورقم الهاتف قبل الطلب.';
+  }
+  if (serverMessage.contains('INVALID_ITEMS') ||
+      serverMessage.contains('INVALID_ITEM') ||
+      serverMessage.contains('INVALID_OR_DUPLICATE_ITEM')) {
+    return 'محتوى السلة يحتاج تحديث قبل إتمام الطلب.';
+  }
+  return 'تعذر إنشاء الطلب الآن. جرّب لاحقاً أو اتصل بالدعم.';
 }
