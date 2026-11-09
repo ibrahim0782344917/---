@@ -29,6 +29,16 @@ void main() {
     expect(CommerceCart.instance.storeId, 'shop-2');
   });
 
+  test('checkout errors explain pending stores and stock without SQL details', () {
+    expect(checkoutFailureText('STORE_NOT_AVAILABLE'),
+      contains('بانتظار موافقة الإدارة'));
+    expect(checkoutFailureText('OUT_OF_STOCK'), contains('الكمية'));
+    expect(checkoutFailureText('PRODUCT_UNAVAILABLE'), contains('متوفر'));
+    expect(checkoutFailureText('LOGIN_REQUIRED'), contains('دخولك'));
+    expect(checkoutFailureText('unrecognized database problem'),
+      isNot(contains('unrecognized')));
+  });
+
   test('out-of-stock product cannot be put in live cart', () {
     const empty = MarketplaceProduct(
       id: 'sold-out', storeId: 'shop-1', name: 'Sold out',
