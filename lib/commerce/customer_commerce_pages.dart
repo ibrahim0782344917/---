@@ -182,6 +182,17 @@ class _LiveCartPageState extends State<LiveCartPage> {
     }
     setState(() => _submitting = true);
     try {
+      // A merchant can see their own pending products through RLS, but
+      // customer checkout must never accept orders for unapproved stores.
+      if (!await CommerceService.isStoreApproved(cart.storeId!)) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          duration: Duration(seconds: 6),
+          content: Text('المتجر بعده بانتظار موافقة الإدارة. '
+              'الشراء يتفعل بعد اعتماد المتجر.'),
+        ));
+        return;
+      }
       final orderId = await CommerceService.placeCashOrder(
         storeId: cart.storeId!,
         items: cart.items,
@@ -197,10 +208,12 @@ class _LiveCartPageState extends State<LiveCartPage> {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
         content: Text('تم إرسال الطلب بنجاح. رقمه: ' + orderId.substring(0, 8)),
       ));
-    } catch (_) {
+    } catch (error) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-          content: Text('فشل إنشاء الطلب. تحقق من المخزون والبيانات وجرب مجدداً.')));
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          duration: const Duration(seconds: 6),
+          content: Text(CommerceService.checkoutErrorMessage(error)),
+        ));
       }
     } finally {
       if (mounted) setState(() => _submitting = false);
@@ -243,6 +256,11 @@ class _LiveCartPageState extends State<LiveCartPage> {
             ]),
           )),
         if (cart.items.isNotEmpty) ...[
+          OutlinedButton.icon(
+            onPressed: cart.clear,
+            icon: const Icon(Icons.remove_shopping_cart_outlined),
+            label: const Text('إفراغ السلة'),
+          ),
           const SizedBox(height: 14),
           Text('المجموع: ' + priceText(cart.totalIqd),
             style: const TextStyle(
