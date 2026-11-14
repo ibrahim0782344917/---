@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:shitreed_merchant/shared/merchant_widgets.dart';
+import 'package:shitreed_merchant/merchant/shop_location.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 /// The server checks admin membership against auth.users.raw_app_meta_data.
@@ -15,7 +16,7 @@ class StoreReviewService {
   }
 
   static Future<List<Map<String, dynamic>>> pendingStores() async {
-    final rows = await _db.rpc('shitreed_pending_store_reviews');
+    final rows = await _db.rpc('shitreed_pending_store_reviews_v2');
     return (rows as List).map((row) =>
         Map<String, dynamic>.from(row as Map)).toList(growable: false);
   }
@@ -41,6 +42,15 @@ class StoreReviewService {
 /// Checks only the UX. Database validates authorization and details again.
 bool validReviewReason(String reason) =>
     reason.trim().length >= 20 && reason.trim().length <= 1000;
+
+/// Readiness is a UX hint; the database trigger enforces it independently.
+bool storeReadyForApproval(Map<String, dynamic> store) =>
+    validShopPhone(store['store_phone'] as String?) &&
+    isBaghdadShopLocation(
+      (store['latitude'] as num?)?.toDouble(),
+      (store['longitude'] as num?)?.toDouble(),
+    ) &&
+    (store['store_address'] as String? ?? '').trim().length >= 8;
 
 class StoreReviewsPage extends StatefulWidget {
   const StoreReviewsPage({super.key});
@@ -230,6 +240,20 @@ class _StoreReviewsPageState extends State<StoreReviewsPage> {
                             if ((store['store_phone'] as String?)?.isNotEmpty ??
                                 false)
                               Text('الهاتف: ${store['store_phone']}'),
+                            const SizedBox(height: 6),
+                            if (!storeReadyForApproval(store))
+                              const Text(
+                                'بيانات المراجعة ناقصة: يحتاج رقم اتصال '
+                                'صحيح وموقع محل داخل بغداد قبل الاعتماد. '
+                                'اطلب من التاجر تحديث إعداداته.',
+                                style: TextStyle(color: Colors.deepOrange,
+                                  fontWeight: FontWeight.w600),
+                              ),
+                            if (storeReadyForApproval(store))
+                              Text('دبوس المتجر: '
+                                  '${store['latitude']}, ${store['longitude']}',
+                                style: const TextStyle(
+                                    color: Colors.black54, fontSize: 12)),
                             const SizedBox(height: 12),
                             Wrap(
                               spacing: 8,
@@ -241,7 +265,8 @@ class _StoreReviewsPageState extends State<StoreReviewsPage> {
                                   child: const Text('رفض'),
                                 ),
                                 FilledButton.icon(
-                                  onPressed: _reviewing
+                                  onPressed: _reviewing ||
+                                          !storeReadyForApproval(store)
                                       ? null
                                       : () => _review(store, 'approve'),
                                   icon: const Icon(Icons.verified_user_outlined),
