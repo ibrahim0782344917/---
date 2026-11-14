@@ -105,3 +105,39 @@ begin
   raise notice 'Checkout idempotency tests passed (retries, stock, mismatch, grants)';
 end
 $test$;
+
+-- Another buyer may use the same opaque request UUID without seeing a
+-- different buyer's order. Legacy Android clients still call with five args.
+select set_config('request.jwt.claim.sub',
+  '10000000-0000-4000-8000-000000000002',false);
+
+do $test$
+declare
+  buyer_two_id uuid;
+  legacy_id uuid;
+  total_orders integer;
+  stock_left integer;
+begin
+  buyer_two_id := public.place_cash_order(
+    '20000000-0000-4000-8000-000000000001',
+    '[{"product_id":"30000000-0000-4000-8000-000000000001","quantity":1}]'::jsonb,
+    'بغداد - عنوان اختبار كامل', '07700000000', '',
+    '40000000-0000-4000-8000-000000000001'
+  );
+  legacy_id := public.place_cash_order(
+    '20000000-0000-4000-8000-000000000001',
+    '[{"product_id":"30000000-0000-4000-8000-000000000001","quantity":1}]'::jsonb,
+    'بغداد - عنوان اختبار كامل', '07700000000', ''
+  );
+  if buyer_two_id = legacy_id then
+    raise exception 'Different calls yielded same order';
+  end if;
+  select count(*) into total_orders from public.orders;
+  select stock_quantity into stock_left from public.products;
+  if total_orders <> 4 or stock_left <> 0 then
+    raise exception 'User isolation or legacy call failed: %, %',
+      total_orders, stock_left;
+  end if;
+  raise notice 'Buyer isolation and legacy RPC compatibility passed';
+end
+$test$;
