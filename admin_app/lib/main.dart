@@ -712,7 +712,52 @@ class _AdminHomeState extends State<AdminHome> {
   @override
   Widget build(BuildContext context) {
     final sections = AdminAccess.sectionsFor(widget.role);
+    final narrow = MediaQuery.sizeOf(context).width < 760;
+    final menuIcons = <String, IconData>{
+      'overview': Icons.dashboard_outlined,
+      'stores': Icons.storefront,
+      'products': Icons.inventory_2_outlined,
+      'orders': Icons.receipt_long,
+      'customers': Icons.groups_2_outlined,
+      'staff': Icons.admin_panel_settings_outlined,
+      'audit': Icons.history,
+    };
     return Scaffold(
+      drawer: narrow ? Drawer(backgroundColor: const Color(0xFF141B2E),
+        child: SafeArea(child: Column(children: [
+          const Padding(padding: EdgeInsets.all(24),
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('شتريد | الإدارة', style: TextStyle(
+                  color: Colors.white, fontSize: 24,
+                  fontWeight: FontWeight.w900)),
+                Text('مركز العمليات', style: TextStyle(
+                  color: Colors.white70, fontSize: 13)),
+              ])),
+          Expanded(child: ListView(children: sections.map((key) =>
+            Padding(padding: const EdgeInsets.symmetric(horizontal: 9),
+              child: ListTile(
+                selected: key == section,
+                selectedTileColor: const Color(0xFF3C4365),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(11)),
+                leading: Icon(menuIcons[key], color: Colors.white70),
+                title: Text(AdminAccess.sectionLabels[key] ?? key,
+                  style: const TextStyle(color: Colors.white)),
+                onTap: () {
+                  Navigator.pop(context);
+                  changeSection(key);
+                },
+              ))).toList())),
+          const Divider(color: Colors.white24),
+          ListTile(
+            leading: const Icon(Icons.logout, color: Colors.white70),
+            title: const Text('تسجيل الخروج',
+              style: TextStyle(color: Colors.white)),
+            onTap: () => AdminApi.client.auth.signOut()),
+          const SizedBox(height: 12),
+        ])),
+      ) : null,
       appBar: AppBar(
         title: const Text('شتريد | لوحة الإدارة'),
         actions: [
@@ -729,7 +774,7 @@ class _AdminHomeState extends State<AdminHome> {
             color: const Color(0xFFF1E8FA),
             child: Text('الصلاحية: ' +
               (AdminAccess.roleLabels[widget.role] ?? widget.role))),
-          SizedBox(height: 55, child: ListView(
+          if (!narrow) SizedBox(height: 55, child: ListView(
             padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 6),
             scrollDirection: Axis.horizontal,
             children: sections.map((key) => Padding(
