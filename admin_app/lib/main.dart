@@ -2,9 +2,10 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'admin_api.dart';
+import 'admin_pro_features.dart';
 
-const purple = Color(0xFF572B90);
-const orange = Color(0xFFFF9B39);
+const purple = Color(0xFF595FCB);
+const orange = Color(0xFFFFC071);
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -26,9 +27,12 @@ class ShitreedAdminApp extends StatelessWidget {
     theme: ThemeData(
       useMaterial3: true,
       colorScheme: ColorScheme.fromSeed(seedColor: purple),
-      scaffoldBackgroundColor: const Color(0xFFF8F5FC),
+      scaffoldBackgroundColor: const Color(0xFFF5F6FA),
+      cardTheme: CardThemeData(elevation: 0, color: Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15),
+          side: const BorderSide(color: Color(0xFFE7EAF2)))),
       appBarTheme: const AppBarTheme(
-        backgroundColor: Color(0xFF28183E), foregroundColor: Colors.white),
+        backgroundColor: Color(0xFF141B2E), foregroundColor: Colors.white),
     ),
     home: const AdminGate(),
   );
@@ -168,7 +172,7 @@ class _AdminLoginState extends State<AdminLogin> {
             padding: const EdgeInsets.all(28),
             decoration: BoxDecoration(
               gradient: const LinearGradient(
-                colors: [Color(0xFF28183E), purple]),
+                colors: [Color(0xFF141B2E), purple]),
               borderRadius: BorderRadius.circular(22)),
             child: const Column(children: [
               Icon(Icons.admin_panel_settings_rounded,
@@ -230,6 +234,17 @@ class _AdminHomeState extends State<AdminHome> {
   String? error;
   Map<String, dynamic> summary = {};
   List<Map<String, dynamic>> items = [];
+  List<Map<String, dynamic>> trends = [];
+  final searchInput = TextEditingController();
+  String filter = '';
+  int total = 0;
+  int loadSequence = 0;
+
+  @override
+  void dispose() {
+    searchInput.dispose();
+    super.dispose();
+  }
 
   @override
   void initState() {
@@ -239,26 +254,38 @@ class _AdminHomeState extends State<AdminHome> {
 
   Future<void> load() async {
     if (!mounted) return;
+    final seq = ++loadSequence;
+    final currentSection = section;
+    final currentOffset = offset;
+    final currentFilter = filter;
+    final currentSearch = searchInput.text.trim();
     setState(() { loading = true; error = null; });
     try {
-      if (section == 'overview') {
+      if (currentSection == 'overview') {
         final result = await AdminApi.dashboard();
-        if (mounted) setState(() => summary = result);
+        final weekly = await AdminApi.insights();
+        if (mounted && seq == loadSequence) {
+          setState(() { summary = result; trends = weekly; });
+        }
       } else {
-        final result = await AdminApi.rows(section, offset: offset);
-        if (mounted) setState(() => items = result);
+        final result = await AdminApi.searchPage(currentSection,
+          query: currentSearch, filter: currentFilter, offset: currentOffset);
+        if (mounted && seq == loadSequence) {
+          setState(() { items = result.items; total = result.total; });
+        }
       }
-    } catch (_) {
-      if (mounted) setState(() => error =
-          'تعذر تحميل البيانات. راجع اتصال Supabase وصلاحيات الإدارة.');
+    } catch (e) {
+      if (mounted && seq == loadSequence) setState(() => error =
+        'تعذر تحميل البيانات: ' + e.toString());
     } finally {
-      if (mounted) setState(() => loading = false);
+      if (mounted && seq == loadSequence) setState(() => loading = false);
     }
   }
 
   void changeSection(String next) {
     if (next == section) return;
-    setState(() { section = next; offset = 0; items = []; });
+    searchInput.clear();
+    setState(() { section = next; offset = 0; filter = ''; items = []; total = 0; });
     unawaited(load());
   }
 
@@ -487,7 +514,21 @@ class _AdminHomeState extends State<AdminHome> {
       ('قيمة الطلبات غير الملغاة (د.ع)',
         'order_value_iqd', Icons.paid_outlined),
     ];
-    return ListView(padding: const EdgeInsets.all(14), children: [
+    return RefreshIndicator(onRefresh: load,
+      child: ListView(padding: const EdgeInsets.all(14), children: [
+      Container(padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(borderRadius: BorderRadius.circular(17),
+          gradient: const LinearGradient(colors: [
+            Color(0xFF141B2E), Color(0xFF595FCB)])),
+        child: const Column(crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('مركز عمليات شتريد', style: TextStyle(
+              fontSize: 23, fontWeight: FontWeight.w900, color: Colors.white)),
+            SizedBox(height: 6),
+            Text('إدارة المتاجر والطلبات والمنتجات والصلاحيات من مكان واحد',
+              style: TextStyle(color: Colors.white70)),
+          ])),
+      const SizedBox(height: 15),
       Text('نظرة عامة', style: Theme.of(context).textTheme.headlineSmall),
       const Text('قيمة الطلبات ليست أرباحاً أو مدفوعات محصلة.',
         style: TextStyle(color: Colors.black54)),
@@ -510,14 +551,17 @@ class _AdminHomeState extends State<AdminHome> {
                 ]),
             )))).toList());
       }),
-    ]);
+      const SizedBox(height: 14),
+      WeeklyOrdersChart(daily: trends),
+    ]));
   }
 
   Widget itemsBody() {
     if (items.isEmpty) {
       return const Center(child: Text('لا توجد سجلات بهذه الصفحة.'));
     }
-    return ListView.builder(
+    return RefreshIndicator(onRefresh: load,
+      child: ListView.builder(
       padding: const EdgeInsets.all(12),
       itemCount: items.length,
       itemBuilder: (context, index) {
@@ -530,6 +574,30 @@ class _AdminHomeState extends State<AdminHome> {
                 color: purple, fontSize: 17, fontWeight: FontWeight.bold)),
               const SizedBox(height: 7),
               SelectableText(details(row)),
+              if (section == 'orders')
+                TextButton.icon(
+                  onPressed: () => AdminProDialogs.showOrder(
+                    context, row['id'].toString()),
+                  icon: const Icon(Icons.receipt_long),
+                  label: const Text('تفاصيل الطلب والمنتجات وسجل الحالة')),
+              if (section == 'products' &&
+                  AdminAccess.canChange(widget.role, 'products'))
+                Wrap(spacing: 8, children: [
+                  OutlinedButton.icon(
+                    onPressed: working ? null : () async {
+                      if (await AdminProDialogs.editProduct(context, row,
+                          price: false)) { await load(); }
+                    },
+                    icon: const Icon(Icons.inventory),
+                    label: const Text('تسوية المخزون')),
+                  OutlinedButton.icon(
+                    onPressed: working ? null : () async {
+                      if (await AdminProDialogs.editProduct(context, row,
+                          price: true)) { await load(); }
+                    },
+                    icon: const Icon(Icons.price_change),
+                    label: const Text('تعديل السعر')),
+                ]),
               if (actions(row).isNotEmpty) Padding(
                 padding: const EdgeInsets.only(top: 10),
                 child: Wrap(spacing: 8, runSpacing: 5,
@@ -546,6 +614,61 @@ class _AdminHomeState extends State<AdminHome> {
             ]),
         ));
       },
+    ));
+  }
+
+  Widget searchBar() {
+    final filters = <String, Map<String, String>>{
+      'stores': {'': 'جميع المتاجر', 'pending': 'بانتظار المراجعة',
+        'approved': 'معتمد', 'suspended': 'موقوف'},
+      'products': {'': 'جميع المنتجات',
+        'active': 'منشور', 'inactive': 'مخفي'},
+      'orders': {'': 'جميع الطلبات', 'placed': 'جديد',
+        'accepted': 'مقبول', 'preparing': 'قيد التجهيز',
+        'ready': 'جاهز', 'rejected': 'مرفوض', 'cancelled': 'ملغى'},
+      'staff': {'': 'كل الموظفين',
+        'enabled': 'مفعل', 'disabled': 'معطل'},
+      'audit': {'': 'كل العمليات', 'stores': 'متاجر',
+        'products': 'منتجات', 'orders': 'طلبات', 'staff': 'موظفون',
+        'inventory': 'مخزون', 'pricing': 'أسعار'},
+    };
+    final options = filters[section];
+    return Container(color: Colors.white,
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      child: Column(children: [
+        Row(children: [
+          Expanded(child: TextField(controller: searchInput,
+            maxLength: 80, textInputAction: TextInputAction.search,
+            onSubmitted: (_) {
+              setState(() => offset = 0);
+              unawaited(load());
+            },
+            decoration: const InputDecoration(
+              border: OutlineInputBorder(), counterText: '',
+              prefixIcon: Icon(Icons.search), hintText: 'بحث بالاسم أو المعرف',
+              isDense: true))),
+          const SizedBox(width: 6),
+          IconButton.filled(onPressed: loading ? null : () {
+            setState(() => offset = 0);
+            unawaited(load());
+          }, icon: const Icon(Icons.search), tooltip: 'بحث'),
+        ]),
+        if (options != null)
+          Row(children: [
+            const Icon(Icons.filter_list, size: 20),
+            const SizedBox(width: 10),
+            Expanded(child: DropdownButton<String>(
+              isExpanded: true, value: filter,
+              items: options.entries.map((a) => DropdownMenuItem<String>(
+                value: a.key, child: Text(a.value))).toList(),
+              onChanged: loading ? null : (value) {
+                if (value == null) return;
+                setState(() { filter = value; offset = 0; });
+                unawaited(load());
+              },
+            )),
+          ]),
+      ]),
     );
   }
 
@@ -579,6 +702,7 @@ class _AdminHomeState extends State<AdminHome> {
                 selected: key == section,
                 selectedColor: const Color(0xFFFFE0B6),
                 onSelected: (_) => changeSection(key)))).toList())),
+          if (section != 'overview') searchBar(),
           if (section == 'staff' && widget.role == 'super_admin')
             Align(alignment: Alignment.centerRight,
               child: Padding(padding: const EdgeInsets.all(8),
@@ -599,15 +723,17 @@ class _AdminHomeState extends State<AdminHome> {
           if (section != 'overview') Row(children: [
             const SizedBox(width: 8),
             OutlinedButton(onPressed: loading || offset == 0 ? null : () {
-              setState(() => offset -= 30);
+              setState(() => offset -= 25);
               unawaited(load());
             }, child: const Text('السابق')),
             const SizedBox(width: 12),
-            Text('صفحة ' + ((offset ~/ 30) + 1).toString()),
+            Text(total == 0 ? 'لا توجد نتائج' :
+              ((offset + 1).toString() + '–' +
+              (offset + items.length).toString() + ' من ' + total.toString())),
             const SizedBox(width: 12),
             OutlinedButton(
-              onPressed: loading || items.length < 30 ? null : () {
-                setState(() => offset += 30);
+              onPressed: loading || offset + items.length >= total ? null : () {
+                setState(() => offset += 25);
                 unawaited(load());
               }, child: const Text('التالي')),
           ]),
