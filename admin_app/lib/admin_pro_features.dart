@@ -108,7 +108,7 @@ class AdminProDialogs {
                 redraw(() => error = 'تأكد من القيمة والسبب؛ لا يمكن حفظ إدخال غير صحيح.');
                 return;
               }
-              Navigator.pop(dialog, (parsed, reason.text.trim()));
+              Navigator.pop(dialog, (parsed!, reason.text.trim()));
             }, child: const Text('تأكيد وتسجيل العملية')),
           ],
         ),
@@ -187,7 +187,7 @@ class AdminProDialogs {
                 subtitle: Text(date(event['changed_at'])),
               ),
           ]),
-        ))),
+        )),
       );
     } catch (e) {
       if (context.mounted) {
