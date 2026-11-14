@@ -289,3 +289,113 @@ revoke all on function public.shitreed_admin_find_user(text)
   from public,anon,authenticated;
 grant execute on function public.shitreed_admin_find_user(text)
   to authenticated;
+
+-- Add explicit rejection from pending alongside existing approvals.
+-- Reuses both review audit and admin activity logging in one transaction.
+ no destructive customer, store or order deletion.
+-- Inventory is restored once under the same order lock used by merchant RPCs.
+create or replace function public.shitreed_admin_change(
+  p_section text, p_id uuid, p_action text, p_reason text
+) returns text language plpgsql security definer
+set search_path = ''
+as $$
+declare
+  v_role text := public.shitreed_admin_role();
+  v_actor uuid := auth.uid();
+  v_store public.stores%rowtype;
+  v_product public.products%rowtype;
+  v_order public.orders%rowtype;
+  v_old text;
+  v_next text;
+begin
+  if v_role is null then raise exception 'ADMIN_ACCESS_REQUIRED'; end if;
+  if p_id is null or p_reason is null or
+     char_length(btrim(p_reason)) not between 12 and 1000 then
+    raise exception 'VALID_REASON_REQUIRED';
+  end if;
+  if p_section = 'stores' and v_role in
+    ('super_admin','operations','merchant_reviewer') then
+    if char_length(btrim(p_reason)) < 20 then
+      raise exception 'STORE_REVIEW_REASON_TOO_SHORT';
+    end if;
+    select * into v_store from public.stores where id = p_id for update;
+    if not found then raise exception 'STORE_NOT_FOUND'; end if;
+    v_old := v_store.status;
+    if p_action = 'approve' and v_old = 'pending' then
+      if char_length(btrim(v_store.address)) < 8 then
+        raise exception 'STORE_DETAILS_INCOMPLETE';
+      end if;
+      v_next := 'approved';
+    elsif p_action = 'reject' and v_old = 'pending' then
+      v_next := 'suspended';
+    elsif p_action = 'suspend' and v_old = 'approved' then
+      v_next := 'suspended';
+    elsif p_action = 'reopen' and v_old = 'suspended' then
+      v_next := 'pending';
+    else
+      raise exception 'INVALID_STORE_TRANSITION';
+    end if;
+    update public.stores set status = v_next where id = p_id;
+    -- Keep the established store-review audit alongside the admin activity log.
+    insert into public.store_review_audit
+      (store_id, admin_id, old_status, new_status, reason)
+    values (p_id, v_actor, v_old, v_next, btrim(p_reason));
+  elsif p_section = 'products' and v_role in
+    ('super_admin','operations','catalog_manager') then
+    select * into v_product from public.products where id = p_id for update;
+    if not found then raise exception 'PRODUCT_NOT_FOUND'; end if;
+    v_old := case when v_product.is_active then 'active' else 'inactive' end;
+    if p_action = 'disable' and v_product.is_active then
+      v_next := 'inactive';
+      update public.products set is_active = false where id = p_id;
+    elsif p_action = 'enable' and not v_product.is_active then
+      if not exists (select 1 from public.stores s
+        where s.id = v_product.store_id and s.status = 'approved') then
+        raise exception 'STORE_NOT_APPROVED';
+      end if;
+      v_next := 'active';
+      update public.products set is_active = true where id = p_id;
+    else
+      raise exception 'INVALID_PRODUCT_TRANSITION';
+    end if;
+  elsif p_section = 'orders' and v_role in
+    ('super_admin','operations','support') then
+    select * into v_order from public.orders where id = p_id for update;
+    if not found then raise exception 'ORDER_NOT_FOUND'; end if;
+    v_old := v_order.status;
+    if p_action = 'accept' and v_old = 'placed' then
+      v_next := 'accepted';
+    elsif p_action = 'prepare' and v_old = 'accepted' then
+      v_next := 'preparing';
+    elsif p_action = 'ready' and v_old = 'preparing' then
+      v_next := 'ready';
+    elsif p_action = 'reject' and v_old = 'placed' then
+      v_next := 'rejected';
+    elsif p_action = 'cancel' and v_old in ('placed','accepted','preparing') then
+      v_next := 'cancelled';
+    else
+      raise exception 'INVALID_ORDER_TRANSITION';
+    end if;
+    if v_next in ('cancelled','rejected') then
+      update public.products p
+        set stock_quantity = p.stock_quantity + i.quantity
+        from public.order_items i
+        where i.order_id = p_id and i.product_id = p.id;
+    end if;
+    update public.orders set status = v_next, updated_at = now()
+      where id = p_id;
+  else
+    raise exception 'ACTION_NOT_ALLOWED';
+  end if;
+  insert into public.shitreed_admin_activity
+    (actor_id, section, entity_id, action, before_state, after_state, reason)
+    values (v_actor, p_section, p_id, p_action, v_old, v_next, btrim(p_reason));
+  return v_next;
+end;
+$$;
+revoke all on function public.shitreed_admin_change(text,uuid,text,text)
+  from public, anon, authenticated;
+grant execute on function public.shitreed_admin_change(text,uuid,text,text)
+  to authenticated;
+
+
