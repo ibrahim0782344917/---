@@ -224,12 +224,15 @@ class _StoreReviewsPageState extends State<StoreReviewsPage> {
                                   fontSize: 18,
                                 )),
                             const SizedBox(height: 6),
-                            Text('undefined • undefined'),
+                            Text((store['area'] as String? ?? '') + ' • ' +
+                              (store['category'] as String? ?? '')),
                             const SizedBox(height: 6),
-                            Text('العنوان: undefined'),
+                            Text('العنوان: ' +
+                                (store['store_address'] as String? ?? '')),
                             if ((store['store_phone'] as String?)?.isNotEmpty ??
                                 false)
-                              Text('الهاتف: undefined'),
+                              Text('الهاتف: ' +
+                                (store['store_phone'] as String? ?? '')),
                             const SizedBox(height: 12),
                             Wrap(
                               spacing: 8,
