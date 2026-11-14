@@ -31,6 +31,7 @@ function productCard(p){
  body.append(create('h3','',p.name),create('p','',store?.name||'متجر شتريد'));
  if(p.stock_quantity!=null)body.append(create('p','',Number(p.stock_quantity)>0?'متوفر':'غير متوفر حالياً'));
  const price=Number(p.price_iqd);if(Number.isFinite(price)&&price>=0)body.append(create('div','price',price.toLocaleString('en-US')+' د.ع'));
+ if(Number(p.stock_quantity)>0){ const buy=create('a','button button-primary','شراء عند الاستلام');buy.href='/checkout?product='+encodeURIComponent(p.id);buy.style.marginTop='12px';body.append(buy); }
  a.append(art,body);return a;
 }
 function render(q=''){
