@@ -17,8 +17,7 @@ void main() {
     await tester.pumpWidget(MaterialApp(home:
       Scaffold(body: WeeklyOrdersChart(daily: days))));
     expect(find.text('حركة الطلبات خلال 7 أيام'), findsOneWidget);
-    expect(find.text('11-14'), findsNothing);
-    expect(find.text('11-14'), findsNothing);
+    expect(find.text('11-14'), findsOneWidget);
     expect(find.text('11-08'), findsOneWidget);
     expect(find.text('0'), findsNWidgets(7));
   });
