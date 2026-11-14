@@ -1,0 +1,14 @@
+{
+  "name": "shitreed-web",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "start": "node server.js",
+    "check": "node --check server.js && node --check shop-routes.js && node --check public/app.js && node --check public/shop.js",
+    "test": "node --test"
+  }
+}
