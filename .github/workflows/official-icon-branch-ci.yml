@@ -1,0 +1,106 @@
+name: Shitreed Official Shared Icon - Android Validation
+
+on:
+  push:
+    branches: [feature/shitreed-official-shared-icon-20261114]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  customer:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: '3.47.9'
+      - name: Generate customer Android
+        run: flutter create --org com.shitreed --project-name shitreed_customer --platforms android .
+      - name: Set Android metadata
+        env:
+          GOOGLE_MAPS_API_KEY: ${{ secrets.GOOGLE_MAPS_API_KEY }}
+        run: python3 scripts/configure_android_maps.py
+      - name: Install image tooling and official icon
+        run: |
+          python3 -m pip install --break-system-packages pillow==11.3.0
+          python3 scripts/install_official_icon.py android
+          python3 - <<'PY'
+          from PIL import Image
+          from pathlib import Path
+          for density, size in [('mdpi',48),('hdpi',72),('xhdpi',96),('xxhdpi',144),('xxxhdpi',192)]:
+              img = Image.open(Path('android/app/src/main/res')/f'mipmap-{density}'/'ic_launcher.png')
+              assert img.size == (size, size)
+          print('Shitreed Customer launcher verified at all 5 sizes')
+          PY
+      - name: Install Flutter packages
+        run: flutter pub get
+      - name: Analyze customer
+        run: flutter analyze lib test
+      - name: Test customer
+        run: flutter test
+      - name: Build Shitreed Customer test APK
+        env:
+          GOOGLE_MAPS_API_KEY: ${{ secrets.GOOGLE_MAPS_API_KEY }}
+        run: |
+          MAPS_ENABLED=false
+          if [ -n "$GOOGLE_MAPS_API_KEY" ]; then MAPS_ENABLED=true; fi
+          flutter build apk --debug \
+            --dart-define=GOOGLE_MAPS_ENABLED=$MAPS_ENABLED \
+            --dart-define=SUPABASE_URL=https://ltwncrewggdrjevakwpb.supabase.co \
+            --dart-define=SUPABASE_PUBLISHABLE_KEY=sb_publishable_Tao4VcnXR93Ne9KUBJ76tg_o-Pmd75_
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Shitreed-Customer-Official-Icon-TEST-APK
+          path: build/app/outputs/flutter-apk/app-debug.apk
+          if-no-files-found: error
+          retention-days: 14
+
+  merchant:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    defaults:
+      run:
+        working-directory: merchant_app
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: '3.47.9'
+      - name: Generate merchant Android
+        run: flutter create --org com.shitreed --project-name shitreed_merchant --platforms android .
+      - name: Set merchant Android metadata
+        run: python3 scripts/configure_android.py
+      - name: Install image tooling and official icon
+        run: |
+          python3 -m pip install --break-system-packages pillow==11.3.0
+          python3 ../scripts/install_official_icon.py android
+          python3 - <<'PY'
+          from PIL import Image
+          from pathlib import Path
+          for density, size in [('mdpi',48),('hdpi',72),('xhdpi',96),('xxhdpi',144),('xxxhdpi',192)]:
+              img = Image.open(Path('android/app/src/main/res')/f'mipmap-{density}'/'ic_launcher.png')
+              assert img.size == (size, size)
+          print('Shitreed Merchant launcher verified at all 5 sizes')
+          PY
+      - name: Install Flutter packages
+        run: flutter pub get
+      - name: Analyze merchant
+        run: flutter analyze
+      - name: Test merchant
+        run: flutter test
+      - name: Build Shitreed Merchant test APK
+        run: |
+          flutter build apk --debug \
+            --dart-define=SUPABASE_URL=https://ltwncrewggdrjevakwpb.supabase.co \
+            --dart-define=SUPABASE_PUBLISHABLE_KEY=sb_publishable_Tao4VcnXR93Ne9KUBJ76tg_o-Pmd75_
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Shitreed-Merchant-Official-Icon-TEST-APK
+          path: merchant_app/build/app/outputs/flutter-apk/app-debug.apk
+          if-no-files-found: error
+          retention-days: 14
