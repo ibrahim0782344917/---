@@ -1,0 +1,125 @@
+name: Shitreed Three-App Release Readiness
+
+on:
+  push:
+    branches:
+      - release/shitreed-production-readiness-20261114
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  customer:
+    name: Customer Android - verify and preview APK
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: '3.47.9'
+          cache: true
+      - name: Generate Android
+        run: flutter create --org com.shitreed --project-name shitreed_customer --platforms android .
+      - name: Prepare manifest without requiring paid Maps services
+        run: python3 scripts/configure_android_maps.py
+      - run: flutter pub get
+      - run: flutter analyze lib test
+      - run: flutter test
+      - name: Build Customer preview (not Play release)
+        run: flutter build apk --debug
+      - name: Confirm Android API 36 target
+        run: |
+          AAPT=$(find "$ANDROID_HOME/build-tools" -type f -name aapt | sort -V | tail -1)
+          test -n "$AAPT"
+          TARGET=$("$AAPT" dump badging build/app/outputs/flutter-apk/app-debug.apk | sed -n "s/.*targetSdkVersion:'\([0-9]*\)'.*/\1/p" | head -1)
+          echo "Customer target SDK: $TARGET"
+          test -n "$TARGET" && test "$TARGET" -ge 36
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Shitreed-Customer-PREVIEW-NOT-FOR-PRODUCTION
+          path: build/app/outputs/flutter-apk/app-debug.apk
+          if-no-files-found: error
+          retention-days: 14
+
+  merchant:
+    name: Merchant Android - verify and preview APK
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    defaults:
+      run:
+        working-directory: merchant_app
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: '3.47.9'
+          cache: true
+      - name: Generate Android
+        run: flutter create --org com.shitreed --project-name shitreed_merchant --platforms android .
+      - name: Set network permission
+        run: python3 scripts/configure_android.py
+      - run: flutter pub get
+      - run: flutter analyze
+      - run: flutter test
+      - name: Build Merchant preview (not Play release)
+        run: flutter build apk --debug
+      - name: Confirm Android API 36 target
+        run: |
+          AAPT=$(find "$ANDROID_HOME/build-tools" -type f -name aapt | sort -V | tail -1)
+          test -n "$AAPT"
+          TARGET=$("$AAPT" dump badging build/app/outputs/flutter-apk/app-debug.apk | sed -n "s/.*targetSdkVersion:'\([0-9]*\)'.*/\1/p" | head -1)
+          echo "Merchant target SDK: $TARGET"
+          test -n "$TARGET" && test "$TARGET" -ge 36
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Shitreed-Merchant-PREVIEW-NOT-FOR-PRODUCTION
+          path: merchant_app/build/app/outputs/flutter-apk/app-debug.apk
+          if-no-files-found: error
+          retention-days: 14
+
+  admin:
+    name: Admin Android branch - verify and preview APK
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    defaults:
+      run:
+        working-directory: admin_app
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feature/shitreed-complete-admin
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: '3.47.9'
+          cache: true
+      - name: Generate Android
+        run: flutter create --org com.shitreed --project-name shitreed_admin --platforms android .
+      - name: Remove generated template test
+        run: rm -f test/widget_test.dart
+      - run: flutter pub get
+      - run: flutter analyze --no-fatal-infos lib test
+      - run: flutter test
+      - name: Build Admin preview (not Play release)
+        run: flutter build apk --debug
+      - name: Confirm Android API 36 target
+        run: |
+          AAPT=$(find "$ANDROID_HOME/build-tools" -type f -name aapt | sort -V | tail -1)
+          test -n "$AAPT"
+          TARGET=$("$AAPT" dump badging build/app/outputs/flutter-apk/app-debug.apk | sed -n "s/.*targetSdkVersion:'\([0-9]*\)'.*/\1/p" | head -1)
+          echo "Admin target SDK: $TARGET"
+          test -n "$TARGET" && test "$TARGET" -ge 36
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Shitreed-Admin-PREVIEW-NOT-FOR-PRODUCTION
+          path: admin_app/build/app/outputs/flutter-apk/app-debug.apk
+          if-no-files-found: error
+          retention-days: 14
