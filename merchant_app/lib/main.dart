@@ -2,7 +2,8 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:shitreed_merchant/backend/marketplace_backend.dart';
-import 'package:shitreed_merchant/merchant/merchant_dashboard.dart';
+import 'package:shitreed_merchant/navigation/merchant_shell.dart';
+import 'package:shitreed_merchant/account/merchant_legal_pages.dart';
 import 'package:shitreed_merchant/shared/merchant_widgets.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -83,7 +84,7 @@ class _MerchantAuthGateState extends State<MerchantAuthGate> {
       ));
     }
     return _signedIn
-        ? const MerchantDashboardPage()
+        ? const MerchantShellPage()
         : MerchantLoginPage(onSuccess: () {
             if (mounted) setState(() => _signedIn = true);
           });
@@ -282,6 +283,29 @@ class _MerchantLoginPageState extends State<MerchantLoginPage> {
               : 'ما عندك حساب تاجر؟ افتح حساب'),
         ),
         const SizedBox(height: 18),
+        Wrap(alignment: WrapAlignment.center, spacing: 6,
+          children: [
+            TextButton(
+              onPressed: () => Navigator.of(context).push(
+                MaterialPageRoute<void>(builder: (_) =>
+                  const MerchantLegalPage(
+                    title: 'سياسة الخصوصية',
+                    sections: merchantPrivacySections))),
+              child: const Text('سياسة الخصوصية')),
+            TextButton(
+              onPressed: () => Navigator.of(context).push(
+                MaterialPageRoute<void>(builder: (_) =>
+                  const MerchantLegalPage(
+                    title: 'الشروط والأحكام',
+                    sections: merchantTermsSections))),
+              child: const Text('الشروط')),
+            TextButton(
+              onPressed: () => Navigator.of(context).push(
+                MaterialPageRoute<void>(builder: (_) =>
+                  const MerchantAboutPage())),
+              child: const Text('معلومات المطوّر')),
+          ],
+        ),
         const Text(
           'التطبيق خاص بأصحاب المحلات. حساب التاجر لا يمنح '
           'موافقة تلقائية على المتجر أو صلاحيات الإدارة.',
