@@ -70,6 +70,6 @@ const server=createServer(async (req,res)=>{
    res.writeHead(200,{'content-type':MIME[extname(full)]||'application/octet-stream','cache-control':file.endsWith('.html')?'no-store':'public,max-age=3600'});
    if(req.method==='HEAD')return res.end();
    return res.end(bytes);
- } catch(e){console.error('Request failed:',e.message); if(!res.headersSent)res.writeHead(500);res.end('خطأ مؤقت');}
+ } catch(e){console.error('Request failed:',e.message); if(res.writableEnded)return; if(!res.headersSent)res.writeHead(500);res.end('خطأ مؤقت');}
 });
 server.listen(port,'0.0.0.0',()=>console.log('Shitreed web listening on '+port));
