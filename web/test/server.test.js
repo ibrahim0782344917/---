@@ -38,6 +38,7 @@ test('website GET pages and authenticated API route guards',async t=>{
   });
   let stderr='';
   child.stderr.on('data',d=>{stderr+=d.toString()});
+  child.on('exit',(code,signal)=>{if(code!==0 && signal!=='SIGTERM')console.error('Test server terminated: '+JSON.stringify({code,signal,stderr:stderr.slice(-5000)}));});
   try {
     let ready=false;
     for(let i=0;i<40;i++){
