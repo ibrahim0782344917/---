@@ -224,15 +224,12 @@ class _StoreReviewsPageState extends State<StoreReviewsPage> {
                                   fontSize: 18,
                                 )),
                             const SizedBox(height: 6),
-                            Text((store['area'] as String? ?? '') + ' • ' +
-                              (store['category'] as String? ?? '')),
+                            Text('${store['area']} • ${store['category']}'),
                             const SizedBox(height: 6),
-                            Text('العنوان: ' +
-                                (store['store_address'] as String? ?? '')),
+                            Text('العنوان: ${store['store_address']}'),
                             if ((store['store_phone'] as String?)?.isNotEmpty ??
                                 false)
-                              Text('الهاتف: ' +
-                                (store['store_phone'] as String? ?? '')),
+                              Text('الهاتف: ${store['store_phone']}'),
                             const SizedBox(height: 12),
                             Wrap(
                               spacing: 8,
