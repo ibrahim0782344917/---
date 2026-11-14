@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:shitreed_merchant/backend/marketplace_backend.dart';
 import 'package:shitreed_merchant/commerce/commerce_service.dart';
+import 'package:shitreed_merchant/commerce/order_timeline_page.dart';
 import 'package:shitreed_merchant/shared/merchant_widgets.dart';
 import 'package:shitreed_merchant/reports/merchant_reports.dart';
 import 'package:shitreed_merchant/merchant/merchant_settings_pages.dart';
@@ -631,6 +632,21 @@ class _MerchantOrdersPageState extends State<MerchantOrdersPage> {
                     Text('العنوان: ' + (o['delivery_address'] as String)),
                     if ((o['notes'] as String).isNotEmpty)
                       Text('ملاحظة: ' + (o['notes'] as String)),
+                    const SizedBox(height: 8),
+                    OutlinedButton.icon(
+                      onPressed: () async {
+                        await Navigator.of(context).push<void>(
+                          MaterialPageRoute(builder: (_) => OrderTimelinePage(
+                            orderId: o['id'] as String,
+                            totalIqd: (o['total_iqd'] as num).toInt(),
+                            status: o['status'] as String,
+                          )),
+                        );
+                        if (mounted) _refresh();
+                      },
+                      icon: const Icon(Icons.list_alt_outlined),
+                      label: const Text('تفاصيل المنتجات ومراحل الطلب'),
+                    ),
                     const SizedBox(height: 8),
                     if (o['status'] == 'placed') Row(children: [
                       OutlinedButton(
