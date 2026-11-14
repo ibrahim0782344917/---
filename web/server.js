@@ -49,7 +49,12 @@ const server=createServer(async (req,res)=>{
      res.writeHead(308,{location:'https://pixer-laravel.com'+requested.pathname+requested.search,'cache-control':'public,max-age=300'});
      return res.end();
    }
-   if (await handleShop(req,res,pathname,{url:sbUrl,key:sbKey})) return;
+   // API responses may complete with a void return; do not fall through into static routing.
+   if (pathname.startsWith('/api/auth/') || pathname==='/api/orders' ||
+       pathname==='/api/account/deletion-request' || pathname==='/webhooks/stripe') {
+     await handleShop(req,res,pathname,{url:sbUrl,key:sbKey});
+     return;
+   }
    if(req.method!=='GET' && req.method!=='HEAD'){res.writeHead(405,{'allow':'GET, HEAD'});return res.end('Method not allowed');}
    if (pathname==='/health'){res.writeHead(200,{'content-type':'application/json'});return res.end('{"ok":true,"app":"shitreed-web"}');}
    if (pathname==='/favicon.ico'){res.writeHead(204);return res.end();}
