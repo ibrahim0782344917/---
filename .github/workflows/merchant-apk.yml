@@ -4,7 +4,11 @@ on:
   push:
     branches: [main]
     paths:
-      - 'merchant_app/**'
+      - 'merchant_app/lib/**'
+      - 'merchant_app/test/**'
+      - 'merchant_app/scripts/**'
+      - 'merchant_app/pubspec.yaml'
+      - 'merchant_app/assets/**'
       - 'assets/branding/**'
       - 'scripts/**'
       - '.github/workflows/merchant-apk.yml'
