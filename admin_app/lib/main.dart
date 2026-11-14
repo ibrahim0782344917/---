@@ -429,6 +429,8 @@ class _AdminHomeState extends State<AdminHome> {
     final id = TextEditingController(
       text: current?['user_id']?.toString() ?? '');
     final reason = TextEditingController();
+    final staffEmail = TextEditingController();
+    String? userLookup;
     final form = GlobalKey<FormState>();
     String role = current?['staff_role']?.toString() ?? 'viewer';
     bool enabled = current?['enabled'] != false;
@@ -441,6 +443,38 @@ class _AdminHomeState extends State<AdminHome> {
           content: SizedBox(width: 400,
             child: SingleChildScrollView(child: Form(key: form,
               child: Column(mainAxisSize: MainAxisSize.min, children: [
+                if (current == null) ...[
+                  TextField(controller: staffEmail,
+                    keyboardType: TextInputType.emailAddress,
+                    decoration: const InputDecoration(
+                      labelText: 'البريد الإلكتروني للمستخدم الموجود',
+                      border: OutlineInputBorder())),
+                  TextButton.icon(
+                    onPressed: busy ? null : () async {
+                      redraw(() { busy = true; userLookup = null; });
+                      try {
+                        final person = await AdminApi.findUser(staffEmail.text);
+                        if (!ctx.mounted) return;
+                        redraw(() {
+                          if (person == null) {
+                            userLookup = 'لا يوجد مستخدم مسجل بهذا البريد.';
+                          } else {
+                            id.text = person['id'].toString();
+                            userLookup = 'تم العثور على الحساب.';
+                          }
+                        });
+                      } catch (e) {
+                        if (ctx.mounted) redraw(() =>
+                          userLookup = 'تعذر البحث: ' + e.toString());
+                      } finally {
+                        if (ctx.mounted) redraw(() => busy = false);
+                      }
+                    },
+                    icon: const Icon(Icons.person_search),
+                    label: const Text('البحث عن الحساب')),
+                  if (userLookup != null) Text(userLookup!),
+                  const SizedBox(height: 8),
+                ],
                 TextFormField(
                   controller: id, readOnly: current != null,
                   decoration: const InputDecoration(
@@ -499,6 +533,7 @@ class _AdminHomeState extends State<AdminHome> {
     );
     id.dispose();
     reason.dispose();
+    staffEmail.dispose();
   }
 
   Widget overviewBody() {
