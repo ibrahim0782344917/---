@@ -52,7 +52,14 @@ begin
 
     v_request_digest := pg_catalog.md5(
       coalesce(p_store_id::text, '') || '|' ||
-      coalesce(p_items::text, '') || '|' ||
+      coalesce((
+        select pg_catalog.string_agg(
+          coalesce(line ->> 'product_id', '') || ':' ||
+          coalesce(line ->> 'quantity', ''),
+          ',' order by line ->> 'product_id', line ->> 'quantity'
+        )
+        from jsonb_array_elements(p_items) as line
+      ), '') || '|' ||
       coalesce(trim(p_delivery_address), '') || '|' ||
       coalesce(trim(p_phone), '') || '|' ||
       coalesce(trim(p_notes), '')
