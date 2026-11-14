@@ -9,6 +9,6 @@ void main() {
     expect(validReviewReason(
       'تحققت من صاحب المتجر والعنوان وصحة بيانات الاتصال'),
       isTrue);
-    expect(validReviewReason('أ' * 1001), isFalse);
+    expect(validReviewReason(List.filled(1001, 'أ').join()), isFalse);
   });
 }
