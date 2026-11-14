@@ -1,0 +1,72 @@
+name: Shitreed Merchant Location and Review Validation
+on:
+  push:
+    branches:
+      - feature/shitreed-merchant-location-review-20261114
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  merchant:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    defaults:
+      run:
+        working-directory: merchant_app
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.47.9'
+          channel: stable
+      - name: Generate Android project
+        run: |
+          flutter create --org com.shitreed --project-name shitreed_merchant --platforms android .
+          python3 scripts/configure_android.py
+      - name: Install dependencies
+        run: flutter pub get
+      - name: Dart analysis
+        run: flutter analyze
+      - name: Merchant tests
+        run: flutter test
+      - name: Build merchant debug APK without paid APIs
+        run: flutter build apk --debug
+      - name: Upload merchant GPS test APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: Shitreed-Merchant-GPS-Review-TEST-APK
+          path: merchant_app/build/app/outputs/flutter-apk/app-debug.apk
+          if-no-files-found: error
+          retention-days: 14
+
+  postgres:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 8
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install postgres client
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y postgresql-client
+      - name: Verify merchant approval without production data
+        env:
+          PGPASSWORD: postgres
+        run: |
+          psql -h localhost -U postgres -d postgres -v ON_ERROR_STOP=1 \
+            -f supabase/tests/store_approval_contact_pin_smoke.sql

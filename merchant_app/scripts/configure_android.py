@@ -17,6 +17,14 @@ permissions = {item.get(name_attr) for item in root.findall("uses-permission")}
 internet = "android.permission.INTERNET"
 if internet not in permissions:
     root.insert(0, ET.Element("uses-permission", {name_attr: internet}))
+# Foreground-only location, requested after a merchant taps "use my location".
+# No background location or foreground-service location permission.
+for permission in (
+    "android.permission.ACCESS_COARSE_LOCATION",
+    "android.permission.ACCESS_FINE_LOCATION",
+):
+    if permission not in permissions:
+        root.insert(0, ET.Element("uses-permission", {name_attr: permission}))
 app = root.find("application")
 if app is None:
     raise SystemExit("Generated manifest does not contain application.")
