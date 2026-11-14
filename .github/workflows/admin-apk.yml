@@ -6,7 +6,7 @@ on:
       - 'supabase/migrations/**'
       - '.github/workflows/admin-apk.yml'
   push:
-    branches: [main]
+    branches: [main, 'feature/shitreed-complete-admin']
     paths:
       - 'admin_app/**'
       - '.github/workflows/admin-apk.yml'
@@ -63,3 +63,30 @@ jobs:
           path: admin_app/build/app/outputs/flutter-apk/Shitreed-Admin-Pro-arm64.apk
           if-no-files-found: error
           retention-days: 30
+
+  release_preview:
+    name: Publish direct-download preview
+    needs: admin_android
+    if: github.event_name == 'push' && github.ref == 'refs/heads/feature/shitreed-complete-admin'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: Shitreed-Admin-Pro-ARM64-APK
+          path: release-dist
+      - name: Publish installable APK without ZIP
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if ! gh release view shitreed-admin-pro-v0.2.0-preview --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release create shitreed-admin-pro-v0.2.0-preview \
+              release-dist/Shitreed-Admin-Pro-arm64.apk \
+              --target "$GITHUB_SHA" --prerelease --latest=false \
+              --title "Shitreed Admin Pro 0.2 (Android ARM64 Preview)" \
+              --notes "Direct Android ARM64 APK for testing only. Debug key signing; not Google Play production. Uses Shitreed Supabase RBAC and real operations." \
+              --repo "$GITHUB_REPOSITORY"
+          else
+            echo "Preview release already exists; keeping its verified asset."
+          fi
