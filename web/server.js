@@ -1,3 +1,4 @@
+import { handleShop } from './shop-routes.js';
 import { createServer } from 'node:http';
 import { readFile } from 'node:fs/promises';
 import { extname, join, resolve, sep } from 'node:path';
@@ -8,10 +9,10 @@ const sbUrl = (process.env.SUPABASE_URL || '').replace(/\/$/, '');
 const sbKey = process.env.SUPABASE_PUBLISHABLE_KEY || '';
 const MIME = {'.html':'text/html; charset=utf-8','.css':'text/css; charset=utf-8','.js':'text/javascript; charset=utf-8','.svg':'image/svg+xml','.ico':'image/x-icon'};
 const filePaths = new Map([
- ['/', 'index.html'], ['/index.html','index.html'], ['/merchant','merchant.html'],
+ ['/', 'index.html'], ['/index.html','index.html'], ['/login','login.html'], ['/checkout','checkout.html'], ['/orders','orders.html'], ['/merchant','merchant.html'],
  ['/admin','admin.html'], ['/privacy','privacy.html'], ['/terms','terms.html'],
  ['/support','support.html'], ['/delete-account','delete-account.html'],
- ['/app.css','app.css'], ['/app.js','app.js']
+ ['/app.css','app.css'], ['/app.js','app.js'], ['/shop.js','shop.js']
 ]);
 const json = (res, code, obj) => { res.writeHead(code, {'content-type':'application/json; charset=utf-8','cache-control':'public, max-age=30','x-content-type-options':'nosniff'});res.end(JSON.stringify(obj)); };
 const securityHeaders = {
@@ -44,6 +45,7 @@ const server=createServer(async (req,res)=>{
    for (const [k,v] of Object.entries(securityHeaders)) res.setHeader(k,v);
    if(req.method!=='GET' && req.method!=='HEAD'){res.writeHead(405,{'allow':'GET, HEAD'});return res.end('Method not allowed');}
    const pathname = new URL(req.url||'/', 'http://localhost').pathname;
+   if (await handleShop(req,res,pathname,{url:sbUrl,key:sbKey})) return;
    if (pathname==='/health'){res.writeHead(200,{'content-type':'application/json'});return res.end('{"ok":true,"app":"shitreed-web"}');}
    if (pathname==='/favicon.ico'){res.writeHead(204);return res.end();}
    if (pathname==='/api/catalog') {
