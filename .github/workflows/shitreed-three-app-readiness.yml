@@ -7,6 +7,11 @@ on:
   pull_request:
     paths:
       - '.github/workflows/shitreed-three-app-readiness.yml'
+      - 'lib/**'
+      - 'test/**'
+      - 'merchant_app/**'
+      - 'admin_app/**'
+      - 'scripts/**'
   workflow_dispatch:
 
 permissions:
