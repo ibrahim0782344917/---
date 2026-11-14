@@ -86,7 +86,7 @@ async function auth(conf,req,res){
   const user=await u.json();return user?.id?{token:tokens.access_token,user}:null;
  }catch{return null;}
 }
-function validEmail(x){return typeof x==='string'&&x.length<=254&&/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(x);}
+function validEmail(x){return typeof x==='string'&&x.length<=254&&/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(x);}
 function validUuid(x){return typeof x==='string'&&/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(x);}
 async function proxyStripe(req,res){
  if(req.method!=='POST'){res.writeHead(405,{'allow':'POST'});res.end();return;}
