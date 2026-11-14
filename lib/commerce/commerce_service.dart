@@ -1,5 +1,6 @@
 // ignore_for_file: prefer_interpolation_to_compose_strings, curly_braces_in_flow_control_structures
 import 'package:flutter/foundation.dart';
+import 'package:shitreed_customer/commerce/checkout_request_token.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:shitreed_customer/backend/marketplace_backend.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -14,6 +15,7 @@ class CommerceCart extends ChangeNotifier {
   CommerceCart._();
   static final CommerceCart instance = CommerceCart._();
   final Map<String, CommerceCartItem> _items = {};
+  final CheckoutRequestToken _checkoutToken = CheckoutRequestToken();
 
   List<CommerceCartItem> get items => _items.values.toList(growable: false);
   int get count => _items.values.fold(0, (v, line) => v + line.quantity);
@@ -21,6 +23,25 @@ class CommerceCart extends ChangeNotifier {
       0, (v, line) => v + line.product.priceIqd * line.quantity);
   String? get storeId =>
       _items.isEmpty ? null : _items.values.first.product.storeId;
+
+  /// Keep a retry ID until the customer actually changes the order.
+  String requestIdFor({
+    required String deliveryAddress,
+    required String phone,
+    String notes = '',
+  }) {
+    final id = storeId;
+    if (id == null) throw StateError('EMPTY_CART');
+    return _checkoutToken.forOrder(
+      storeId: id,
+      items: _items.values.map((line) => (
+        productId: line.product.id, quantity: line.quantity,
+      )),
+      deliveryAddress: deliveryAddress,
+      phone: phone,
+      notes: notes,
+    );
+  }
 
   bool add(MarketplaceProduct product) {
     if (product.stockQuantity < 1 ||
@@ -34,6 +55,7 @@ class CommerceCart extends ChangeNotifier {
     } else {
       previous.quantity++;
     }
+    _checkoutToken.reset();
     notifyListeners();
     return true;
   }
@@ -46,11 +68,13 @@ class CommerceCart extends ChangeNotifier {
     } else {
       line.quantity--;
     }
+    _checkoutToken.reset();
     notifyListeners();
   }
 
   void clear() {
     _items.clear();
+    _checkoutToken.reset();
     notifyListeners();
   }
 }
@@ -195,6 +219,7 @@ class CommerceService {
     required List<CommerceCartItem> items,
     required String deliveryAddress,
     required String phone,
+    required String requestId,
     String notes = '',
   }) async {
     if (_myUserId.isEmpty) throw StateError('LOGIN_REQUIRED');
@@ -207,6 +232,7 @@ class CommerceService {
       'p_delivery_address': deliveryAddress.trim(),
       'p_phone': phone.trim(),
       'p_notes': notes.trim(),
+      'p_request_id': requestId,
     });
     return value.toString();
   }
@@ -259,6 +285,9 @@ class CommerceService {
 
 /// Never display internal SQL exception details or personal information.
 String checkoutFailureText(String serverMessage) {
+  if (serverMessage.contains('IDEMPOTENCY_KEY_REUSED')) {
+    return 'تغيّرت تفاصيل الطلب؛ حدّث السلة وجرّب من جديد.';
+  }
   if (serverMessage.contains('STORE_NOT_AVAILABLE')) {
     return 'المتجر بعده بانتظار موافقة الإدارة، لذلك الطلبات مو مفعلة إله.';
   }
