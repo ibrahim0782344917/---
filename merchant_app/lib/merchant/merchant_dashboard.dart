@@ -613,13 +613,44 @@ class _MerchantOrdersPageState extends State<MerchantOrdersPage> {
       buyerId: order['buyer_id'] as String?,
       merchantUserId: MarketplaceBackend.currentUser?.id,
     )) {
-      return const Padding(
-        padding: EdgeInsets.symmetric(vertical: 9),
-        child: Text(
-          'هذا الطلب أُنشئ بنفس حساب صاحب المتجر. '
-          'ما تگدر تقبله أو ترفضه كتاجر؛ '
-          'جرّب الشراء من حساب زبون مستقل.',
-          style: TextStyle(color: Color(0xFF8C5C18)),
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 9),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const Text(
+              'هذا الطلب أُنشئ بنفس حساب صاحب المتجر. '
+              'ما تگدر تقبله أو ترفضه كتاجر؛ '
+              'جرّب الشراء من حساب زبون مستقل.',
+              style: TextStyle(color: Color(0xFF8C5C18)),
+            ),
+            if (currentStatus == 'placed') TextButton.icon(
+              icon: const Icon(Icons.cancel_outlined),
+              label: const Text('إلغاء طلبي التجريبي'),
+              onPressed: _changingOrderId == null ? () async {
+                final cancel = await showDialog<bool>(
+                  context: context,
+                  builder: (dialogContext) => AlertDialog(
+                    title: const Text('إلغاء الطلب؟'),
+                    content: const Text(
+                      'هذا الطلب تم من حسابك نفسه. '
+                      'الإلغاء يعيد المخزون ولا يحوّله إلى بيع مكتمل.'),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(dialogContext, false),
+                        child: const Text('رجوع')),
+                      FilledButton(
+                        onPressed: () => Navigator.pop(dialogContext, true),
+                        child: const Text('تأكيد الإلغاء')),
+                    ],
+                  ),
+                );
+                if (cancel == true && mounted) {
+                  await _change(orderId, 'cancelled');
+                }
+              } : null,
+            ),
+          ],
         ),
       );
     }
