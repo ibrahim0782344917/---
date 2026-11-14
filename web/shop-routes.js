@@ -165,13 +165,13 @@ export async function handleShop(req,res,path,conf){
       ||input.confirmed!==true)return send(res,400,{error:'راجع بيانات السلة والعنوان ورقم الهاتف'});
    const idempotency=String(input.request_key||'');
    if(!validUuid(idempotency))return send(res,400,{error:'معرّف الطلب غير صالح'});
-   // Prevent same-process accidental double submission. Durable database idempotency is a pre-production follow-up.
+   // In-memory throttling is supplemental; PostgreSQL handles durable idempotency.
    const attemptKey=session.user.id+'|'+idempotency;
    const attempt=state.get(attemptKey);
    if(attempt&&Date.now()<attempt.expires)return send(res,attempt.orderId?200:409,attempt.orderId?{order_id:attempt.orderId,repeated:true}:{error:'الطلب قيد المعالجة'});
    state.set(attemptKey,{expires:Date.now()+60*60*1000});
-   const payload={p_store_id:input.store_id,p_items:input.items,p_delivery_address:input.delivery_address.trim(),p_phone:input.phone.trim(),p_notes:input.notes};
-   const r=await supa(conf,'/rest/v1/rpc/place_cash_order',{method:'POST',headers:{Authorization:'Bearer '+session.token},body:JSON.stringify(payload)});
+   const payload={p_store_id:input.store_id,p_items:input.items,p_delivery_address:input.delivery_address.trim(),p_phone:input.phone.trim(),p_notes:input.notes,p_request_key:idempotency};
+   const r=await supa(conf,'/rest/v1/rpc/place_cash_order_web',{method:'POST',headers:{Authorization:'Bearer '+session.token},body:JSON.stringify(payload)});
    if(!r.ok){state.delete(attemptKey);return send(res,409,{error:'تعذر إتمام الطلب. راجع توفر المنتجات والعنوان'});}
    const id=await r.json();
    if(!validUuid(id)){state.delete(attemptKey);return send(res,502,{error:'استجابة الطلب غير صالحة'});}
