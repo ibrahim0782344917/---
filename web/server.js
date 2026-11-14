@@ -45,6 +45,7 @@ const server=createServer(async (req,res)=>{
    if(req.method!=='GET' && req.method!=='HEAD'){res.writeHead(405,{'allow':'GET, HEAD'});return res.end('Method not allowed');}
    const pathname = new URL(req.url||'/', 'http://localhost').pathname;
    if (pathname==='/health'){res.writeHead(200,{'content-type':'application/json'});return res.end('{"ok":true,"app":"shitreed-web"}');}
+   if (pathname==='/favicon.ico'){res.writeHead(204);return res.end();}
    if (pathname==='/api/catalog') {
      try {return json(res,200,await catalog());}
      catch(e){console.error('Catalog read failed:',e.message);return json(res,503,{configured:true,stores:[],products:[],note:'تعذر تحميل البيانات حالياً'});}
