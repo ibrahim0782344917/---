@@ -355,7 +355,8 @@ class _AdminHomeState extends State<AdminHome> {
     if (!AdminAccess.canChange(widget.role, section)) return {};
     final state = row['status']?.toString();
     if (section == 'stores') {
-      if (state == 'pending') return {'approve': 'اعتماد المتجر'};
+      if (state == 'pending') return {
+        'approve': 'اعتماد المتجر', 'reject': 'رفض المتجر'};
       if (state == 'approved') return {'suspend': 'إيقاف المتجر'};
       if (state == 'suspended') return {'reopen': 'إعادة للمراجعة'};
     }
@@ -376,6 +377,7 @@ class _AdminHomeState extends State<AdminHome> {
 
   Future<String?> askReason(String action) async {
     final controller = TextEditingController();
+    final minimum = section == 'stores' ? 20 : 12;
     final result = await showDialog<String>(
       context: context,
       builder: (ctx) => StatefulBuilder(builder: (ctx, update) =>
@@ -389,7 +391,7 @@ class _AdminHomeState extends State<AdminHome> {
               controller: controller, maxLength: 1000, maxLines: 3,
               onChanged: (_) => update(() {}),
               decoration: const InputDecoration(
-                labelText: 'السبب (12 حرفاً على الأقل)',
+                labelText: 'سبب موثق للتغيير',
                 border: OutlineInputBorder()),
             ),
           ]),
@@ -398,7 +400,7 @@ class _AdminHomeState extends State<AdminHome> {
               onPressed: () => Navigator.pop(ctx),
               child: const Text('رجوع')),
             FilledButton(
-              onPressed: controller.text.trim().length < 12
+              onPressed: controller.text.trim().length < minimum
                   ? null : () => Navigator.pop(ctx, controller.text.trim()),
               child: const Text('تأكيد')),
           ],
