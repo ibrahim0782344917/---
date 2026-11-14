@@ -148,7 +148,51 @@ async function ordersPage(){
   if(String(e.message).includes('سجّل'))list.append(link('اضغط هنا لتسجيل الدخول','/login?next=/orders'));
  }
 }
+
+async function deletionPage(){
+ const form=$('deletion-form'),info=$('deletion-session'),history=$('deletion-history');
+ async function refresh(){
+  const result=await api('/api/account/deletion-request');
+  history.replaceChildren();
+  if(Array.isArray(result.requests)&&result.requests.length){
+   for(const row of result.requests){
+    const wrapper=create('div','purchase-card');
+    const label={pending:'قيد المراجعة',processing:'قيد المعالجة',completed:'مكتمل',rejected:'يتطلب مراجعة الدعم'}[row.status]||row.status;
+    wrapper.append(create('strong','',label),create('p','',new Date(row.requested_at).toLocaleString('ar-IQ')));
+    history.append(wrapper);
+   }
+   const open=result.requests.some(r=>['pending','processing'].includes(r.status));
+   form.hidden=open;
+   if(open)text('deletion-status','عندك طلب حذف قيد المعالجة بالفعل، ولا تحتاج ترسل طلباً ثانياً.','success');
+  }
+ }
+ try{
+  const session=await api('/api/auth/session');
+  if(!session.authenticated){
+   info.replaceChildren(create('span','','لازم تسجل دخول بحسابك أولاً. '),link('تسجيل الدخول','/login?next=/delete-account'));
+   return;
+  }
+  info.textContent='الحساب الحالي: '+session.email;
+  form.hidden=false;
+  await refresh();
+ }catch(err){text('deletion-status',err.message,'error');return;}
+ form.addEventListener('submit',async e=>{
+  e.preventDefault();
+  if(!$('deletion-confirm').checked)return;
+  const button=$('deletion-submit');
+  button.disabled=true;
+  text('deletion-status','جاري إرسال طلب الحذف...');
+  try{
+   const r=await api('/api/account/deletion-request',{method:'POST',body:JSON.stringify({reason:$('deletion-reason').value})});
+   text('deletion-status',r.message,'success');
+   form.hidden=true;
+   await refresh();
+  }catch(err){text('deletion-status',err.message,'error');button.disabled=false;}
+ });
+}
+
 const page=document.body.dataset.shopPage;
 if(page==='login')loginPage();
 if(page==='checkout')checkoutPage();
 if(page==='orders')ordersPage();
+if(page==='deletion')deletionPage();
