@@ -49,3 +49,17 @@ jobs:
           path: admin_app/build/app/outputs/flutter-apk/app-debug.apk
           if-no-files-found: error
           retention-days: 30
+
+      - name: Build optimized ARM64 preview APK
+        run: |
+          flutter build apk --release --target-platform android-arm64 \
+            --dart-define=SUPABASE_URL=https://ltwncrewggdrjevakwpb.supabase.co \
+            --dart-define=SUPABASE_PUBLISHABLE_KEY=sb_publishable_Tao4VcnXR93Ne9KUBJ76tg_o-Pmd75_
+      - name: Name ARM64 preview APK
+        run: cp build/app/outputs/flutter-apk/app-release.apk build/app/outputs/flutter-apk/Shitreed-Admin-Pro-arm64.apk
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Shitreed-Admin-Pro-ARM64-APK
+          path: admin_app/build/app/outputs/flutter-apk/Shitreed-Admin-Pro-arm64.apk
+          if-no-files-found: error
+          retention-days: 30
