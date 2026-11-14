@@ -43,7 +43,6 @@ async function catalog(){
 const server=createServer(async (req,res)=>{
  try {
    for (const [k,v] of Object.entries(securityHeaders)) res.setHeader(k,v);
-   if(req.method!=='GET' && req.method!=='HEAD'){res.writeHead(405,{'allow':'GET, HEAD'});return res.end('Method not allowed');}
    const pathname = new URL(req.url||'/', 'http://localhost').pathname;
    if(String(req.headers.host||'').toLowerCase()==='www.pixer-laravel.com' && (req.method==='GET'||req.method==='HEAD')) {
      const requested=new URL(req.url||'/', 'https://www.pixer-laravel.com');
@@ -51,6 +50,7 @@ const server=createServer(async (req,res)=>{
      return res.end();
    }
    if (await handleShop(req,res,pathname,{url:sbUrl,key:sbKey})) return;
+   if(req.method!=='GET' && req.method!=='HEAD'){res.writeHead(405,{'allow':'GET, HEAD'});return res.end('Method not allowed');}
    if (pathname==='/health'){res.writeHead(200,{'content-type':'application/json'});return res.end('{"ok":true,"app":"shitreed-web"}');}
    if (pathname==='/favicon.ico'){res.writeHead(204);return res.end();}
    if (pathname==='/api/catalog') {
