@@ -40,6 +40,8 @@ for node in application.findall("meta-data"):
         break
 if metadata is None:
     metadata = ET.SubElement(application, "meta-data")
+application.set(f"{{{ANDROID_NS}}}label", "شتريد؟ موجود!")
+application.set(f"{{{ANDROID_NS}}}icon", "@mipmap/ic_launcher")
 metadata.set(key_name, "com.google.android.geo.API_KEY")
 metadata.set(key_value, os.getenv("GOOGLE_MAPS_API_KEY", "").strip() or "MAPS_KEY_NOT_CONFIGURED")
 
