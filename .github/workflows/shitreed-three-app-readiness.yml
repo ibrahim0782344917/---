@@ -12,6 +12,12 @@ on:
 permissions:
   contents: read
 
+env:
+  SHITREED_SUPABASE_URL: https://ltwncrewggdrjevakwpb.supabase.co
+  # This is a public client-side API key, NOT a service_role/secret key.
+  # It is embedded into Android binaries by design; RLS secures the data.
+  SHITREED_SUPABASE_PUBLISHABLE_KEY: sb_publishable_Tao4VcnXR93Ne9KUBJ76tg_o-Pmd75_
+
 jobs:
   customer:
     name: Customer Android - verify and preview APK
@@ -32,7 +38,12 @@ jobs:
       - run: flutter analyze lib test
       - run: flutter test
       - name: Build Customer preview (not Play release)
-        run: flutter build apk --debug
+        run: |
+          test -n "$SHITREED_SUPABASE_URL"
+          [[ "$SHITREED_SUPABASE_PUBLISHABLE_KEY" == sb_publishable_* ]]
+          flutter build apk --debug \
+            --dart-define="SUPABASE_URL=$SHITREED_SUPABASE_URL" \
+            --dart-define="SUPABASE_PUBLISHABLE_KEY=$SHITREED_SUPABASE_PUBLISHABLE_KEY"
       - name: Confirm Android API 36 target
         run: |
           AAPT=$(find "$ANDROID_HOME/build-tools" -type f -name aapt | sort -V | tail -1)
@@ -69,7 +80,12 @@ jobs:
       - run: flutter analyze
       - run: flutter test
       - name: Build Merchant preview (not Play release)
-        run: flutter build apk --debug
+        run: |
+          test -n "$SHITREED_SUPABASE_URL"
+          [[ "$SHITREED_SUPABASE_PUBLISHABLE_KEY" == sb_publishable_* ]]
+          flutter build apk --debug \
+            --dart-define="SUPABASE_URL=$SHITREED_SUPABASE_URL" \
+            --dart-define="SUPABASE_PUBLISHABLE_KEY=$SHITREED_SUPABASE_PUBLISHABLE_KEY"
       - name: Confirm Android API 36 target
         run: |
           AAPT=$(find "$ANDROID_HOME/build-tools" -type f -name aapt | sort -V | tail -1)
@@ -108,7 +124,12 @@ jobs:
       - run: flutter analyze --no-fatal-infos lib test
       - run: flutter test
       - name: Build Admin preview (not Play release)
-        run: flutter build apk --debug
+        run: |
+          test -n "$SHITREED_SUPABASE_URL"
+          [[ "$SHITREED_SUPABASE_PUBLISHABLE_KEY" == sb_publishable_* ]]
+          flutter build apk --debug \
+            --dart-define="SUPABASE_URL=$SHITREED_SUPABASE_URL" \
+            --dart-define="SUPABASE_PUBLISHABLE_KEY=$SHITREED_SUPABASE_PUBLISHABLE_KEY"
       - name: Confirm Android API 36 target
         run: |
           AAPT=$(find "$ANDROID_HOME/build-tools" -type f -name aapt | sort -V | tail -1)
