@@ -3,6 +3,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:shitreed_merchant/backend/marketplace_backend.dart';
 import 'package:shitreed_merchant/commerce/commerce_service.dart';
 import 'package:shitreed_merchant/shared/merchant_widgets.dart';
+import 'package:shitreed_merchant/merchant/shop_location.dart';
 
 class MerchantStoreSettingsPage extends StatefulWidget {
   final Map<String, dynamic> store;
@@ -27,6 +28,7 @@ class _MerchantStoreSettingsPageState
   late final TextEditingController _latitude;
   late final TextEditingController _longitude;
   bool _busy = false;
+  bool _locating = false;
 
   @override
   void initState() {
@@ -87,16 +89,41 @@ class _MerchantStoreSettingsPageState
     }
   }
 
+  Future<void> _captureLocation() async {
+    if (_busy || _locating) return;
+    setState(() => _locating = true);
+    try {
+      final pos = await captureShopLocation();
+      if (!mounted) return;
+      _latitude.text = pos.latitude.toStringAsFixed(6);
+      _longitude.text = pos.longitude.toStringAsFixed(6);
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+        content: Text('تم تحديد موقع المحل. راجع الموقع قبل الحفظ.')));
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(e is StateError ? e.message.toString()
+            : 'تعذر تحديد الموقع. أدخل الإحداثيات يدوياً.')));
+    } finally {
+      if (mounted) setState(() => _locating = false);
+    }
+  }
+
   Future<void> _save() async {
-    if (_busy || !_form.currentState!.validate()) return;
+    if (_busy || _locating || !_form.currentState!.validate()) return;
     final latString = _latitude.text.trim();
     final lngString = _longitude.text.trim();
     final lat = latString.isEmpty ? null : double.tryParse(latString);
     final lng = lngString.isEmpty ? null : double.tryParse(lngString);
-    if ((latString.isNotEmpty && (lat == null || lat < -90 || lat > 90)) ||
-        (lngString.isNotEmpty && (lng == null || lng < -180 || lng > 180))) {
+    if ((latString.isNotEmpty || lngString.isNotEmpty) &&
+        !isBaghdadShopLocation(lat, lng)) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
         content: Text('إحداثيات المتجر غير صحيحة.')));
+      return;
+    }
+    if (_phone.text.trim().isNotEmpty &&
+        !validShopPhone(_phone.text)) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+        content: Text('رقم الهاتف غير صالح.')));
       return;
     }
     setState(() => _busy = true);
@@ -164,18 +191,27 @@ class _MerchantStoreSettingsPageState
           _field(_area, 'المنطقة'),
           _field(_category, 'التصنيف'),
           _field(_address, 'العنوان', minLength: 8),
-          _field(_phone, 'هاتف المحل (اختياري)',
+          _field(_phone, 'هاتف المحل (مطلوب للاعتماد)',
             optional: true, keyboard: TextInputType.phone),
           _field(_description, 'وصف المحل (اختياري)', optional: true),
           _field(_openingHours, 'أوقات الدوام (مثلاً 9 ص - 10 م)',
             optional: true),
-          _field(_latitude, 'خط العرض (اختياري)',
+          OutlinedButton.icon(
+            onPressed: (_busy || _locating) ? null : _captureLocation,
+            icon: const Icon(Icons.my_location_outlined),
+            label: Text(_locating ? 'جاري تحديد الموقع...' :
+              'أنا داخل المحل: تحديد الموقع تلقائياً'),
+          ),
+          const Text('الموقع لا يُطلب تلقائياً، ولا تحفظ إحداثيات بيتك.',
+            style: TextStyle(fontSize: 12, color: Colors.black54)),
+          const SizedBox(height: 12),
+          _field(_latitude, 'خط العرض (مطلوب للاعتماد)',
             optional: true, keyboard: TextInputType.number),
-          _field(_longitude, 'خط الطول (اختياري)',
+          _field(_longitude, 'خط الطول (مطلوب للاعتماد)',
             optional: true, keyboard: TextInputType.number),
         ])),
         FilledButton.icon(
-          onPressed: _busy ? null : _save,
+          onPressed: (_busy || _locating) ? null : _save,
           style: FilledButton.styleFrom(
             backgroundColor: merchantPurple,
             padding: const EdgeInsets.symmetric(vertical: 14)),
