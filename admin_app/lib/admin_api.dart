@@ -79,6 +79,61 @@ class AdminApi {
     );
     return response.toString();
   }
+  static Future<AdminPage> searchPage(String section, {
+    String query = '', String filter = '', int offset = 0, int limit = 25,
+  }) async {
+    final response = await client.rpc('shitreed_admin_search', params: {
+      'p_section': section, 'p_search': query.trim(),
+      'p_filter': filter, 'p_offset': offset, 'p_limit': limit,
+    });
+    final data = Map<String, dynamic>.from(response as Map);
+    return AdminPage(
+      items: (data['items'] as List<dynamic>? ?? const [])
+          .map((x) => Map<String, dynamic>.from(x as Map)).toList(),
+      total: (data['total'] as num?)?.toInt() ?? 0,
+    );
+  }
+
+  static Future<List<Map<String, dynamic>>> insights() async {
+    final result = await client.rpc('shitreed_admin_insights');
+    final rows = (result as Map)['daily'] as List<dynamic>? ?? [];
+    return rows.map((x) => Map<String, dynamic>.from(x as Map)).toList();
+  }
+
+  static Future<Map<String, dynamic>> orderDetail(String orderId) async {
+    final response = await client.rpc('shitreed_admin_order_detail',
+        params: {'p_order_id': orderId});
+    return Map<String, dynamic>.from(response as Map);
+  }
+
+  static Future<int> adjustStock({
+    required String productId, required int delta, required String reason,
+  }) async {
+    final result = await client.rpc('shitreed_admin_inventory_adjust',
+        params: {
+          'p_product_id': productId, 'p_delta': delta,
+          'p_reason': reason.trim(),
+        });
+    return (result as num).toInt();
+  }
+
+  static Future<int> setPrice({
+    required String productId, required int priceIqd, required String reason,
+  }) async {
+    final result = await client.rpc('shitreed_admin_price_update',
+        params: {
+          'p_product_id': productId, 'p_price_iqd': priceIqd,
+          'p_reason': reason.trim(),
+        });
+    return (result as num).toInt();
+  }
+
+  static Future<Map<String, dynamic>?> findUser(String email) async {
+    final response = await client.rpc('shitreed_admin_find_user',
+        params: {'p_email': email.trim()});
+    return response == null ? null : Map<String, dynamic>.from(response as Map);
+  }
+
 }
 
 class AdminAccess {
@@ -130,4 +185,10 @@ class AdminAccess {
   static bool isUuid(String value) => RegExp(
     r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$',
   ).hasMatch(value);
+}
+
+class AdminPage {
+  final List<Map<String, dynamic>> items;
+  final int total;
+  const AdminPage({required this.items, required this.total});
 }
