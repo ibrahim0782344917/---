@@ -108,7 +108,7 @@ async function proxyStripe(req,res){
 }
 export async function handleShop(req,res,path,conf){
  if(path==='/webhooks/stripe'){await proxyStripe(req,res);return true;}
- if(!path.startsWith('/api/auth/')&&path!=='/api/orders')return false;
+ if(!path.startsWith('/api/auth/')&&path!=='/api/orders'&&path!=='/api/account/deletion-request')return false;
  if(!conf.url||!conf.key){send(res,503,{error:'إعداد اتصال الحسابات غير مكتمل'});return true;}
  const method=req.method||'GET';
  if(method!=='GET'&&method!=='POST'){res.writeHead(405,{'allow':'GET, POST'});res.end();return true;}
@@ -142,6 +142,25 @@ export async function handleShop(req,res,path,conf){
   if(path==='/api/auth/session'&&method==='GET'){
    const session=await auth(conf,req,res);
    return send(res,200,session?{authenticated:true,email:session.user.email||'',user_id:session.user.id}:{authenticated:false});
+  }
+  if(path==='/api/account/deletion-request') {
+   const session=await auth(conf,req,res);
+   if(!session)return send(res,401,{error:'سجّل الدخول لحماية طلب حذف حسابك'});
+   if(method==='GET'){
+    const r=await supa(conf,'/rest/v1/customer_deletion_requests?select=id,status,requested_at&order=requested_at.desc&limit=5',{headers:{Authorization:'Bearer '+session.token}});
+    if(!r.ok)return send(res,502,{error:'تعذر قراءة حالة طلب الحذف'});
+    return send(res,200,{requests:await r.json()});
+   }
+   const data=await bodyJson(req,1200);
+   if(data===null||typeof data!=='object'||typeof data.reason!=='string'||data.reason.length>500)
+     return send(res,400,{error:'يرجى إدخال سبب لا يتجاوز 500 حرف، أو تركه فارغاً'});
+   const r=await supa(conf,'/rest/v1/customer_deletion_requests',{
+    method:'POST',body:JSON.stringify({reason:data.reason.trim()}),
+    headers:{Authorization:'Bearer '+session.token,'Prefer':'return=minimal'}
+   });
+   if(r.status===409)return send(res,409,{error:'يوجد طلب حذف قيد المعالجة بالفعل'});
+   if(!r.ok)return send(res,502,{error:'لم ينجح تسجيل طلب الحذف، حاول لاحقاً'});
+   return send(res,202,{accepted:true,message:'تم تسجيل طلب حذف الحساب للمراجعة؛ سنعالج البيانات وفق سياسة الاحتفاظ.'});
   }
   if(path==='/api/orders'&&method==='GET'){
    const session=await auth(conf,req,res);
