@@ -193,8 +193,14 @@ class _LiveCartPageState extends State<LiveCartPage> {
         ));
         return;
       }
+      final requestId = cart.requestIdFor(
+        deliveryAddress: _address.text,
+        phone: _phone.text,
+        notes: _notes.text,
+      );
       final orderId = await CommerceService.placeCashOrder(
         storeId: cart.storeId!,
+        requestId: requestId,
         items: cart.items,
         deliveryAddress: _address.text,
         phone: _phone.text,
@@ -242,11 +248,11 @@ class _LiveCartPageState extends State<LiveCartPage> {
             subtitle: Text(priceText(line.product.priceIqd)),
             trailing: Row(mainAxisSize: MainAxisSize.min, children: [
               IconButton(
-                onPressed: () => cart.subtract(line.product),
+                onPressed: _submitting ? null : () => cart.subtract(line.product),
                 icon: const Icon(Icons.remove_circle_outline)),
               Text(line.quantity.toString()),
               IconButton(
-                onPressed: () {
+                onPressed: _submitting ? null : () {
                   if (!cart.add(line.product)) {
                     ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
                       content: Text('الكمية المطلوبة أكبر من المخزون.')));
@@ -257,7 +263,7 @@ class _LiveCartPageState extends State<LiveCartPage> {
           )),
         if (cart.items.isNotEmpty) ...[
           OutlinedButton.icon(
-            onPressed: cart.clear,
+            onPressed: _submitting ? null : cart.clear,
             icon: const Icon(Icons.remove_shopping_cart_outlined),
             label: const Text('إفراغ السلة'),
           ),
