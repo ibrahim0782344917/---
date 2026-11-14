@@ -6,6 +6,7 @@ import 'package:shitreed_merchant/commerce/commerce_service.dart';
 import 'package:shitreed_merchant/shared/merchant_widgets.dart';
 import 'package:shitreed_merchant/reports/merchant_reports.dart';
 import 'package:shitreed_merchant/merchant/merchant_settings_pages.dart';
+import 'package:shitreed_merchant/admin/store_reviews_page.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 const _purple = Color(0xFF51159B);
@@ -19,10 +20,12 @@ class MerchantDashboardPage extends StatefulWidget {
 
 class _MerchantDashboardPageState extends State<MerchantDashboardPage> {
   late Future<List<Map<String, dynamic>>> _stores;
+  late final Future<bool> _adminAccess;
 
   @override
   void initState() {
     super.initState();
+    _adminAccess = StoreReviewService.isAdmin();
     _refresh();
   }
 
@@ -37,6 +40,23 @@ class _MerchantDashboardPageState extends State<MerchantDashboardPage> {
     appBar: AppBar(
       title: const Text('شتريد تاجر'),
       actions: [
+        FutureBuilder<bool>(
+          future: _adminAccess,
+          builder: (context, snapshot) {
+            if (snapshot.data != true) {
+              return const SizedBox.shrink();
+            }
+            return IconButton(
+              icon: const Icon(Icons.admin_panel_settings_outlined),
+              tooltip: 'مراجعة المتاجر للإدارة',
+              onPressed: () => Navigator.of(context).push<void>(
+                MaterialPageRoute(
+                  builder: (_) => const StoreReviewsPage(),
+                ),
+              ),
+            );
+          },
+        ),
         IconButton(
           icon: const Icon(Icons.bar_chart_rounded),
           tooltip: 'الإحصائيات',
