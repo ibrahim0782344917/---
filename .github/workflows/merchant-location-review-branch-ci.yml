@@ -33,6 +33,13 @@ jobs:
         run: flutter test
       - name: Build merchant debug APK without paid APIs
         run: flutter build apk --debug
+      - name: Upload merchant GPS test APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: Shitreed-Merchant-GPS-Review-TEST-APK
+          path: merchant_app/build/app/outputs/flutter-apk/app-debug.apk
+          if-no-files-found: error
+          retention-days: 14
 
   postgres:
     runs-on: ubuntu-latest
