@@ -7,6 +7,7 @@ on:
       - 'test/**'
       - 'pubspec.yaml'
       - 'scripts/**'
+      - 'assets/branding/**'
       - '.github/workflows/android-apk.yml'
   workflow_dispatch:
 permissions:
@@ -28,6 +29,10 @@ jobs:
         env:
           GOOGLE_MAPS_API_KEY: ${{ secrets.GOOGLE_MAPS_API_KEY }}
         run: python3 scripts/configure_android_maps.py
+      - name: Install official icon image tooling
+        run: python3 -m pip install --break-system-packages pillow==11.3.0
+      - name: Apply uploaded Shitreed icon
+        run: python3 scripts/install_official_icon.py android
       - name: Packages
         run: flutter pub get
       - name: Analyze customer app only
