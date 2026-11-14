@@ -1,3 +1,4 @@
+// ignore_for_file: curly_braces_in_flow_control_structures
 import 'package:flutter/material.dart';
 import 'package:shitreed_merchant/account/merchant_account_page.dart';
 import 'package:shitreed_merchant/commerce/commerce_service.dart';
