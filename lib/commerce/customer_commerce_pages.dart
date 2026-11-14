@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:shitreed_customer/auth/customer_auth_page.dart';
 import 'package:shitreed_customer/backend/marketplace_backend.dart';
 import 'package:shitreed_customer/commerce/commerce_service.dart';
+import 'package:shitreed_customer/commerce/order_timeline_page.dart';
 
 const _purple = Color(0xFF51159B);
 const _dark = Color(0xFF280B53);
@@ -390,6 +391,16 @@ class _OrderHistoryPageState extends State<OrderHistoryPage> {
               for (final order in orders) Card(
                 color: Colors.white,
                 child: ListTile(
+                  onTap: () async {
+                    await Navigator.of(context).push<void>(
+                      MaterialPageRoute(builder: (_) => OrderTimelinePage(
+                        orderId: order['id'] as String,
+                        totalIqd: (order['total_iqd'] as num).toInt(),
+                        status: order['status'] as String,
+                      )),
+                    );
+                    if (mounted) _refresh();
+                  },
                   title: Text('طلب رقم ' +
                     (order['id'] as String).substring(0, 8)),
                   subtitle: Text(
