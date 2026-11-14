@@ -226,6 +226,27 @@ class CommerceService {
         .eq('store_id', storeId).order('created_at', ascending: false).limit(60);
   }
 
+  /// Order line snapshots survive product edits or later price changes.
+  /// Row Level Security prevents access outside the buyer or store owner.
+  static Future<List<Map<String, dynamic>>> orderItems(String orderId) async {
+    if (_myUserId.isEmpty) throw StateError('LOGIN_REQUIRED');
+    final rows = await _db.from('order_items')
+        .select('product_name,unit_price_iqd,quantity,line_total_iqd')
+        .eq('order_id', orderId)
+        .order('product_name');
+    return rows;
+  }
+
+  static Future<List<Map<String, dynamic>>> orderStatusEvents(
+      String orderId) async {
+    if (_myUserId.isEmpty) throw StateError('LOGIN_REQUIRED');
+    final rows = await _db.from('order_status_history')
+        .select('old_status,new_status,changed_at')
+        .eq('order_id', orderId)
+        .order('changed_at');
+    return rows;
+  }
+
   static Future<String> changeOrderStatus(String id, String status) async {
     if (_myUserId.isEmpty) throw StateError('LOGIN_REQUIRED');
     final result = await _db.rpc('change_cash_order_status', params: {
