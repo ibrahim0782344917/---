@@ -5,6 +5,8 @@ on:
     branches: [main]
     paths:
       - 'merchant_app/**'
+      - 'assets/branding/**'
+      - 'scripts/**'
       - '.github/workflows/merchant-apk.yml'
   workflow_dispatch:
 
@@ -33,6 +35,10 @@ jobs:
       - name: Configure Android manifest
         run: python3 scripts/configure_android.py
 
+      - name: Install official icon image tooling
+        run: python3 -m pip install --break-system-packages pillow==11.3.0
+      - name: Apply uploaded Shitreed icon
+        run: python3 ../scripts/install_official_icon.py android
       - name: Install packages
         run: flutter pub get
 
