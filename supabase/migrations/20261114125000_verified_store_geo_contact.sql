@@ -19,9 +19,7 @@ begin
     end if;
     if new.latitude is null or new.longitude is null or
        new.latitude not between 32.8 and 33.9 or
-       new.longitude not between 43.6 and 45.2 or
-       not pg_catalog.isfinite(new.latitude) or
-       not pg_catalog.isfinite(new.longitude) then
+       new.longitude not between 43.6 and 45.2 then
       raise exception 'STORE_MAP_PIN_REQUIRED';
     end if;
   end if;
