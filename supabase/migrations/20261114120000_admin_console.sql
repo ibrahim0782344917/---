@@ -39,7 +39,7 @@ returns text language plpgsql stable security definer
 set search_path = ''
 as $$
 declare v_uid uuid := (select auth.uid());
-declare v_role text;
+        v_role text;
 begin
   if v_uid is null then return null; end if;
   if exists (
@@ -176,6 +176,9 @@ begin
   end if;
   if p_section = 'stores' and v_role in
     ('super_admin','operations','merchant_reviewer') then
+    if char_length(btrim(p_reason)) < 20 then
+      raise exception 'STORE_REVIEW_REASON_TOO_SHORT';
+    end if;
     select * into v_store from public.stores where id = p_id for update;
     if not found then raise exception 'STORE_NOT_FOUND'; end if;
     v_old := v_store.status;
@@ -192,6 +195,10 @@ begin
       raise exception 'INVALID_STORE_TRANSITION';
     end if;
     update public.stores set status = v_next where id = p_id;
+    -- Keep the established store-review audit alongside the admin activity log.
+    insert into public.store_review_audit
+      (store_id, admin_id, old_status, new_status, reason)
+    values (p_id, v_actor, v_old, v_next, btrim(p_reason));
   elsif p_section = 'products' and v_role in
     ('super_admin','operations','catalog_manager') then
     select * into v_product from public.products where id = p_id for update;
@@ -258,7 +265,7 @@ create or replace function public.shitreed_admin_set_staff(
 set search_path = ''
 as $$
 declare v_old text;
-declare v_next text;
+        v_next text;
 begin
   if public.shitreed_admin_role() is distinct from 'super_admin' then
     raise exception 'SUPER_ADMIN_REQUIRED';
@@ -266,7 +273,7 @@ begin
   if p_user_id is null or p_user_id = auth.uid() then
     raise exception 'INVALID_STAFF_MEMBER';
   end if;
-  if p_role not in
+  if p_role is null or p_role not in
      ('operations','merchant_reviewer','catalog_manager','support','viewer')
      or p_enabled is null or p_reason is null or
      char_length(btrim(p_reason)) not between 12 and 1000 then
