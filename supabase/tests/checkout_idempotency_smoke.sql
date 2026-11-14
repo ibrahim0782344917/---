@@ -25,7 +25,7 @@ create table public.products (
 );
 
 \ir ../migrations/20261107220000_cash_orders_and_inventory.sql
-\ir ../migrations/20261114090000_checkout_idempotency.sql
+\ir ../migrations/20261114120000_checkout_idempotency.sql
 
 insert into auth.users(id) values
   ('10000000-0000-4000-8000-000000000001'),
