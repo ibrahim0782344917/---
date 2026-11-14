@@ -5,6 +5,7 @@ import 'package:shitreed_merchant/backend/marketplace_backend.dart';
 import 'package:shitreed_merchant/commerce/commerce_service.dart';
 import 'package:shitreed_merchant/commerce/order_timeline_page.dart';
 import 'package:shitreed_merchant/shared/merchant_widgets.dart';
+import 'package:shitreed_merchant/merchant/shop_location.dart';
 import 'package:shitreed_merchant/reports/merchant_reports.dart';
 import 'package:shitreed_merchant/merchant/merchant_settings_pages.dart';
 import 'package:shitreed_merchant/admin/store_reviews_page.dart';
@@ -201,28 +202,51 @@ class _MerchantRegistrationPageState extends State<MerchantRegistrationPage> {
   final _area = TextEditingController();
   final _category = TextEditingController();
   final _address = TextEditingController();
+  final _phone = TextEditingController();
   final _latitude = TextEditingController();
   final _longitude = TextEditingController();
   bool _busy = false;
+  bool _locating = false;
 
   @override
   void dispose() {
-    for (final c in [_name,_area,_category,_address,_latitude,_longitude]) {
+    for (final c in [_name,_area,_category,_address,_phone,_latitude,_longitude]) {
       c.dispose();
     }
     super.dispose();
   }
 
+  Future<void> _captureLocation() async {
+    if (_locating || _busy) return;
+    setState(() => _locating = true);
+    try {
+      final pos = await captureShopLocation();
+      if (!mounted) return;
+      _latitude.text = pos.latitude.toStringAsFixed(6);
+      _longitude.text = pos.longitude.toStringAsFixed(6);
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+        content: Text('تم تحديد موقع الهاتف. تأكد أنك داخل المحل قبل الحفظ.')));
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(e is StateError ? e.message.toString()
+            : 'تعذر تحديد الموقع. أدخل الإحداثيات يدوياً.')));
+    } finally {
+      if (mounted) setState(() => _locating = false);
+    }
+  }
+
   Future<void> _submit() async {
-    if (!_form.currentState!.validate() || _busy) return;
+    if (!_form.currentState!.validate() || _busy || _locating) return;
     final lat = _latitude.text.trim().isEmpty
       ? null : double.tryParse(_latitude.text.trim());
     final lng = _longitude.text.trim().isEmpty
       ? null : double.tryParse(_longitude.text.trim());
-    if ((_latitude.text.trim().isNotEmpty &&
-          (lat == null || lat < -90 || lat > 90)) ||
-        (_longitude.text.trim().isNotEmpty &&
-          (lng == null || lng < -180 || lng > 180))) {
+    if (!validShopPhone(_phone.text)) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+        content: Text('أدخل رقم هاتف المحل الصحيح حتى يمكن مراجعته.')));
+      return;
+    }
+    if (!isBaghdadShopLocation(lat, lng)) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
         content: Text('إحداثيات الموقع غير صحيحة.')));
       return;
@@ -232,7 +256,7 @@ class _MerchantRegistrationPageState extends State<MerchantRegistrationPage> {
       await CommerceService.registerStore(
         name: _name.text, area: _area.text,
         category: _category.text, address: _address.text,
-        latitude: lat, longitude: lng,
+        phone: _phone.text, latitude: lat, longitude: lng,
       );
       if (!mounted) return;
       Navigator.of(context).pop(true);
@@ -273,19 +297,30 @@ class _MerchantRegistrationPageState extends State<MerchantRegistrationPage> {
         _field(_area, 'المنطقة (مثلاً المنصور)'),
         _field(_category, 'التصنيف (مثلاً موبايلات)'),
         _field(_address, 'العنوان بالتفصيل', minimum: 8),
-        _field(_latitude, 'خط العرض من Google Maps (اختياري)',
+        _field(_phone, 'رقم هاتف المحل', minimum: 8,
+          keyboardType: TextInputType.phone),
+        OutlinedButton.icon(
+          onPressed: (_busy || _locating) ? null : _captureLocation,
+          icon: const Icon(Icons.my_location_outlined),
+          label: Text(_locating ? 'جاري تحديد الموقع...' :
+            'أنا داخل المحل: استخدم موقعي الآن'),
+        ),
+        const Text('الموقع لا يُطلب تلقائياً. اضغط الزر فقط وأنت داخل المحل.',
+          style: TextStyle(fontSize: 12, color: Colors.black54)),
+        const SizedBox(height: 12),
+        _field(_latitude, 'خط عرض المحل في بغداد',
           optional: true, keyboardType: TextInputType.number),
-        _field(_longitude, 'خط الطول من Google Maps (اختياري)',
+        _field(_longitude, 'خط طول المحل في بغداد',
           optional: true, keyboardType: TextInputType.number),
       ])),
       FilledButton(
-        onPressed: _busy ? null : _submit,
+        onPressed: (_busy || _locating) ? null : _submit,
         style: FilledButton.styleFrom(backgroundColor: _purple),
         child: Text(_busy ? 'جاري الإرسال...' : 'إرسال طلب إضافة المتجر'),
       ),
       const SizedBox(height: 12),
-      const Text('إضافة موقع دقيق اختيارية الآن. سيظهر دبوس المحل '
-        'في خريطة شتريد بعد اعتماد المتجر.',
+      const Text('موقع المحل ورقم الهاتف مطلوبان للمراجعة. '
+        'لن يظهر الدبوس على خريطة شتريد إلا بعد اعتماد المتجر.',
         textAlign: TextAlign.center,
         style: TextStyle(color: Colors.black54)),
     ]),
