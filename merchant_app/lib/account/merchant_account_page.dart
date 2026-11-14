@@ -91,7 +91,7 @@ class MerchantAccountPage extends StatelessWidget {
         const Text('شتريد تاجر • نسخة تجريبية',
           textAlign:TextAlign.center,
           style:TextStyle(color:Colors.black54,fontSize:12)),
-      ]))),
+      ])),
   );
 }
 
