@@ -1,0 +1,61 @@
+name: Shitreed Real Checkout Branch Validation
+
+on:
+  push:
+    branches: [feature/shitreed-real-orders-20261114]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  flutter:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+      - name: Create Android project without Google key
+        run: |
+          flutter create --org com.shitreed --project-name shitreed_customer --platforms android .
+          python3 scripts/configure_android_maps.py
+      - name: Install Dart packages
+        run: flutter pub get
+      - name: Static analysis
+        run: flutter analyze lib test
+      - name: Unit tests
+        run: flutter test
+      - name: Compile Android debug offline
+        run: flutter build apk --debug --dart-define=GOOGLE_MAPS_ENABLED=false
+
+  postgres:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 8
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install PostgreSQL client
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y postgresql-client
+      - name: Verify SQL migration and safe retry behavior
+        env:
+          PGPASSWORD: postgres
+        run: |
+          psql -h localhost -U postgres -d postgres -v ON_ERROR_STOP=1 \
+            -f supabase/tests/checkout_idempotency_smoke.sql
