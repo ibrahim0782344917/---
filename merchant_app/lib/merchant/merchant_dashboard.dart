@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:shitreed_merchant/backend/marketplace_backend.dart';
 import 'package:shitreed_merchant/commerce/commerce_service.dart';
+import 'package:shitreed_merchant/commerce/merchant_order_rules.dart';
 import 'package:shitreed_merchant/commerce/order_timeline_page.dart';
 import 'package:shitreed_merchant/shared/merchant_widgets.dart';
 import 'package:shitreed_merchant/reports/merchant_reports.dart';
@@ -588,14 +589,66 @@ class _MerchantOrdersPageState extends State<MerchantOrdersPage> {
     _orders = CommerceService.merchantOrders(widget.storeId);
   });
 
+  String? _changingOrderId;
+
   Future<void> _change(String id, String status) async {
+    if (_changingOrderId != null) return;
+    setState(() => _changingOrderId = id);
     try {
       await CommerceService.changeOrderStatus(id, status);
       if (mounted) _refresh();
-    } catch (_) {
+    } catch (error) {
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('تعذر تغيير حالة الطلب.')));
+        SnackBar(content: Text(
+          MerchantOrderRules.friendlyStatusError(error))));
+    } finally {
+      if (mounted) setState(() => _changingOrderId = null);
     }
+  }
+
+  Widget _orderActions(Map<String, dynamic> order) {
+    final orderId = order['id'] as String;
+    final currentStatus = order['status'] as String;
+    if (MerchantOrderRules.isSelfPurchase(
+      buyerId: order['buyer_id'] as String?,
+      merchantUserId: MarketplaceBackend.currentUser?.id,
+    )) {
+      return const Padding(
+        padding: EdgeInsets.symmetric(vertical: 9),
+        child: Text(
+          'هذا الطلب أُنشئ بنفس حساب صاحب المتجر. '
+          'ما تگدر تقبله أو ترفضه كتاجر؛ '
+          'جرّب الشراء من حساب زبون مستقل.',
+          style: TextStyle(color: Color(0xFF8C5C18)),
+        ),
+      );
+    }
+
+    if (currentStatus == 'placed') {
+      return Wrap(spacing: 10, children: [
+        OutlinedButton(
+          onPressed: _changingOrderId == null
+              ? () => _change(orderId, 'rejected') : null,
+          child: const Text('رفض')),
+        FilledButton(
+          onPressed: _changingOrderId == null
+              ? () => _change(orderId, 'accepted') : null,
+          child: const Text('قبول الطلب')),
+      ]);
+    }
+    if (currentStatus == 'accepted') {
+      return FilledButton.tonal(
+        onPressed: _changingOrderId == null
+            ? () => _change(orderId, 'preparing') : null,
+        child: const Text('بدء التحضير'));
+    }
+    if (currentStatus == 'preparing') {
+      return FilledButton.tonal(
+        onPressed: _changingOrderId == null
+            ? () => _change(orderId, 'ready') : null,
+        child: const Text('جاهز للتسليم'));
+    }
+    return const SizedBox.shrink();
   }
 
   @override
@@ -648,21 +701,7 @@ class _MerchantOrdersPageState extends State<MerchantOrdersPage> {
                       label: const Text('تفاصيل المنتجات ومراحل الطلب'),
                     ),
                     const SizedBox(height: 8),
-                    if (o['status'] == 'placed') Row(children: [
-                      OutlinedButton(
-                        onPressed: () => _change(o['id'] as String, 'rejected'),
-                        child: const Text('رفض')),
-                      const SizedBox(width: 10),
-                      FilledButton(
-                        onPressed: () => _change(o['id'] as String, 'accepted'),
-                        child: const Text('قبول الطلب')),
-                    ]),
-                    if (o['status'] == 'accepted') FilledButton.tonal(
-                      onPressed: () => _change(o['id'] as String, 'preparing'),
-                      child: const Text('بدء التحضير')),
-                    if (o['status'] == 'preparing') FilledButton.tonal(
-                      onPressed: () => _change(o['id'] as String, 'ready'),
-                      child: const Text('جاهز للتسليم')),
+                    _orderActions(o),
                   ],
                 ))),
           ]);
