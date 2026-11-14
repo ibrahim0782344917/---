@@ -1,0 +1,32 @@
+name: Shitreed Google Places Branch CI
+
+on:
+  push:
+    branches:
+      - feature/google-places-baghdad-20261109
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+      - name: Generate Android project (offline Maps config)
+        run: |
+          flutter create --org com.shitreed --project-name shitreed_customer --platforms android .
+          python3 scripts/configure_android_maps.py
+      - name: Get packages
+        run: flutter pub get
+      - name: Analyze Dart sources
+        run: flutter analyze lib test
+      - name: Unit tests without live API
+        run: flutter test
+      - name: Compile Android debug without paid Places calls
+        run: flutter build apk --debug --dart-define=GOOGLE_MAPS_ENABLED=false

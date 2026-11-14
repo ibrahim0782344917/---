@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:shitreed_customer/backend/marketplace_backend.dart';
+import 'package:shitreed_customer/maps/google_places_service.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 const _purple = Color(0xFF51159B);
@@ -23,7 +24,12 @@ class _BaghdadMapPageState extends State<BaghdadMapPage> {
   GoogleMapController? _controller;
   Position? _position;
   List<MarketplaceStore> _stores = [];
+  List<GooglePlaceStore> _googleStores = [];
   MarketplaceStore? _selected;
+  GooglePlaceStore? _selectedGoogle;
+  bool _googleLoading = false;
+  String? _googleError;
+  LatLng _mapCenter = _baghdad;
   bool _loading = false;
   bool _locating = false;
   String? _error;
@@ -32,7 +38,7 @@ class _BaghdadMapPageState extends State<BaghdadMapPage> {
   @override
   void initState() {
     super.initState();
-    _load();
+    _load(); // Google requests only after an explicit user action.
   }
 
   @override
@@ -56,6 +62,40 @@ class _BaghdadMapPageState extends State<BaghdadMapPage> {
     } finally {
       if (mounted) setState(() => _loading = false);
     }
+  }
+
+  /// A user-triggered search after panning; no Google requests on every swipe.
+  Future<void> _loadGoogle([LatLng? center]) async {
+    if (_googleLoading) return;
+    if (!MarketplaceBackend.configured) {
+      if (mounted) setState(() => _googleError = 'يلزم اتصال قاعدة شتريد.');
+      return;
+    }
+    final target = center ?? _mapCenter;
+    setState(() {
+      _googleLoading = true;
+      _googleError = null;
+      _selectedGoogle = null;
+    });
+    try {
+      final places = await GooglePlacesService.nearby(
+        latitude: target.latitude, longitude: target.longitude);
+      if (mounted) setState(() => _googleStores = places);
+    } catch (_) {
+      if (mounted) {
+        setState(() {
+          _googleStores = [];
+          _googleError = 'تعذر تحميل محلات Google. تأكد من تفعيل Places API والخادم.';
+        });
+      }
+    } finally {
+      if (mounted) setState(() => _googleLoading = false);
+    }
+  }
+
+  Future<void> _refreshAll() async {
+    // Do not issue billable Google requests from pull-to-refresh.
+    await _load();
   }
 
   List<String> get _areas {
@@ -86,15 +126,41 @@ class _BaghdadMapPageState extends State<BaghdadMapPage> {
     return result;
   }
 
-  Set<Marker> get _markers => _visible
-      .where((s) => s.latitude != null && s.longitude != null)
+  List<GooglePlaceStore> get _googleVisible {
+    final keyword = _search.text.trim().toLowerCase();
+    final places = _googleStores.where((s) =>
+      (_area == 'كل بغداد' || s.address.contains(_area)) &&
+      ('${s.name} ${s.address} ${s.category}')
+          .toLowerCase().contains(keyword)).toList();
+    if (_position != null) {
+      places.sort((a, b) =>
+        _googleDistance(a).compareTo(_googleDistance(b)));
+    }
+    return places;
+  }
+
+  double _googleDistance(GooglePlaceStore place) => _position == null
+    ? double.infinity
+    : Geolocator.distanceBetween(_position!.latitude, _position!.longitude,
+        place.latitude, place.longitude);
+
+  Set<Marker> get _markers => {
+    ..._visible.where((s) => s.latitude != null && s.longitude != null)
       .map((s) => Marker(
-        markerId: MarkerId(s.id),
+        markerId: MarkerId('approved_${s.id}'),
         position: LatLng(s.latitude!, s.longitude!),
-        infoWindow: InfoWindow(title: s.name, snippet: s.area),
+        infoWindow: InfoWindow(title: s.name, snippet: 'تاجر معتمد • ${s.area}'),
         icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueViolet),
-        onTap: () => setState(() => _selected = s),
-      )).toSet();
+        onTap: () => setState(() { _selected = s; _selectedGoogle = null; }),
+      )),
+    ..._googleVisible.map((s) => Marker(
+        markerId: MarkerId('google_${s.id}'),
+        position: LatLng(s.latitude, s.longitude),
+        infoWindow: InfoWindow(title: s.name, snippet: 'من Google Maps'),
+        icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueOrange),
+        onTap: () => setState(() { _selectedGoogle = s; _selected = null; }),
+      )),
+  };
 
   void _toast(String message) {
     if (mounted) {
@@ -132,7 +198,9 @@ class _BaghdadMapPageState extends State<BaghdadMapPage> {
           LatLng(p.latitude, p.longitude), 14,
         ));
       }
+      _mapCenter = LatLng(p.latitude, p.longitude);
       _toast('تم تحديد موقعك لهالجلسة وترتيب المحلات حسب المسافة.');
+      await _loadGoogle(_mapCenter);
     } catch (_) {
       _toast('تعذر تحديد الموقع حالياً؛ حاول مرة ثانية.');
     } finally {
@@ -207,8 +275,24 @@ class _BaghdadMapPageState extends State<BaghdadMapPage> {
     }));
   }
 
+  Future<void> _googleDirections(GooglePlaceStore place) async {
+    await _openUrl(Uri.https('www.google.com', '/maps/search/', {
+      'api': '1',
+      'query': '${place.latitude},${place.longitude}',
+      'query_place_id': place.id,
+    }));
+  }
+
+  Future<void> _focusGoogle(GooglePlaceStore place) async {
+    setState(() { _selectedGoogle = place; _selected = null; });
+    if (_mapsEnabled && _controller != null) {
+      await _controller!.animateCamera(CameraUpdate.newLatLngZoom(
+        LatLng(place.latitude, place.longitude), 15));
+    }
+  }
+
   Future<void> _focus(MarketplaceStore store) async {
-    setState(() => _selected = store);
+    setState(() { _selected = store; _selectedGoogle = null; });
     if (_mapsEnabled && _controller != null &&
         store.latitude != null && store.longitude != null) {
       await _controller!.animateCamera(CameraUpdate.newLatLngZoom(
@@ -236,7 +320,7 @@ class _BaghdadMapPageState extends State<BaghdadMapPage> {
       const SizedBox(height: 17),
       TextField(
         controller: _search,
-        onChanged: (_) => setState(() => _selected = null),
+        onChanged: (_) => setState(() { _selected = null; _selectedGoogle = null; }),
         decoration: InputDecoration(
           hintText: 'ابحث عن محل أو منطقة أو نوع خدمة',
           prefixIcon: const Icon(Icons.search, color: _purple),
@@ -268,7 +352,8 @@ class _BaghdadMapPageState extends State<BaghdadMapPage> {
             zoomControlsEnabled: false,
             mapToolbarEnabled: false,
             onMapCreated: (c) => _controller = c,
-            onTap: (_) => setState(() => _selected = null),
+            onCameraMove: (camera) => _mapCenter = camera.target,
+            onTap: (_) => setState(() { _selected = null; _selectedGoogle = null; }),
           )),
           Positioned(
             top: 9, right: 9,
@@ -343,10 +428,39 @@ class _BaghdadMapPageState extends State<BaghdadMapPage> {
     );
   }
 
+  Widget _googleCard(GooglePlaceStore place) => Card(
+    color: Colors.white,
+    margin: const EdgeInsets.only(bottom: 9),
+    child: Padding(
+      padding: const EdgeInsets.all(9),
+      child: Column(children: [
+        ListTile(
+          contentPadding: EdgeInsets.zero,
+          leading: const CircleAvatar(
+            backgroundColor: Color(0xFFFFF0E1),
+            child: Icon(Icons.place_outlined, color: _orange)),
+          title: Text(place.name,
+            style: const TextStyle(fontWeight: FontWeight.w800)),
+          subtitle: Text('${place.category} • ${place.address}'),
+          onTap: () => _focusGoogle(place),
+        ),
+        Row(children: [
+          const Expanded(child: Text('من Google Maps • غير معتمد للبيع',
+            style: TextStyle(fontSize: 11, color: Colors.black54))),
+          TextButton.icon(
+            onPressed: () => _googleDirections(place),
+            icon: const Icon(Icons.directions, size: 18),
+            label: const Text('الاتجاهات'),
+          ),
+        ]),
+      ]),
+    ),
+  );
+
   @override
   Widget build(BuildContext context) {
     final visible = _visible;
-    return RefreshIndicator(onRefresh: _load,
+    return RefreshIndicator(onRefresh: _refreshAll,
       child: ListView(children: [
         _header(),
         const SizedBox(height: 12),
@@ -363,12 +477,36 @@ class _BaghdadMapPageState extends State<BaghdadMapPage> {
                 onSelected: (_) => setState(() {
                   _area = area;
                   _selected = null;
+                  _selectedGoogle = null;
                 })),
             ),
           ]),
         ),
         const SizedBox(height: 11),
         _map(),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(14, 5, 14, 0),
+          child: OutlinedButton.icon(
+            onPressed: _googleLoading ? null : () => _loadGoogle(_mapCenter),
+            icon: const Icon(Icons.travel_explore),
+            label: const Text('ابحث بهذه المنطقة عن محلات Google'),
+          ),
+        ),
+        if (_selectedGoogle != null) Padding(
+          padding: const EdgeInsets.fromLTRB(14, 8, 14, 0),
+          child: Card(
+            color: const Color(0xFFFFF0E3),
+            child: ListTile(
+              title: Text(_selectedGoogle!.name,
+                style: const TextStyle(fontWeight: FontWeight.bold)),
+              subtitle: Text('من Google Maps • ${_selectedGoogle!.address}'),
+              trailing: IconButton(
+                tooltip: 'الاتجاهات',
+                onPressed: () => _googleDirections(_selectedGoogle!),
+                icon: const Icon(Icons.directions, color: _purple)),
+            ),
+          ),
+        ),
         if (_selected != null) Padding(
           padding: const EdgeInsets.fromLTRB(14, 8, 14, 0),
           child: Card(color: const Color(0xFFFFF0E3),
@@ -394,11 +532,33 @@ class _BaghdadMapPageState extends State<BaghdadMapPage> {
               label: const Text('المحلات القريبة مني'))),
             const SizedBox(width: 9),
             IconButton.filledTonal(
-              tooltip: 'تحديث المحلات',
-              onPressed: _load,
+              tooltip: 'تحديث المتاجر المعتمدة',
+              onPressed: _refreshAll,
               icon: const Icon(Icons.refresh)),
           ]),
         ),
+        Padding(padding: const EdgeInsets.fromLTRB(16, 10, 16, 7),
+          child: Text('محلات على Google Maps (${_googleVisible.length})',
+            style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w900,
+              color: _darkPurple))),
+        if (_googleLoading) const Center(
+          child: Padding(padding: EdgeInsets.all(16),
+            child: CircularProgressIndicator())),
+        if (_googleError != null)
+          Padding(padding: const EdgeInsets.all(15),
+            child: Text(_googleError!, textAlign: TextAlign.center)),
+        if (!_googleLoading && _googleError == null && _googleVisible.isEmpty)
+          const Padding(padding: EdgeInsets.all(16),
+            child: Text('اضغط «ابحث بهذه المنطقة» لعرض المحلات من Google. لا يتم إجراء بحث تلقائي.',
+              textAlign: TextAlign.center)),
+        Padding(padding: const EdgeInsets.symmetric(horizontal: 14),
+          child: Column(children: [
+            for (final place in _googleVisible) _googleCard(place),
+            if (_googleVisible.isNotEmpty)
+              const Text('المصدر: Google Maps • المواقع ليست متاجر معتمدة للطلبات',
+                style: TextStyle(fontSize: 11, color: Colors.black54)),
+          ])),
+        const SizedBox(height: 15),
         Padding(padding: const EdgeInsets.symmetric(horizontal: 16),
           child: Text('المتاجر المعتمدة (${visible.length})',
             style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w900,
@@ -426,9 +586,8 @@ class _BaghdadMapPageState extends State<BaghdadMapPage> {
         Padding(padding: const EdgeInsets.fromLTRB(13, 8, 13, 22),
           child: Column(children: [
             for (final store in visible) _storeCard(store),
-            const Text('الموقع اختياري ولا نطلبه إلا عند الضغط على زر القرب. '
-              'معلومات المحلات يقدمها أصحاب المتاجر، '
-              'وليست بيانات Google Places بعد.',
+            const Text('موقعك اختياري ولا نطلبه إلا عند الضغط على زر القرب. '
+              'محلات Google للتصفح والاتجاهات فقط؛ الطلبات من التجار المعتمدين.',
               textAlign: TextAlign.center,
               style: TextStyle(fontSize: 11, color: Colors.black54)),
           ])),
