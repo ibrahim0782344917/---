@@ -67,6 +67,10 @@ test('website GET pages and authenticated API route guards',async t=>{
       const r=await request(port,'/api/orders','POST',{});
       assert.equal(r.status,401,r.body);
     });
+    await t.test('deletion requests require a signed-in user',async()=>{
+      assert.equal((await request(port,'/api/account/deletion-request')).status,401);
+      assert.equal((await request(port,'/api/account/deletion-request','POST',{reason:'delete my account'})).status,401);
+    });
     await t.test('unrecognized POST is 405 and has no arbitrary file writes',async()=>{
       const r=await request(port,'/not-a-route','POST',{anything:'value'});
       assert.equal(r.status,405);
