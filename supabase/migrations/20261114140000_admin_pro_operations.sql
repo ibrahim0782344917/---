@@ -292,7 +292,7 @@ grant execute on function public.shitreed_admin_find_user(text)
 
 -- Add explicit rejection from pending alongside existing approvals.
 -- Reuses both review audit and admin activity logging in one transaction.
- no destructive customer, store or order deletion.
+-- No destructive customer, store or order deletion.
 -- Inventory is restored once under the same order lock used by merchant RPCs.
 create or replace function public.shitreed_admin_change(
   p_section text, p_id uuid, p_action text, p_reason text
