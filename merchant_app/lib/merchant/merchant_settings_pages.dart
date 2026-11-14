@@ -100,9 +100,11 @@ class _MerchantStoreSettingsPageState
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
         content: Text('تم تحديد موقع المحل. راجع الموقع قبل الحفظ.')));
     } catch (e) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(e is StateError ? e.message.toString()
-            : 'تعذر تحديد الموقع. أدخل الإحداثيات يدوياً.')));
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(e is StateError ? e.message.toString()
+              : 'تعذر تحديد الموقع. أدخل الإحداثيات يدوياً.')));
+      }
     } finally {
       if (mounted) setState(() => _locating = false);
     }
