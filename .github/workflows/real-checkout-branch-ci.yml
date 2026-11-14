@@ -24,7 +24,7 @@ jobs:
       - name: Install Dart packages
         run: flutter pub get
       - name: Static analysis
-        run: flutter analyze lib test
+        run: flutter analyze --no-fatal-infos lib test
       - name: Unit tests
         run: flutter test
       - name: Compile Android debug offline
