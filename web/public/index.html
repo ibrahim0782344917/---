@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<meta name="description" content="شتريد؟ موجود! اكتشف المتاجر القريبة والمنتجات في بغداد، وتواصل مع أصحاب المحلات.">
+<meta name="theme-color" content="#0b7255"><title>شتريد؟ موجود! | الأسواق والمحلات حولك</title>
+<link rel="stylesheet" href="/app.css"><script defer src="/app.js"></script>
+</head>
+<body>
+<header class="site-header"><div class="container header-inner">
+ <a class="brand" href="/" aria-label="شتريد الرئيسية"><span class="brand-mark" aria-hidden="true">ش</span><span>شتريد<span class="brand-highlight">؟ موجود!</span></span></a>
+ <nav class="desktop-nav" aria-label="التنقل الرئيسي"><a class="selected" href="#discover">استكشف</a><a href="#stores">المتاجر</a><a href="#products">المنتجات</a><a href="/merchant">للتجار</a><a href="/support">الدعم</a></nav>
+ <div class="header-actions"><span class="dev-pill">نسخة تجريبية</span><a class="button button-outline" href="/merchant">انضم كتاجر</a></div>
+</div></header>
+<main>
+<section class="hero" id="discover"><div class="container hero-grid">
+ <div class="hero-copy">
+  <span class="eyebrow"><span class="pulse"></span> من بغداد... لكل العراق</span>
+  <h1>كل اللي تريده<br><span>موجود قريب منك.</span></h1>
+  <p class="hero-description">اكتشف المحلات المحلية، قارن المنتجات، وتعرّف على الأسعار والعروض. مكان واحد يجمع الزبائن والتجار بسهولة وأمان.</p>
+  <form class="search-wrap" id="search-form" role="search"><label for="search" class="sr-only">ابحث عن منتج أو متجر</label><span aria-hidden="true">⌕</span><input id="search" name="q" type="search" autocomplete="off" placeholder="ابحث عن محل أو منتج في بغداد..."><button class="button button-primary" type="submit">بحث</button></form>
+  <div class="quick-links"><span>جرّب البحث:</span><button data-query="موبايل">موبايلات</button><button data-query="ملابس">ملابس</button><button data-query="مطعم">مطاعم</button></div>
+ </div>
+ <div class="hero-visual" aria-hidden="true"><div class="visual-orbit orbit-one"></div><div class="visual-orbit orbit-two"></div>
+  <div class="phone-card"><div class="phone-top"><span>شتريد؟ موجود!</span><span>● ● ●</span></div><div class="phone-search">⌕ شنو تريد اليوم؟</div><div class="phone-map"><span class="pin pin-one">⌖</span><span class="pin pin-two">⌖</span><span class="pin pin-three">⌖</span><div class="map-street"></div><div class="map-street s2"></div></div><div class="phone-bottom"><span>🏠 الرئيسية</span><span>⌖ الخريطة</span><span>▤ طلباتي</span></div></div>
+  <div class="floating-tag top-tag">📍 محلات من منطقتك</div><div class="floating-tag bottom-tag">🛍️ أسعار بالدينار العراقي</div>
+ </div>
+</div></section>
+<section class="highlights"><div class="container highlight-grid">
+ <div class="highlight"><span class="highlight-icon">⌖</span><div><strong>محلات قريبة</strong><small>تعرّف على المحلات حولك</small></div></div>
+ <div class="highlight"><span class="highlight-icon">☑</span><div><strong>متاجر معتمدة</strong><small>فقط المتاجر التي توافق عليها الإدارة</small></div></div>
+ <div class="highlight"><span class="highlight-icon">◈</span><div><strong>بالدينار العراقي</strong><small>أسعار واضحة بدون تخمين</small></div></div>
+ <div class="highlight"><span class="highlight-icon">♡</span><div><strong>تجربة سهلة</strong><small>اكتشف المنتج والمحلات بسرعة</small></div></div>
+</div></section>
+<section id="stores" class="section container">
+ <div class="section-heading"><div><span class="section-kicker">متاجر شتريد</span><h2>استكشف المتاجر المعتمدة</h2><p>المحلات تظهر بعد موافقة الإدارة عليها. لا نعرض متاجر غير معتمدة أو بيانات وهمية.</p></div><a class="subtle-link" href="https://www.google.com/maps/search/?api=1&query=shops%20in%20Baghdad" target="_blank" rel="noopener noreferrer">فتح خرائط Google ↗</a></div>
+ <div id="store-list" class="card-grid" aria-live="polite"><div class="empty-state">جاري جلب بيانات المتاجر المعتمدة...</div></div>
+</section>
+<section id="products" class="section container">
+ <div class="section-heading"><div><span class="section-kicker">من متاجر بغداد</span><h2>المنتجات المتوفرة</h2><p>الأسعار والمنتجات مأخوذة من المتاجر المعتمدة داخل شتريد.</p></div><span class="subtle-link">الأسعار بالدينار العراقي</span></div>
+ <div id="product-list" class="card-grid" aria-live="polite"><div class="empty-state">جاري جلب المنتجات...</div></div>
+</section>
+<section class="container"><div class="merchant-banner"><div><span class="section-kicker light">لأصحاب المحلات</span><h2>عندك محل؟ خله يوصّل لزبائن أكثر.</h2><p>سجّل متجرك في شتريد، أضف منتجاتك، وتابع الطلبات من مكان واحد. يخضع قبول المتجر للتحقق والموافقة.</p><a class="button button-light" href="/merchant">تعرّف على شتريد تاجر ↗</a></div><span class="banner-art" aria-hidden="true">🏪</span></div></section>
+<section class="section container">
+ <div class="section-heading"><div><span class="section-kicker">منظومة واحدة</span><h2>ثلاثة تطبيقات مترابطة</h2><p>خدمات مختلفة تعمل على منظومة مشتركة، مع صلاحيات مستقلة لكل نوع حساب.</p></div></div>
+ <div class="three-grid"><article class="feature-card"><span class="large-icon">🛍️</span><h3>شتريد زبون</h3><p>البحث عن المنتجات والمحلات، الطلبات والمتابعة.</p><span class="soft-chip">Android</span></article>
+ <article class="feature-card"><span class="large-icon">🏪</span><h3>شتريد تاجر</h3><p>إدارة المحل والمنتجات والطلبات ومعلومات الفروع.</p><a class="text-link" href="/merchant">تفاصيل التاجر ↗</a></article>
+ <article class="feature-card"><span class="large-icon">🛡️</span><h3>شتريد Admin</h3><p>مراجعة المتاجر وتنظيم الصلاحيات والإشراف على المنصة.</p><a class="text-link" href="/admin">تعرف على الإدارة ↗</a></article></div>
+</section>
+</main>
+<footer class="footer"><div class="container"><div class="footer-top"><div><a class="brand footer-brand" href="/"><span class="brand-mark">ش</span><span>شتريد؟ موجود!</span></a><p>تسوق محلي يجمع الزبائن والتجار في العراق.</p></div><div class="footer-links"><a href="/privacy">الخصوصية</a><a href="/terms">الشروط</a><a href="/support">الدعم</a><a href="/delete-account">حذف الحساب</a><a href="/merchant">للتجار</a></div></div><div class="footer-bottom"><span>© <span id="year">2026</span> شتريد؟ موجود! — جميع الحقوق محفوظة.</span><span>المنصة في مرحلة الاختبار، ولم يتم تفعيل البيع الإلكتروني على هذا الموقع بعد.</span></div></div></footer>
+</body></html>
