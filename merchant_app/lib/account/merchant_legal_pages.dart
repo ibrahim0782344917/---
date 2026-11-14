@@ -94,7 +94,7 @@ class MerchantLegalPage extends StatelessWidget {
                 Text(section.body,
                   style:const TextStyle(height:1.6)),
               ]))),
-      ]))),
+      ])),
   );
 }
 
@@ -139,7 +139,7 @@ class MerchantAboutPage extends StatelessWidget {
           'وليس إعلان جاهزية الدفع الإلكتروني أو خدمات التوصيل.',
           textAlign:TextAlign.center,
           style:TextStyle(color:Colors.black54)),
-      ]))),
+      ])),
   );
 }
 
@@ -184,7 +184,7 @@ class MerchantFaqPage extends StatelessWidget {
         _Faq('شلون أطلب حذف الحساب؟',
           'من الحساب والإعدادات اختر طلب حذف الحساب، '
           'واكمل التأكيد ليُسجل طلب مراجعة حقيقي.'),
-      ]))),
+      ])),
   );
 }
 
