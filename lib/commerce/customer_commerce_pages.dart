@@ -5,8 +5,8 @@ import 'package:shitreed_customer/backend/marketplace_backend.dart';
 import 'package:shitreed_customer/commerce/commerce_service.dart';
 import 'package:shitreed_customer/commerce/order_timeline_page.dart';
 
-const _purple = Color(0xFF51159B);
-const _dark = Color(0xFF280B53);
+const _purple = Color(0xFF0C946B);
+const _dark = Color(0xFF163E32);
 
 String priceText(int price) {
   final s = price.toString().replaceAllMapped(
