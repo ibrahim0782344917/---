@@ -211,6 +211,16 @@ class CommerceService {
     return value.toString();
   }
 
+  /// Saved address rows belong only to the current user (enforced by RLS).
+  static Future<List<Map<String, dynamic>>> mySavedAddresses() async {
+    final user = _myUserId;
+    final rows = await _db.from('shitreed_saved_addresses')
+        .select('id,label,address_text,contact_phone')
+        .eq('user_id', user).order('created_at', ascending: false)
+        .limit(30);
+    return rows;
+  }
+
   static Future<List<Map<String, dynamic>>> myOrders() async {
     final uid = _myUserId;
     return _db.from('orders')
