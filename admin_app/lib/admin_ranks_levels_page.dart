@@ -330,3 +330,4 @@ class _AdminRanksAndLevelsPageState extends State<AdminRanksAndLevelsPage> {
               style: TextStyle(fontSize: 12, color: Colors.black54)),
           ]),
   );
+}
