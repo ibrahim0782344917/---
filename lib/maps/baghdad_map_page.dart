@@ -81,11 +81,11 @@ class _BaghdadMapPageState extends State<BaghdadMapPage> {
       final places = await GooglePlacesService.nearby(
         latitude: target.latitude, longitude: target.longitude);
       if (mounted) setState(() => _googleStores = places);
-    } catch (_) {
+    } catch (error) {
       if (mounted) {
         setState(() {
           _googleStores = [];
-          _googleError = 'تعذر تحميل محلات Google. تأكد من تفعيل Places API والخادم.';
+          _googleError = GooglePlacesService.errorMessage(error);
         });
       }
     } finally {
