@@ -20,7 +20,7 @@ void main() {
 
   test('shows an actionable message when Places is not enabled', () {
     final message = GooglePlacesService.errorMessage(
-      FunctionsHttpException(
+      const FunctionsHttpException(
         status: 503,
         details: {'code': 'PLACES_NOT_ENABLED'},
       ),
@@ -32,12 +32,12 @@ void main() {
   test('tells a missing Edge Function apart from a throttled call', () {
     expect(
       GooglePlacesService.errorMessage(
-        FunctionsHttpException(status: 404)),
+        const FunctionsHttpException(status: 404)),
       contains('مو منشورة'),
     );
     expect(
       GooglePlacesService.errorMessage(
-        FunctionsHttpException(status: 429)),
+        const FunctionsHttpException(status: 429)),
       contains('الحد المسموح'),
     );
   });
