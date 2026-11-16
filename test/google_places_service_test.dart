@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:shitreed_customer/maps/google_places_service.dart';
 
 void main() {
@@ -15,6 +16,30 @@ void main() {
     expect(store!.name, 'محل في بغداد');
     expect(store.latitude, 33.3);
     expect(store.category, 'سوبرماركت');
+  });
+
+  test('shows an actionable message when Places is not enabled', () {
+    final message = GooglePlacesService.errorMessage(
+      FunctionsHttpException(
+        status: 503,
+        details: {'code': 'PLACES_NOT_ENABLED'},
+      ),
+    );
+    expect(message, contains('مو مفعّل'));
+    expect(message, contains('المعتمدة'));
+  });
+
+  test('tells a missing Edge Function apart from a throttled call', () {
+    expect(
+      GooglePlacesService.errorMessage(
+        FunctionsHttpException(status: 404)),
+      contains('مو منشورة'),
+    );
+    expect(
+      GooglePlacesService.errorMessage(
+        FunctionsHttpException(status: 429)),
+      contains('الحد المسموح'),
+    );
   });
 
   test('rejects incomplete Google place results', () {
