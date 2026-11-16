@@ -45,6 +45,44 @@ class GooglePlaceStore {
 }
 
 class GooglePlacesService {
+  /// Human-readable, privacy-safe messages for Supabase Edge Function failures.
+  /// A deployed but disabled endpoint is different from a missing function.
+  static String errorMessage(Object error) {
+    if (error is FunctionException) {
+      final status = error.status;
+      final details = error.details;
+      Object? code;
+      if (details is Map) code = details['code'];
+      if (details is String) {
+        try {
+          final data = jsonDecode(details);
+          if (data is Map) code = data['code'];
+        } catch (_) { /* Non-JSON details are not trusted UI content. */ }
+      }
+      if (status == 404) {
+        return 'خدمة اكتشاف محلات Google مو منشورة. حدّث التطبيق أو تواصل ويا الدعم.';
+      }
+      if (status == 503 && code == 'PLACES_NOT_ENABLED') {
+        return 'اكتشاف محلات Google مو مفعّل بعد. محلات شتريد المعتمدة متاحة بالأسفل.';
+      }
+      if (status == 503) {
+        return 'خدمة البحث عبر Google غير جاهزة حالياً. محلات شتريد المعتمدة متاحة.';
+      }
+      if (status == 429) {
+        return 'وصلنا إلى الحد المسموح لطلبات Google Places. جرّب لاحقاً.';
+      }
+      if (status == 401 || status == 403) {
+        return 'خدمة Google تحتاج إعداد صلاحيات الخادم. تواصل ويا الدعم.';
+      }
+      if (status == 502) {
+        return 'تعذر اتصال الخادم بخدمة Google. جرّب لاحقاً.';
+      }
+    }
+    if (error is FunctionsFetchException || error is FunctionsRelayException) {
+      return 'تعذر الاتصال بخادم محلات Google. تحقق من الإنترنت وجرّب مرة ثانية.';
+    }
+    return 'تعذر تحميل محلات Google حالياً. محلات شتريد المعتمدة تبقى متاحة.';
+  }
   /// Calls the protected server-side Places proxy, never Google with an app key.
   /// Only the current results are kept in widget memory (not Supabase).
   static Future<List<GooglePlaceStore>> nearby({
