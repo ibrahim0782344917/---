@@ -47,8 +47,8 @@ class MerchantAccountPage extends StatelessWidget {
           'بروفايل التاجر والرتب',
           'الصورة، البيانات، المستوى، XP وشارة التوثيق',
           ()=>_go(context,Scaffold(
-            appBar: AppBar(title: Text('بروفايل التاجر')),
-            body: ShitreedProfilePage(merchantMode: true),
+            appBar: AppBar(title: const Text('بروفايل التاجر')),
+            body: const ShitreedProfilePage(merchantMode: true),
           ))),
         const SizedBox(height:14),
         const _Heading('المساعدة'),
