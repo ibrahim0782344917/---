@@ -37,18 +37,32 @@ jobs:
           cache: true
       - name: Generate Android
         run: flutter create --org com.shitreed --project-name shitreed_customer --platforms android .
-      - name: Prepare manifest without requiring paid Maps services
-        run: python3 scripts/configure_android_maps.py
+      - name: Prepare Android Maps key only after explicit approval
+        env:
+          MAPS_ANDROID_KEY: ${{ secrets.SHITREED_GOOGLE_MAPS_ANDROID_KEY }}
+          MAPS_APPROVED: ${{ vars.SHITREED_GOOGLE_MAPS_APPROVED }}
+        run: |
+          if [[ "$MAPS_APPROVED" == "true" && -n "$MAPS_ANDROID_KEY" ]]; then
+            GOOGLE_MAPS_API_KEY="$MAPS_ANDROID_KEY" python3 scripts/configure_android_maps.py
+          else
+            python3 scripts/configure_android_maps.py
+          fi
       - run: flutter pub get
       - run: flutter analyze lib test
       - run: flutter test
       - name: Build Customer preview (not Play release)
+        env:
+          MAPS_ANDROID_KEY: ${{ secrets.SHITREED_GOOGLE_MAPS_ANDROID_KEY }}
+          MAPS_APPROVED: ${{ vars.SHITREED_GOOGLE_MAPS_APPROVED }}
         run: |
           test -n "$SHITREED_SUPABASE_URL"
           [[ "$SHITREED_SUPABASE_PUBLISHABLE_KEY" == sb_publishable_* ]]
+          MAPS_ENABLED=false
+          if [[ "$MAPS_APPROVED" == "true" && -n "$MAPS_ANDROID_KEY" ]]; then MAPS_ENABLED=true; fi
           flutter build apk --debug \
             --dart-define="SUPABASE_URL=$SHITREED_SUPABASE_URL" \
-            --dart-define="SUPABASE_PUBLISHABLE_KEY=$SHITREED_SUPABASE_PUBLISHABLE_KEY"
+            --dart-define="SUPABASE_PUBLISHABLE_KEY=$SHITREED_SUPABASE_PUBLISHABLE_KEY" \
+            --dart-define="GOOGLE_MAPS_ENABLED=$MAPS_ENABLED"
       - name: Confirm Android API 36 target
         run: |
           AAPT=$(find "$ANDROID_HOME/build-tools" -type f -name aapt | sort -V | tail -1)
