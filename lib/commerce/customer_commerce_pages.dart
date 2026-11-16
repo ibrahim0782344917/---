@@ -322,16 +322,42 @@ class _OrderHistoryPageState extends State<OrderHistoryPage> {
     _orders = CommerceService.myOrders();
   });
 
+  bool _cancelling = false;
+  String _statusFilter = 'all';
+
   Future<void> _cancel(String id) async {
+    if (_cancelling) return;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('تأكيد إلغاء الطلب'),
+        content: const Text(
+          'يمكن إلغاء الطلب فقط قبل موافقة التاجر. '
+          'عند الإلغاء يرجع المخزون تلقائياً. تريد تكمل؟'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('رجوع')),
+          FilledButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: const Text('إلغاء الطلب')),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+    setState(() => _cancelling = true);
     try {
       await CommerceService.changeOrderStatus(id, 'cancelled');
       if (!mounted) return;
       _refresh();
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-        content: Text('تم إلغاء الطلب وإرجاع المنتجات للمخزون.')));
+        content: Text('تم إلغاء الطلب وإعادة المنتجات للمخزون.')));
     } catch (_) {
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('ما يمكن إلغاء هذا الطلب في حالته الحالية.')));
+        const SnackBar(content: Text(
+          'تعذر الإلغاء. يمكن أن حالة الطلب تغيرت؛ اسحب للأسفل للتحديث.')));
+    } finally {
+      if (mounted) setState(() => _cancelling = false);
     }
   }
 
@@ -372,6 +398,19 @@ class _OrderHistoryPageState extends State<OrderHistoryPage> {
         const Text('طلباتي', style: TextStyle(
           fontSize: 23, color: _dark, fontWeight: FontWeight.w900)),
         const SizedBox(height: 10),
+        Wrap(spacing: 6, runSpacing: 6, children: [
+          for (final choice in const <String, String>{
+            'all':'الكل', 'placed':'جديدة',
+            'accepted':'مقبولة', 'preparing':'قيد التجهيز',
+            'ready':'جاهزة', 'cancelled':'ملغاة',
+            'rejected':'مرفوضة',
+          }.entries)
+            ChoiceChip(
+              label: Text(choice.value),
+              selected: _statusFilter == choice.key,
+              onSelected: (_) => setState(() => _statusFilter = choice.key)),
+        ]),
+        const SizedBox(height: 10),
         FutureBuilder<List<Map<String, dynamic>>>(
           future: _orders,
           builder: (context, snapshot) {
@@ -381,7 +420,9 @@ class _OrderHistoryPageState extends State<OrderHistoryPage> {
             if (snapshot.hasError) {
               return const Text('تعذّر جلب الطلبات. اسحب للأسفل لتحديث القائمة.');
             }
-            final orders = snapshot.data ?? [];
+            final allOrders = snapshot.data ?? [];
+            final orders = allOrders.where((row) =>
+              _statusFilter == 'all' || row['status'] == _statusFilter).toList();
             if (orders.isEmpty) {
               return const Padding(padding: EdgeInsets.all(30),
                 child: Text('ما عندك طلبات حقيقية حالياً.',
