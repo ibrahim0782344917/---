@@ -47,6 +47,7 @@ class _ShitreedProfilePageState extends State<ShitreedProfilePage> {
       final x = await db.from('shitreed_xp_events')
           .select('event_type,points,created_at')
           .eq('user_id', user).order('created_at', ascending: false).limit(200);
+      final lifetimeXp = await db.rpc('shitreed_my_xp_total');
       final t = await db.from('shitreed_level_thresholds')
           .select('level,min_xp').order('level');
       if (mounted) setState(() {
@@ -54,6 +55,7 @@ class _ShitreedProfilePageState extends State<ShitreedProfilePage> {
         addresses = a;
         badges = b;
         events = x;
+        xpTotal = (lifetimeXp as num).toInt();
         thresholds = t;
         loading = false;
       });
@@ -71,8 +73,8 @@ class _ShitreedProfilePageState extends State<ShitreedProfilePage> {
     return saved.isNotEmpty ? saved : (signup.isNotEmpty ? signup : 'عضو شتريد');
   }
 
-  int get totalXp => events.fold(0, (sum, row) =>
-      sum + ((row['points'] as num?)?.toInt() ?? 0));
+  int xpTotal = 0;
+  int get totalXp => xpTotal;
   int get level {
     int value = 1;
     for (final row in thresholds) {
