@@ -4,6 +4,7 @@ import 'package:shitreed_customer/backend/marketplace_backend.dart';
 import 'package:shitreed_customer/maps/baghdad_map_page.dart';
 import 'package:shitreed_customer/commerce/commerce_service.dart';
 import 'package:shitreed_customer/commerce/customer_commerce_pages.dart';
+import 'package:shitreed_customer/profile/shitreed_profile_page.dart';
 import 'package:shitreed_customer/merchant/merchant_dashboard.dart';
 
 Future<void> main() async {
@@ -585,33 +586,26 @@ class _CustomerHomeState extends State<CustomerHome> {
         ],
       ));
     }
-    return ListView(padding: const EdgeInsets.all(20), children: [
-      const Icon(Icons.verified_user, color: purple, size: 75),
-      const SizedBox(height: 14),
-      const Text('حسابك متصل', textAlign: TextAlign.center,
-        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 22)),
-      const SizedBox(height: 9),
-      Text(user.email ?? 'بريد غير متوفر', textAlign: TextAlign.center),
-      const SizedBox(height: 20),
-      FilledButton.icon(
-        onPressed: () => Navigator.of(context).push(
+    return Column(children: [
+      Expanded(child: ShitreedProfilePage(
+        onMerchantTap: () => Navigator.of(context).push(
           MaterialPageRoute<void>(builder: (_) =>
             const MerchantDashboardPage())),
-        icon: const Icon(Icons.storefront_outlined),
-        label: const Text('أنا صاحب متجر — إدارة متجري'),
-      ),
-      const SizedBox(height: 10),
-      OutlinedButton.icon(
-        onPressed: () async {
-          try {
-            await MarketplaceBackend.signOut();
-            if (mounted) setState(() {});
-          } catch (_) {
-            if (mounted) message('تعذّر تسجيل الخروج، حاول مرة ثانية');
-          }
-        },
-        icon: const Icon(Icons.logout),
-        label: const Text('تسجيل الخروج'),
+      )),
+      Padding(
+        padding: const EdgeInsets.fromLTRB(16, 0, 16, 10),
+        child: OutlinedButton.icon(
+          onPressed: () async {
+            try {
+              await MarketplaceBackend.signOut();
+              if (mounted) setState(() {});
+            } catch (_) {
+              if (mounted) message('تعذر تسجيل الخروج، حاول مرة ثانية');
+            }
+          },
+          icon: const Icon(Icons.logout),
+          label: const Text('تسجيل الخروج'),
+        ),
       ),
     ]);
   }
