@@ -46,7 +46,7 @@ class MerchantAccountPage extends StatelessWidget {
         _SettingTile(Icons.person_rounded,
           'بروفايل التاجر والرتب',
           'الصورة، البيانات، المستوى، XP وشارة التوثيق',
-          ()=>_go(context,const Scaffold(
+          ()=>_go(context,Scaffold(
             appBar: AppBar(title: Text('بروفايل التاجر')),
             body: ShitreedProfilePage(merchantMode: true),
           ))),
