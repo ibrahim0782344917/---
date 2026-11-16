@@ -3,6 +3,7 @@ import 'package:shitreed_merchant/account/merchant_account_service.dart';
 import 'package:shitreed_merchant/account/merchant_legal_pages.dart';
 import 'package:shitreed_merchant/account/merchant_support_pages.dart';
 import 'package:shitreed_merchant/shared/merchant_widgets.dart';
+import 'package:shitreed_merchant/profile/shitreed_profile_page.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class MerchantAccountPage extends StatelessWidget {
@@ -41,6 +42,15 @@ class MerchantAccountPage extends StatelessWidget {
             ]),
         ),
         const SizedBox(height:22),
+        const _Heading('حسابي والبروفايل'),
+        _SettingTile(Icons.person_rounded,
+          'بروفايل التاجر والرتب',
+          'الصورة، البيانات، المستوى، XP وشارة التوثيق',
+          ()=>_go(context,const Scaffold(
+            appBar: AppBar(title: Text('بروفايل التاجر')),
+            body: ShitreedProfilePage(merchantMode: true),
+          ))),
+        const SizedBox(height:14),
         const _Heading('المساعدة'),
         _SettingTile(Icons.support_agent_outlined,
           'مركز الدعم','افتح طلباً وتابعه',
