@@ -1,3 +1,4 @@
+// ignore_for_file: curly_braces_in_flow_control_structures, prefer_interpolation_to_compose_strings
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
