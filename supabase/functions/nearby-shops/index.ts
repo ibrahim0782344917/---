@@ -31,6 +31,13 @@ Deno.serve(async (request: Request) => {
   if (request.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
   if (request.method !== 'POST') return json({ error: 'Method not allowed' }, 405)
 
+  // Launch gate: do not make any billable calls until the owner approves
+  // Google Cloud billing, API restrictions and a hard API quota.
+  if (Deno.env.get('GOOGLE_PLACES_ENABLED') !== 'true') {
+    return json({ code: 'PLACES_NOT_ENABLED',
+      error: 'Google Places has not been enabled for Shitreed yet' }, 503)
+  }
+
   const key = Deno.env.get('GOOGLE_PLACES_API_KEY')
   const supabaseUrl = Deno.env.get('SUPABASE_URL')
   const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
