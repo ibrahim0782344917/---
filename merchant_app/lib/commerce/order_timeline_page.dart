@@ -2,8 +2,8 @@
 import 'package:flutter/material.dart';
 import 'package:shitreed_merchant/commerce/commerce_service.dart';
 
-const _purple = Color(0xFF51159B);
-const _dark = Color(0xFF280B53);
+const _purple = Color(0xFF0C946B);
+const _dark = Color(0xFF163E32);
 
 String _statusLabel(String status) {
   switch (status) {
