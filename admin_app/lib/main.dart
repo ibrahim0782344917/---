@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'admin_api.dart';
 import 'admin_pro_features.dart';
+import 'admin_ranks_levels_page.dart';
 
 const purple = Color(0xFF595FCB);
 const orange = Color(0xFFFFC071);
@@ -761,6 +762,14 @@ class _AdminHomeState extends State<AdminHome> {
       appBar: AppBar(
         title: const Text('شتريد | لوحة الإدارة'),
         actions: [
+          if (widget.role == 'super_admin')
+            IconButton(
+              tooltip: 'إدارة الرتب والتوثيق والمستويات',
+              icon: const Icon(Icons.military_tech_outlined),
+              onPressed: () => Navigator.of(context).push(
+                MaterialPageRoute<void>(builder: (_) =>
+                  const AdminRanksAndLevelsPage())),
+            ),
           IconButton(onPressed: loading ? null : load,
             tooltip: 'تحديث', icon: const Icon(Icons.refresh)),
           IconButton(onPressed: () => AdminApi.client.auth.signOut(),
