@@ -193,6 +193,7 @@ class _LiveCartPageState extends State<LiveCartPage> {
       if (!mounted || ok != true) return;
       await _loadSavedAddresses();
     }
+    if (!mounted) return;
     if (_address.text.trim().length < 8 ||
         _phone.text.trim().length < 8) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
