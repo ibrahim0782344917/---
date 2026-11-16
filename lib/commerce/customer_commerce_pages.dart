@@ -158,6 +158,23 @@ class _LiveCartPageState extends State<LiveCartPage> {
   final _phone = TextEditingController();
   final _notes = TextEditingController();
   bool _submitting = false;
+  List<Map<String, dynamic>> _savedAddresses = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSavedAddresses();
+  }
+
+  Future<void> _loadSavedAddresses() async {
+    if (MarketplaceBackend.currentUser == null) return;
+    try {
+      final rows = await CommerceService.mySavedAddresses();
+      if (mounted) setState(() => _savedAddresses = rows);
+    } catch (_) {
+      // Checkout remains available using an address typed manually.
+    }
+  }
 
   @override
   void dispose() {
@@ -174,6 +191,7 @@ class _LiveCartPageState extends State<LiveCartPage> {
       final ok = await Navigator.of(context).push<bool>(
         MaterialPageRoute(builder: (_) => const CustomerAuthPage()));
       if (!mounted || ok != true) return;
+      await _loadSavedAddresses();
     }
     if (_address.text.trim().length < 8 ||
         _phone.text.trim().length < 8) {
@@ -270,6 +288,27 @@ class _LiveCartPageState extends State<LiveCartPage> {
           const Text('المجموع يُعاد حسابه من قاعدة البيانات وقت الطلب.',
             style: TextStyle(color: Colors.black54, fontSize: 12)),
           const SizedBox(height: 16),
+          if (_savedAddresses.isNotEmpty) ...[
+            DropdownButtonFormField<String>(
+              decoration: const InputDecoration(
+                labelText: 'اختر من عناويني المحفوظة',
+                border: OutlineInputBorder()),
+              items: _savedAddresses.map((row) => DropdownMenuItem<String>(
+                value: row['id'] as String,
+                child: Text((row['label'] ?? 'عنوان').toString(),
+                  overflow: TextOverflow.ellipsis),
+              )).toList(),
+              onChanged: (selected) {
+                if (selected == null) return;
+                final row = _savedAddresses.firstWhere(
+                    (a) => a['id'] == selected);
+                _address.text = (row['address_text'] ?? '').toString();
+                final savedPhone = (row['contact_phone'] ?? '').toString();
+                if (savedPhone.isNotEmpty) _phone.text = savedPhone;
+              },
+            ),
+            const SizedBox(height: 12),
+          ],
           TextField(
             controller: _address, maxLength: 300,
             decoration: const InputDecoration(
