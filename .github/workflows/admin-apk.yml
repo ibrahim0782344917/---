@@ -1,0 +1,98 @@
+name: Shitreed Admin Android APK
+on:
+  pull_request:
+    paths:
+      - 'admin_app/**'
+      - 'supabase/migrations/**'
+      - '.github/workflows/admin-apk.yml'
+  push:
+    branches: [main, 'feature/shitreed-complete-admin']
+    paths:
+      - 'admin_app/**'
+      - '.github/workflows/admin-apk.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  admin_android:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    defaults:
+      run:
+        working-directory: admin_app
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - name: Create Android project
+        run: flutter create --org com.shitreed --project-name shitreed_admin --platforms android .
+      - name: Remove Flutter template test
+        run: rm -f test/widget_test.dart
+      - name: Install packages
+        run: flutter pub get
+      - name: Analyze admin app
+        run: flutter analyze --no-fatal-infos lib test
+      - name: Test admin app
+        run: flutter test
+      - name: Build debug APK
+        if: github.event_name == 'pull_request'
+        run: |
+          flutter build apk --debug \
+            --dart-define=SUPABASE_URL=https://ltwncrewggdrjevakwpb.supabase.co \
+            --dart-define=SUPABASE_PUBLISHABLE_KEY=sb_publishable_Tao4VcnXR93Ne9KUBJ76tg_o-Pmd75_
+      - uses: actions/upload-artifact@v4
+        if: github.event_name == 'pull_request'
+        with:
+          name: Shitreed-Admin-Debug-APK
+          path: admin_app/build/app/outputs/flutter-apk/app-debug.apk
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Build optimized ARM64 preview APK
+        run: |
+          flutter build apk --release --target-platform android-arm64 \
+            --dart-define=SUPABASE_URL=https://ltwncrewggdrjevakwpb.supabase.co \
+            --dart-define=SUPABASE_PUBLISHABLE_KEY=sb_publishable_Tao4VcnXR93Ne9KUBJ76tg_o-Pmd75_
+      - name: Name ARM64 preview APK
+        run: cp build/app/outputs/flutter-apk/app-release.apk build/app/outputs/flutter-apk/Shitreed-Admin-Pro-arm64.apk
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Shitreed-Admin-Pro-ARM64-APK
+          path: admin_app/build/app/outputs/flutter-apk/Shitreed-Admin-Pro-arm64.apk
+          if-no-files-found: error
+          retention-days: 30
+
+  release_preview:
+    name: Publish direct-download preview
+    needs: admin_android
+    if: github.event_name == 'push' && github.ref == 'refs/heads/feature/shitreed-complete-admin'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: Shitreed-Admin-Pro-ARM64-APK
+          path: release-dist
+      - name: Publish installable APK without ZIP
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if ! gh release view shitreed-admin-pro-v0.2.0-preview --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release create shitreed-admin-pro-v0.2.0-preview \
+              release-dist/Shitreed-Admin-Pro-arm64.apk \
+              --target "$GITHUB_SHA" --prerelease --latest=false \
+              --title "Shitreed Admin Pro 0.2 (Android ARM64 Preview)" \
+              --notes "Direct Android ARM64 APK for testing only. Debug key signing; not Google Play production. Uses Shitreed Supabase RBAC and real operations." \
+              --repo "$GITHUB_REPOSITORY"
+          else
+            echo "Preview release already exists; keeping its verified asset."
+          fi
