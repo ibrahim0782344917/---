@@ -590,6 +590,7 @@ class _MerchantOrdersPageState extends State<MerchantOrdersPage> {
   });
 
   String? _changingOrderId;
+  String _statusFilter = 'all';
 
   Future<void> _change(String id, String status) async {
     if (_changingOrderId != null) return;
@@ -692,6 +693,18 @@ class _MerchantOrdersPageState extends State<MerchantOrdersPage> {
       const Text('الطلبات الحقيقية', style: TextStyle(
         fontSize: 21, fontWeight: FontWeight.w900, color: _dark)),
       const SizedBox(height: 12),
+      Wrap(spacing: 7, runSpacing: 7, children: [
+        for (final option in const <String, String>{
+          'all':'كل الطلبات', 'placed':'جديدة',
+          'accepted':'مقبولة', 'preparing':'قيد التجهيز',
+          'ready':'جاهزة', 'rejected':'مرفوضة',
+          'cancelled':'ملغاة',
+        }.entries)
+          ChoiceChip(label: Text(option.value),
+            selected: _statusFilter == option.key,
+            onSelected: (_) => setState(() => _statusFilter = option.key)),
+      ]),
+      const SizedBox(height: 12),
       FutureBuilder<List<Map<String, dynamic>>>(
         future: _orders,
         builder: (context, snap) {
@@ -699,8 +712,11 @@ class _MerchantOrdersPageState extends State<MerchantOrdersPage> {
             return const Center(child: CircularProgressIndicator());
           }
           if (snap.hasError) return const Text('ما گدرنا نحمّل الطلبات.');
-          final orders = snap.data ?? [];
-          if (orders.isEmpty) return const Text('ماكو طلبات بعد.');
+          final allOrders = snap.data ?? [];
+          final orders = allOrders.where((order) =>
+            _statusFilter == 'all' || order['status'] == _statusFilter).toList();
+          if (orders.isEmpty) return const Text(
+            'ماكو طلبات مطابقة لهذا التصنيف.');
           return Column(children: [
             for (final o in orders) Card(color: Colors.white,
               child: Padding(padding: const EdgeInsets.all(12),
