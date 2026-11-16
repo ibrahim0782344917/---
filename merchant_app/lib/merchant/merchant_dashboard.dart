@@ -11,8 +11,8 @@ import 'package:shitreed_merchant/merchant/merchant_settings_pages.dart';
 import 'package:shitreed_merchant/admin/store_reviews_page.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-const _purple = Color(0xFF51159B);
-const _dark = Color(0xFF280B53);
+const _purple = Color(0xFF0C946B);
+const _dark = Color(0xFF163E32);
 
 class MerchantDashboardPage extends StatefulWidget {
   const MerchantDashboardPage({super.key});
