@@ -259,6 +259,43 @@ class _ShitreedProfilePageState extends State<ShitreedProfilePage> {
     } catch (_) { notice('تعذر حذف العنوان.'); }
   }
 
+  Future<void> requestAccountDeletion() async {
+    if (uid == null) return;
+    final reason = TextEditingController();
+    try {
+      final okay = await showDialog<bool>(
+        context: context, builder: (ctx) => AlertDialog(
+          title: const Text('طلب حذف الحساب'),
+          content: SingleChildScrollView(child: Column(
+            mainAxisSize: MainAxisSize.min, children: [
+              const Text('سيتم تسجيل طلب رسمي ومراجعته، '
+                'وقد تُحتفظ سجلات الطلبات والمعاملات للمدة القانونية. '
+                'لن يتم حذف البيانات فوراً.'),
+              const SizedBox(height: 12),
+              TextField(controller: reason, maxLength: 500, maxLines: 2,
+                decoration: const InputDecoration(
+                  labelText: 'سبب الطلب (اختياري)')),
+            ],
+          )),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('رجوع')),
+            FilledButton(onPressed: () => Navigator.pop(ctx, true),
+              child: const Text('إرسال الطلب')),
+          ],
+        ),
+      );
+      if (okay != true) return;
+      await db.from('customer_deletion_requests')
+          .insert({'reason': reason.text.trim()});
+      notice('تم تسجيل طلب حذف حسابك للمراجعة.');
+    } catch (_) {
+      notice('يوجد طلب سابق قيد المعالجة أو تعذر الإرسال.');
+    } finally {
+      reason.dispose();
+    }
+  }
+
   Widget box(Widget child) => Card(
     color: Colors.white,
     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
@@ -385,6 +422,11 @@ class _ShitreedProfilePageState extends State<ShitreedProfilePage> {
             icon: const Icon(Icons.storefront_outlined),
             label: const Text('إدارة متجري')),
         ],
+        if (!widget.merchantMode)
+          TextButton.icon(
+            onPressed: requestAccountDeletion,
+            icon: const Icon(Icons.person_remove_outlined),
+            label: const Text('طلب حذف الحساب والبيانات')),
         const SizedBox(height: 25),
         const Text('الشارة الزرقاء تعتمدها الإدارة فقط بعد التحقق. '
           'الرتب الشكلية لا تعطي صلاحيات إدارية.',
