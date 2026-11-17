@@ -105,6 +105,52 @@ Deno.serve(async (req: Request) => {
     const db = createClient(supabaseUrl, serviceKey, {
       auth: { persistSession: false, autoRefreshToken: false },
     })
+    // Prefer the locally indexed, ODbL-attributed Iraq directory whenever
+    // it has nearby places. This avoids calling a public Overpass server at
+    // every tap; it is read-only and distinct from verified Shitreed stores.
+    const padLat = 0.020, padLon = 0.025
+    const {data: localPlaces, error: directoryError} = await db
+      .from('shitreed_osm_directory')
+      .select('osm_id,name,category,address,latitude,longitude')
+      .gte('latitude', latitude - padLat)
+      .lte('latitude', latitude + padLat)
+      .gte('longitude', longitude - padLon)
+      .lte('longitude', longitude + padLon)
+      .limit(800)
+    if (!directoryError && Array.isArray(localPlaces) && localPlaces.length > 0) {
+      const radians = (deg: number) => deg * Math.PI / 180
+      const nearby = localPlaces
+        .map((p) => {
+          const dLat = radians(p.latitude - latitude)
+          const dLon = radians(p.longitude - longitude)
+          const half = Math.sin(dLat / 2) ** 2 +
+            Math.cos(radians(latitude)) * Math.cos(radians(p.latitude)) *
+            Math.sin(dLon / 2) ** 2
+          const meters = 6371000 * 2 * Math.asin(Math.min(1, Math.sqrt(half)))
+          return {place: p, meters}
+        })
+        .filter((v) => v.meters <= 1800)
+        .sort((a,b) => a.meters - b.meters)
+        .slice(0,50)
+        .map((v) => ({
+          id:v.place.osm_id,
+          name:v.place.name, address:v.place.address,
+          category:v.place.category,
+          latitude:v.place.latitude, longitude:v.place.longitude,
+        }))
+      if (nearby.length > 0) {
+        return json({
+          places: nearby,
+          source: 'OpenStreetMap',
+          attribution: '© OpenStreetMap contributors',
+          scope: 'discovery_only_not_verified_for_purchase',
+          provider: 'Shitreed OSM directory snapshot',
+        })
+      }
+    }
+    if (directoryError) {
+      console.warn('Local OSM directory lookup unavailable')
+    }
     const {data: allowed, error: rateError} = await db.rpc(
       'try_consume_shitreed_osm_quota', {p_bucket: bucket})
     if (rateError) return json({ code: 'RATE_LIMIT_UNAVAILABLE' }, 503)
