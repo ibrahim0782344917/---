@@ -342,7 +342,7 @@ class _OsmDiscoveryPageState extends State<OsmDiscoveryPage> {
       const SizedBox(height: 13),
       Padding(
         padding: const EdgeInsets.symmetric(horizontal: 15),
-        child: Text('محلات OpenStreetMap (' + found.length.toString() + ')',
+        child: Text(discoveryError == null ? 'محلات OpenStreetMap (${found.length})' : 'تعذّر تحديث محلات OpenStreetMap',
           style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold,
             color: dark))),
       if (discoveryError != null) Padding(
