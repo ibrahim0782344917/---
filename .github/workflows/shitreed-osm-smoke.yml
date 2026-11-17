@@ -6,6 +6,10 @@ on:
     paths:
       - 'supabase/functions/nearby-osm/**'
       - '.github/workflows/shitreed-osm-smoke.yml'
+  pull_request:
+    paths:
+      - 'supabase/functions/nearby-osm/**'
+      - '.github/workflows/shitreed-osm-smoke.yml'
   workflow_dispatch:
 
 permissions:
@@ -45,5 +49,5 @@ jobs:
           print('Found places:',len(p['places']))
           print('Attribution:',p.get('attribution'))
           assert p.get('attribution')=='© OpenStreetMap contributors'
-          assert len(p['places'])<=50
+          assert 1 <= len(p['places']) <= 50, 'No live indexed Baghdad places returned'
           PY
