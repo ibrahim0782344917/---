@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:shitreed_customer/auth/customer_auth_page.dart';
 import 'package:shitreed_customer/backend/marketplace_backend.dart';
-import 'package:shitreed_customer/maps/baghdad_map_page.dart';
+import 'package:shitreed_customer/maps/osm_discovery_page.dart';
 import 'package:shitreed_customer/commerce/commerce_service.dart';
 import 'package:shitreed_customer/commerce/customer_commerce_pages.dart';
+import 'package:shitreed_customer/profile/shitreed_profile_page.dart';
 import 'package:shitreed_customer/merchant/merchant_dashboard.dart';
 
 Future<void> main() async {
@@ -12,10 +13,10 @@ Future<void> main() async {
   runApp(const ShitreedApp());
 }
 
-const purple = Color(0xFF51159B);
-const darkPurple = Color(0xFF280B53);
-const orange = Color(0xFFFF811A);
-const canvas = Color(0xFFF9F6FC);
+const purple = Color(0xFF0C946B);
+const darkPurple = Color(0xFF15251F);
+const orange = Color(0xFFF2AB3A);
+const canvas = Color(0xFFF6F8F7);
 
 class Store {
   final String name, area, type, emoji;
@@ -31,21 +32,11 @@ class Product {
   const Product(this.title, this.emoji, this.price);
 }
 
-const stores = <Store>[
-  Store('موبايل بغداد - نموذج', 'المنصور', 'موبايلات', '📱'),
-  Store('سوبر ماركت - نموذج', 'الغزالية', 'مواد غذائية', '🛒'),
-  Store('أزياء بغداد - نموذج', 'الكرادة', 'ملابس', '👕'),
-  Store('مستلزمات البيت - نموذج', 'الأعظمية', 'أجهزة منزلية', '🏠'),
-  Store('مطعم بغداد - نموذج', 'زيونة', 'مطاعم', '🍔'),
-  Store('صيدلية - نموذج', 'الدورة', 'صيدليات', '💊'),
-  Store('مول تجريبي', 'بغداد الجديدة', 'مولات', '🏬'),
-];
-
-const products = <Product>[
-  Product('سماعة لاسلكية - نموذج', '🎧', 75000),
-  Product('هاتف ذكي - نموذج', '📱', 599000),
-  Product('حقيبة - نموذج', '👜', 28000),
-];
+// No hard-coded shops or products are shown in release builds.
+// Official Shitreed records are loaded from Supabase, and Google Places
+// discovery is handled separately so a place is not mislabelled as a seller.
+const stores = <Store>[];
+const products = <Product>[];
 
 String dinars(int value) {
   final s = value.toString();
@@ -369,8 +360,7 @@ class _CustomerHomeState extends State<CustomerHome> {
           ),
         ),
         const SizedBox(height: 22),
-        title(MarketplaceBackend.configured
-          ? 'منتجات منشورة' : 'منتجات تجريبية'),
+        title('منتجات المحلات المعتمدة'),
         if (MarketplaceBackend.configured && remoteLoading)
           const Padding(
             padding: EdgeInsets.symmetric(vertical: 18),
@@ -446,35 +436,10 @@ class _CustomerHomeState extends State<CustomerHome> {
             ),
           ),
         if (!MarketplaceBackend.configured)
-          SizedBox(height: 258, child: ListView(
-          scrollDirection: Axis.horizontal,
-          children: [
-            for (var i = 0; i < products.length; i++)
-              Container(width: 150,
-                margin: const EdgeInsets.only(left: 10),
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(color: Colors.white,
-                  borderRadius: BorderRadius.circular(20)),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-                    Text(products[i].emoji,
-                      style: const TextStyle(fontSize: 46),
-                      textAlign: TextAlign.center),
-                    const SizedBox(height: 10),
-                    Text(products[i].title, maxLines: 2,
-                      style: const TextStyle(fontSize: 12,
-                        fontWeight: FontWeight.bold)),
-                    const SizedBox(height: 7),
-                    Text(dinars(products[i].price),
-                      style: const TextStyle(color: purple,
-                        fontWeight: FontWeight.bold)),
-                    const Spacer(),
-                    FilledButton.tonal(onPressed: () => add(i),
-                      child: const Text('+ للسلة')),
-                  ]),
-              ),
-          ],
-        )),
+          const Card(child: Padding(
+            padding: EdgeInsets.all(18),
+            child: Text('بيانات المتاجر غير متاحة: لم يتم إعداد الاتصال بخدمة شتريد. لا نعرض محلات أو أسعاراً وهمية.'),
+          )),
         const SizedBox(height: 21),
         title('متاجر من مناطق بغداد'),
         if (remoteLoading) const Center(child: CircularProgressIndicator()),
@@ -484,7 +449,7 @@ class _CustomerHomeState extends State<CustomerHome> {
         if (filtered.isEmpty && !remoteLoading && remoteError == null)
           Text(MarketplaceBackend.configured
             ? 'ماكو متاجر منشورة بهالمنطقة لحد الآن'
-            : 'ماكو نتائج تجريبية مطابقة'),
+            : 'المتاجر غير متاحة قبل ربط الخدمة'),
         if (MarketplaceBackend.configured)
           OutlinedButton.icon(
             onPressed: _loadRealStores,
@@ -497,7 +462,7 @@ class _CustomerHomeState extends State<CustomerHome> {
           padding: const EdgeInsets.only(top: 8),
           child: Text(MarketplaceBackend.configured
             ? 'الدفع عند الاستلام متاح للمتاجر المعتمدة. التوصيل الفعلي والدفع الإلكتروني قيد التجهيز.'
-            : 'المتاجر والأسعار المعروضة هنا تجريبية.',
+            : 'سيتم عرض المتاجر والمنتجات المعتمدة بعد تفعيل الاتصال.',
             style: const TextStyle(fontSize: 12, color: Colors.black54)),
         ),
       ]),
@@ -530,7 +495,7 @@ class _CustomerHomeState extends State<CustomerHome> {
       if (filtered.isEmpty && !remoteLoading && remoteError == null)
         Text(MarketplaceBackend.configured
           ? 'ماكو متاجر منشورة مطابقة حالياً'
-          : 'لا توجد نتائج تجريبية مطابقة'),
+          : 'المتاجر غير متاحة قبل ربط الخدمة'),
       const SizedBox(height: 20),
       InkWell(
       onTap: () => setState(() => tab = 2),
@@ -621,33 +586,26 @@ class _CustomerHomeState extends State<CustomerHome> {
         ],
       ));
     }
-    return ListView(padding: const EdgeInsets.all(20), children: [
-      const Icon(Icons.verified_user, color: purple, size: 75),
-      const SizedBox(height: 14),
-      const Text('حسابك متصل', textAlign: TextAlign.center,
-        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 22)),
-      const SizedBox(height: 9),
-      Text(user.email ?? 'بريد غير متوفر', textAlign: TextAlign.center),
-      const SizedBox(height: 20),
-      FilledButton.icon(
-        onPressed: () => Navigator.of(context).push(
+    return Column(children: [
+      Expanded(child: ShitreedProfilePage(
+        onMerchantTap: () => Navigator.of(context).push(
           MaterialPageRoute<void>(builder: (_) =>
             const MerchantDashboardPage())),
-        icon: const Icon(Icons.storefront_outlined),
-        label: const Text('أنا صاحب متجر — إدارة متجري'),
-      ),
-      const SizedBox(height: 10),
-      OutlinedButton.icon(
-        onPressed: () async {
-          try {
-            await MarketplaceBackend.signOut();
-            if (mounted) setState(() {});
-          } catch (_) {
-            if (mounted) message('تعذّر تسجيل الخروج، حاول مرة ثانية');
-          }
-        },
-        icon: const Icon(Icons.logout),
-        label: const Text('تسجيل الخروج'),
+      )),
+      Padding(
+        padding: const EdgeInsets.fromLTRB(16, 0, 16, 10),
+        child: OutlinedButton.icon(
+          onPressed: () async {
+            try {
+              await MarketplaceBackend.signOut();
+              if (mounted) setState(() {});
+            } catch (_) {
+              if (mounted) message('تعذر تسجيل الخروج، حاول مرة ثانية');
+            }
+          },
+          icon: const Icon(Icons.logout),
+          label: const Text('تسجيل الخروج'),
+        ),
       ),
     ]);
   }
@@ -670,7 +628,7 @@ class _CustomerHomeState extends State<CustomerHome> {
     final pages = [
       home(),
       searchPage(),
-      const BaghdadMapPage(),
+      const OsmDiscoveryPage(),
       MarketplaceBackend.configured ? const LiveCartPage() : cartPage(),
       MarketplaceBackend.configured
         ? const OrderHistoryPage()

@@ -5,8 +5,8 @@ import 'package:shitreed_customer/backend/marketplace_backend.dart';
 import 'package:shitreed_customer/commerce/commerce_service.dart';
 import 'package:shitreed_customer/commerce/order_timeline_page.dart';
 
-const _purple = Color(0xFF51159B);
-const _dark = Color(0xFF280B53);
+const _purple = Color(0xFF0C946B);
+const _dark = Color(0xFF163E32);
 
 String priceText(int price) {
   final s = price.toString().replaceAllMapped(
@@ -158,6 +158,23 @@ class _LiveCartPageState extends State<LiveCartPage> {
   final _phone = TextEditingController();
   final _notes = TextEditingController();
   bool _submitting = false;
+  List<Map<String, dynamic>> _savedAddresses = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSavedAddresses();
+  }
+
+  Future<void> _loadSavedAddresses() async {
+    if (MarketplaceBackend.currentUser == null) return;
+    try {
+      final rows = await CommerceService.mySavedAddresses();
+      if (mounted) setState(() => _savedAddresses = rows);
+    } catch (_) {
+      // Checkout remains available using an address typed manually.
+    }
+  }
 
   @override
   void dispose() {
@@ -174,7 +191,9 @@ class _LiveCartPageState extends State<LiveCartPage> {
       final ok = await Navigator.of(context).push<bool>(
         MaterialPageRoute(builder: (_) => const CustomerAuthPage()));
       if (!mounted || ok != true) return;
+      await _loadSavedAddresses();
     }
+    if (!mounted) return;
     if (_address.text.trim().length < 8 ||
         _phone.text.trim().length < 8) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
@@ -270,6 +289,27 @@ class _LiveCartPageState extends State<LiveCartPage> {
           const Text('المجموع يُعاد حسابه من قاعدة البيانات وقت الطلب.',
             style: TextStyle(color: Colors.black54, fontSize: 12)),
           const SizedBox(height: 16),
+          if (_savedAddresses.isNotEmpty) ...[
+            DropdownButtonFormField<String>(
+              decoration: const InputDecoration(
+                labelText: 'اختر من عناويني المحفوظة',
+                border: OutlineInputBorder()),
+              items: _savedAddresses.map((row) => DropdownMenuItem<String>(
+                value: row['id'] as String,
+                child: Text((row['label'] ?? 'عنوان').toString(),
+                  overflow: TextOverflow.ellipsis),
+              )).toList(),
+              onChanged: (selected) {
+                if (selected == null) return;
+                final row = _savedAddresses.firstWhere(
+                    (a) => a['id'] == selected);
+                _address.text = (row['address_text'] ?? '').toString();
+                final savedPhone = (row['contact_phone'] ?? '').toString();
+                if (savedPhone.isNotEmpty) _phone.text = savedPhone;
+              },
+            ),
+            const SizedBox(height: 12),
+          ],
           TextField(
             controller: _address, maxLength: 300,
             decoration: const InputDecoration(
@@ -322,16 +362,42 @@ class _OrderHistoryPageState extends State<OrderHistoryPage> {
     _orders = CommerceService.myOrders();
   });
 
+  bool _cancelling = false;
+  String _statusFilter = 'all';
+
   Future<void> _cancel(String id) async {
+    if (_cancelling) return;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('تأكيد إلغاء الطلب'),
+        content: const Text(
+          'يمكن إلغاء الطلب فقط قبل موافقة التاجر. '
+          'عند الإلغاء يرجع المخزون تلقائياً. تريد تكمل؟'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('رجوع')),
+          FilledButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: const Text('إلغاء الطلب')),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+    setState(() => _cancelling = true);
     try {
       await CommerceService.changeOrderStatus(id, 'cancelled');
       if (!mounted) return;
       _refresh();
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-        content: Text('تم إلغاء الطلب وإرجاع المنتجات للمخزون.')));
+        content: Text('تم إلغاء الطلب وإعادة المنتجات للمخزون.')));
     } catch (_) {
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('ما يمكن إلغاء هذا الطلب في حالته الحالية.')));
+        const SnackBar(content: Text(
+          'تعذر الإلغاء. يمكن أن حالة الطلب تغيرت؛ اسحب للأسفل للتحديث.')));
+    } finally {
+      if (mounted) setState(() => _cancelling = false);
     }
   }
 
@@ -372,6 +438,19 @@ class _OrderHistoryPageState extends State<OrderHistoryPage> {
         const Text('طلباتي', style: TextStyle(
           fontSize: 23, color: _dark, fontWeight: FontWeight.w900)),
         const SizedBox(height: 10),
+        Wrap(spacing: 6, runSpacing: 6, children: [
+          for (final choice in const <String, String>{
+            'all':'الكل', 'placed':'جديدة',
+            'accepted':'مقبولة', 'preparing':'قيد التجهيز',
+            'ready':'جاهزة', 'cancelled':'ملغاة',
+            'rejected':'مرفوضة',
+          }.entries)
+            ChoiceChip(
+              label: Text(choice.value),
+              selected: _statusFilter == choice.key,
+              onSelected: (_) => setState(() => _statusFilter = choice.key)),
+        ]),
+        const SizedBox(height: 10),
         FutureBuilder<List<Map<String, dynamic>>>(
           future: _orders,
           builder: (context, snapshot) {
@@ -381,7 +460,9 @@ class _OrderHistoryPageState extends State<OrderHistoryPage> {
             if (snapshot.hasError) {
               return const Text('تعذّر جلب الطلبات. اسحب للأسفل لتحديث القائمة.');
             }
-            final orders = snapshot.data ?? [];
+            final allOrders = snapshot.data ?? [];
+            final orders = allOrders.where((row) =>
+              _statusFilter == 'all' || row['status'] == _statusFilter).toList();
             if (orders.isEmpty) {
               return const Padding(padding: EdgeInsets.all(30),
                 child: Text('ما عندك طلبات حقيقية حالياً.',

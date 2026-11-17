@@ -1,0 +1,171 @@
+name: Shitreed Three-App Release Readiness
+
+on:
+  push:
+    branches:
+      - release/shitreed-production-readiness-20261114
+  pull_request:
+    paths:
+      - '.github/workflows/shitreed-three-app-readiness.yml'
+      - 'lib/**'
+      - 'test/**'
+      - 'merchant_app/**'
+      - 'admin_app/**'
+      - 'scripts/**'
+  workflow_dispatch:
+
+concurrency:
+  group: shitreed-release-preview-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  SHITREED_SUPABASE_URL: https://ltwncrewggdrjevakwpb.supabase.co
+  # This is a public client-side API key, NOT a service_role/secret key.
+  # It is embedded into Android binaries by design; RLS secures the data.
+  SHITREED_SUPABASE_PUBLISHABLE_KEY: sb_publishable_Tao4VcnXR93Ne9KUBJ76tg_o-Pmd75_
+
+jobs:
+  customer:
+    name: Customer Android - verify and preview APK
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: '3.47.9'
+          cache: true
+      - name: Generate Android
+        run: flutter create --org com.shitreed --project-name shitreed_customer --platforms android .
+      - name: Prepare Android Maps key only after explicit approval
+        env:
+          MAPS_ANDROID_KEY: ${{ secrets.SHITREED_GOOGLE_MAPS_ANDROID_KEY }}
+          MAPS_APPROVED: ${{ vars.SHITREED_GOOGLE_MAPS_APPROVED }}
+        run: |
+          if [[ "$MAPS_APPROVED" == "true" && -n "$MAPS_ANDROID_KEY" ]]; then
+            GOOGLE_MAPS_API_KEY="$MAPS_ANDROID_KEY" python3 scripts/configure_android_maps.py
+          else
+            python3 scripts/configure_android_maps.py
+          fi
+      - run: flutter pub get
+      - run: flutter analyze lib test
+      - run: flutter test
+      - name: Build Customer preview (not Play release)
+        env:
+          MAPS_ANDROID_KEY: ${{ secrets.SHITREED_GOOGLE_MAPS_ANDROID_KEY }}
+          MAPS_APPROVED: ${{ vars.SHITREED_GOOGLE_MAPS_APPROVED }}
+        run: |
+          test -n "$SHITREED_SUPABASE_URL"
+          [[ "$SHITREED_SUPABASE_PUBLISHABLE_KEY" == sb_publishable_* ]]
+          MAPS_ENABLED=false
+          if [[ "$MAPS_APPROVED" == "true" && -n "$MAPS_ANDROID_KEY" ]]; then MAPS_ENABLED=true; fi
+          flutter build apk --debug \
+            --dart-define="SUPABASE_URL=$SHITREED_SUPABASE_URL" \
+            --dart-define="SUPABASE_PUBLISHABLE_KEY=$SHITREED_SUPABASE_PUBLISHABLE_KEY" \
+            --dart-define="GOOGLE_MAPS_ENABLED=$MAPS_ENABLED" \
+            --dart-define="SHITREED_OSM_DEMO_TILES=true"
+      - name: Confirm Android API 36 target
+        run: |
+          AAPT=$(find "$ANDROID_HOME/build-tools" -type f -name aapt | sort -V | tail -1)
+          test -n "$AAPT"
+          TARGET=$("$AAPT" dump badging build/app/outputs/flutter-apk/app-debug.apk | sed -n "s/.*targetSdkVersion:'\([0-9]*\)'.*/\1/p" | head -1)
+          echo "Customer target SDK: $TARGET"
+          test -n "$TARGET" && test "$TARGET" -ge 36
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Shitreed-Customer-PREVIEW-NOT-FOR-PRODUCTION
+          path: build/app/outputs/flutter-apk/app-debug.apk
+          if-no-files-found: error
+          retention-days: 14
+
+  merchant:
+    name: Merchant Android - verify and preview APK
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    defaults:
+      run:
+        working-directory: merchant_app
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: '3.47.9'
+          cache: true
+      - name: Generate Android
+        run: flutter create --org com.shitreed --project-name shitreed_merchant --platforms android .
+      - name: Set network permission
+        run: python3 scripts/configure_android.py
+      - name: Use runner NDK for debug preview (avoid network download)
+        run: python3 scripts/use_runner_ndk.py
+      - run: flutter pub get
+      - run: flutter analyze
+      - run: flutter test
+      - name: Build Merchant preview (not Play release)
+        run: |
+          test -n "$SHITREED_SUPABASE_URL"
+          [[ "$SHITREED_SUPABASE_PUBLISHABLE_KEY" == sb_publishable_* ]]
+          flutter build apk --debug \
+            --dart-define="SUPABASE_URL=$SHITREED_SUPABASE_URL" \
+            --dart-define="SUPABASE_PUBLISHABLE_KEY=$SHITREED_SUPABASE_PUBLISHABLE_KEY"
+      - name: Confirm Android API 36 target
+        run: |
+          AAPT=$(find "$ANDROID_HOME/build-tools" -type f -name aapt | sort -V | tail -1)
+          test -n "$AAPT"
+          TARGET=$("$AAPT" dump badging build/app/outputs/flutter-apk/app-debug.apk | sed -n "s/.*targetSdkVersion:'\([0-9]*\)'.*/\1/p" | head -1)
+          echo "Merchant target SDK: $TARGET"
+          test -n "$TARGET" && test "$TARGET" -ge 36
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Shitreed-Merchant-PREVIEW-NOT-FOR-PRODUCTION
+          path: merchant_app/build/app/outputs/flutter-apk/app-debug.apk
+          if-no-files-found: error
+          retention-days: 14
+
+  admin:
+    name: Admin Android branch - verify and preview APK
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    defaults:
+      run:
+        working-directory: admin_app
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feature/shitreed-complete-admin
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: '3.47.9'
+          cache: true
+      - name: Generate Android
+        run: flutter create --org com.shitreed --project-name shitreed_admin --platforms android .
+      - name: Remove generated template test
+        run: rm -f test/widget_test.dart
+      - run: flutter pub get
+      - run: flutter analyze --no-fatal-infos lib test
+      - run: flutter test
+      - name: Build Admin preview (not Play release)
+        run: |
+          test -n "$SHITREED_SUPABASE_URL"
+          [[ "$SHITREED_SUPABASE_PUBLISHABLE_KEY" == sb_publishable_* ]]
+          flutter build apk --debug \
+            --dart-define="SUPABASE_URL=$SHITREED_SUPABASE_URL" \
+            --dart-define="SUPABASE_PUBLISHABLE_KEY=$SHITREED_SUPABASE_PUBLISHABLE_KEY"
+      - name: Confirm Android API 36 target
+        run: |
+          AAPT=$(find "$ANDROID_HOME/build-tools" -type f -name aapt | sort -V | tail -1)
+          test -n "$AAPT"
+          TARGET=$("$AAPT" dump badging build/app/outputs/flutter-apk/app-debug.apk | sed -n "s/.*targetSdkVersion:'\([0-9]*\)'.*/\1/p" | head -1)
+          echo "Admin target SDK: $TARGET"
+          test -n "$TARGET" && test "$TARGET" -ge 36
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Shitreed-Admin-PREVIEW-NOT-FOR-PRODUCTION
+          path: admin_app/build/app/outputs/flutter-apk/app-debug.apk
+          if-no-files-found: error
+          retention-days: 14
