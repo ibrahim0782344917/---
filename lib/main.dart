@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:shitreed_customer/auth/customer_auth_page.dart';
 import 'package:shitreed_customer/backend/marketplace_backend.dart';
-import 'package:shitreed_customer/maps/baghdad_map_page.dart';
+import 'package:shitreed_customer/maps/osm_discovery_page.dart';
 import 'package:shitreed_customer/commerce/commerce_service.dart';
 import 'package:shitreed_customer/commerce/customer_commerce_pages.dart';
 import 'package:shitreed_customer/profile/shitreed_profile_page.dart';
@@ -628,7 +628,7 @@ class _CustomerHomeState extends State<CustomerHome> {
     final pages = [
       home(),
       searchPage(),
-      const BaghdadMapPage(),
+      const OsmDiscoveryPage(),
       MarketplaceBackend.configured ? const LiveCartPage() : cartPage(),
       MarketplaceBackend.configured
         ? const OrderHistoryPage()
