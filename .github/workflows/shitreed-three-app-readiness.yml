@@ -79,7 +79,7 @@ jobs:
 
   merchant:
     name: Merchant Android - verify and preview APK
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 40
     defaults:
       run:
@@ -95,6 +95,8 @@ jobs:
         run: flutter create --org com.shitreed --project-name shitreed_merchant --platforms android .
       - name: Set network permission
         run: python3 scripts/configure_android.py
+      - name: Use runner NDK for debug preview (avoid network download)
+        run: python3 scripts/use_runner_ndk.py
       - run: flutter pub get
       - run: flutter analyze
       - run: flutter test
