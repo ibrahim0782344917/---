@@ -4,6 +4,7 @@ import 'package:shitreed_merchant/account/merchant_legal_pages.dart';
 import 'package:shitreed_merchant/account/merchant_support_pages.dart';
 import 'package:shitreed_merchant/shared/merchant_widgets.dart';
 import 'package:shitreed_merchant/profile/shitreed_profile_page.dart';
+import 'package:shitreed_merchant/account/merchant_osm_claims_page.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class MerchantAccountPage extends StatelessWidget {
@@ -50,6 +51,10 @@ class MerchantAccountPage extends StatelessWidget {
             appBar: AppBar(title: const Text('بروفايل التاجر')),
             body: const ShitreedProfilePage(merchantMode: true),
           ))),
+        _SettingTile(Icons.add_business,
+          'مطالبة ملكية محل من OpenStreetMap',
+          'إرسال طلب مراجعة للمحل الموجود بالخريطة',
+          ()=>_go(context,const MerchantOsmClaimsPage())),
         const SizedBox(height:14),
         const _Heading('المساعدة'),
         _SettingTile(Icons.support_agent_outlined,
