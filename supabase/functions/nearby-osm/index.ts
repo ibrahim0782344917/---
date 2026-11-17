@@ -15,7 +15,10 @@ const json = (data: unknown, status = 200) => new Response(JSON.stringify(data),
   headers: { ...cors, 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' },
 })
 
-const overpass = 'https://overpass-api.de/api/interpreter'
+// The first public endpoint rejected Supabase Edge traffic with HTTP 406.
+// Use the independently operated public Private.coffee instance for tiny previews.
+// Commercial launch still requires a dedicated/contracted provider.
+const overpass = 'https://overpass.private.coffee/api/interpreter'
 const labels: Record<string, string> = {
   supermarket: 'سوبرماركت', convenience: 'بقالة', grocery: 'مواد غذائية',
   clothes: 'ملابس', shoes: 'أحذية', mobile_phone: 'موبايلات',
