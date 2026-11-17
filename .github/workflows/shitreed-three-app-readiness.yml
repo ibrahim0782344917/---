@@ -62,7 +62,8 @@ jobs:
           flutter build apk --debug \
             --dart-define="SUPABASE_URL=$SHITREED_SUPABASE_URL" \
             --dart-define="SUPABASE_PUBLISHABLE_KEY=$SHITREED_SUPABASE_PUBLISHABLE_KEY" \
-            --dart-define="GOOGLE_MAPS_ENABLED=$MAPS_ENABLED"
+            --dart-define="GOOGLE_MAPS_ENABLED=$MAPS_ENABLED" \
+            --dart-define="SHITREED_OSM_DEMO_TILES=true"
       - name: Confirm Android API 36 target
         run: |
           AAPT=$(find "$ANDROID_HOME/build-tools" -type f -name aapt | sort -V | tail -1)
