@@ -7,6 +7,10 @@ on:
     paths:
       - 'scripts/export_baghdad_osm_preview.py'
       - '.github/workflows/shitreed-osm-snapshot.yml'
+  pull_request:
+    paths:
+      - 'scripts/export_baghdad_osm_preview.py'
+      - '.github/workflows/shitreed-osm-snapshot.yml'
   workflow_dispatch:
 
 permissions:
