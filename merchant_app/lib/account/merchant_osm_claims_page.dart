@@ -1,3 +1,4 @@
+// ignore_for_file: prefer_interpolation_to_compose_strings
 import 'package:flutter/material.dart';
 import 'package:shitreed_merchant/commerce/commerce_service.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
