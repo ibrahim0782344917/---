@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Extract a small, real Baghdad OSM POI preview from Geofabrik Iraq snapshot.
+"""Extract a small, real Baghdad OSM POI preview from BBBike Baghdad snapshot.
 
 No private user data is read. Public ODbL places MUST retain attribution.
 No store/account/product records are created by this script.
@@ -108,7 +108,7 @@ def main():
     print("SHITREED_OSM_STATS=" + json.dumps({
         "total_named_baghdad": len(handler.places),
         "selected": len(chosen),
-        "source": "Geofabrik Iraq OSM PBF",
+        "source": "BBBike Baghdad OSM PBF",
         "attribution": "© OpenStreetMap contributors",
     }, ensure_ascii=False, separators=(",", ":")))
     for place in chosen:
