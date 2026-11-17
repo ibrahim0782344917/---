@@ -1,0 +1,45 @@
+name: Shitreed Real Baghdad OSM Snapshot (Preview)
+
+on:
+  push:
+    branches:
+      - release/shitreed-production-readiness-20261114
+    paths:
+      - 'scripts/export_baghdad_osm_preview.py'
+      - '.github/workflows/shitreed-osm-snapshot.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  collect_baghdad:
+    name: Extract public OSM POIs for review
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install pinned OSM parser
+        run: python3 -m pip install --disable-pip-version-check 'osmium==4.3.2'
+      - name: Download official Geofabrik Iraq extract (no credentials)
+        run: |
+          set -euo pipefail
+          curl --fail --location --retry 2 --retry-delay 5 --max-time 210 \
+            https://download.geofabrik.de/asia/iraq-latest.osm.pbf \
+            -o /tmp/iraq-latest.osm.pbf
+          test "$(stat -c '%s' /tmp/iraq-latest.osm.pbf)" -gt 10000000
+      - name: Extract Baghdad shops with open data attribution
+        run: |
+          set -euo pipefail
+          python3 scripts/export_baghdad_osm_preview.py \
+            /tmp/iraq-latest.osm.pbf --limit 850 > /tmp/baghdad-osm.txt
+          grep '^SHITREED_OSM_STATS=' /tmp/baghdad-osm.txt
+          test "$(grep -c '^SHITREED_OSM_POI=' /tmp/baghdad-osm.txt)" -ge 10
+      - name: Store source data for manual safety review and import
+        uses: actions/upload-artifact@v4
+        with:
+          name: Shitreed-Real-Baghdad-OSM-POIs-PREVIEW
+          path: /tmp/baghdad-osm.txt
+          retention-days: 7
+      - name: Expose OSM public POIs for admin-verified read-only import
+        run: cat /tmp/baghdad-osm.txt
