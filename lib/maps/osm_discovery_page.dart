@@ -1,5 +1,6 @@
 // ignore_for_file: curly_braces_in_flow_control_structures, prefer_interpolation_to_compose_strings
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart' as ll;
@@ -222,12 +223,21 @@ class _OsmDiscoveryPageState extends State<OsmDiscoveryPage> {
         Text('هل أنت صاحب ' + place.name + '؟',
           style: const TextStyle(fontSize: 19,fontWeight: FontWeight.bold)),
         const SizedBox(height: 9),
-        const Text('تقدر تسجل محلك من تطبيق شتريد تاجر. '
-          'لكن نشر المنتجات والبيع يحتاج إثبات ملكية وموافقة الإدارة. '
-          'وجود المحل على الخريطة مو توثيق له.',
+        const Text('تقدر تسجل محلك من تطبيق شتريد تاجر، '
+          'ثم تقدم طلب ملكية من صفحة الحساب. '
+          'نشر المنتجات والبيع يحتاج إثبات ملكية وموافقة الإدارة.',
           textAlign: TextAlign.center),
+        const SizedBox(height: 10),
+        OutlinedButton.icon(
+          onPressed: () async {
+            await Clipboard.setData(ClipboardData(text: place.id));
+            if (ctx.mounted) Navigator.pop(ctx);
+            notify('تم نسخ معرّف المحل. الصقه في شتريد تاجر → حسابي → مطالبة ملكية.');
+          },
+          icon: const Icon(Icons.copy),
+          label: const Text('نسخ معرّف المحل لتطبيق التاجر')),
         FilledButton(onPressed: () => Navigator.pop(ctx),
-          child: const Text('فهمت — أستخدم شتريد تاجر')),
+          child: const Text('إغلاق')),
       ]),
     ),
   );
