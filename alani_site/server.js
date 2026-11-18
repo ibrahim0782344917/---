@@ -261,6 +261,26 @@ async function handleApi(req, res, path) {
     ]);
     return respond(res,200,{products,orders,posts,returns:returnsResult});
   }
+  if (req.method === 'POST' && path === '/api/admin/return') {
+    if (!RETURNS_ENABLED) throw new HttpError(503,
+      'إدارة الاسترجاع لم تُفعّل بعد.');
+    const input=await readBody(req);
+    const allowed=['reviewing','approved','declined','resolved'];
+    if (!uuid.test(String(input.id||'')) || !allowed.includes(input.status) ||
+      !validText(input.note,10,1000)) {
+      throw new HttpError(400,'أدخل حالة صحيحة وملاحظة مراجعة واضحة.');
+    }
+    const updated=await supabase(selectUrl('alani_return_requests',
+      'id=eq.'+encodeURIComponent(input.id)+
+      '&store_id=eq.'+encodeURIComponent(STORE_ID)),
+      {method:'PATCH',body:JSON.stringify({
+        status:input.status,resolution_note:input.note.trim(),
+        updated_at:new Date().toISOString(),
+      })},token);
+    if (!updated?.length) throw new HttpError(404,
+      'طلب الاسترجاع غير موجود أو غير تابع لهذا المتجر.');
+    return respond(res,200,{ok:true,id:updated[0].id,status:updated[0].status});
+  }
   if (req.method === 'POST' && path === '/api/admin/product') {
     const input = await readBody(req);
     if (!validText(input.name,2,160) || str(input.description).length > 3000 ||
