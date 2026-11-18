@@ -120,8 +120,8 @@ class _AlAniEditorPageState extends State<AlAniEditorPage> {
                   final row = rows[index];
                   return Card(child: ListTile(
                     title: Text(row['title'] as String? ?? ''),
-                    subtitle: Text((row['kind'] as String? ?? '') + ' • ' +
-                      (row['status'] == 'published' ? 'منشور' : 'مسودة')),
+                    subtitle: Text("${row['kind'] as String? ?? ''} • "
+                      "${row['status'] == 'published' ? 'منشور' : 'مسودة'}"),
                     trailing: const Icon(Icons.edit_outlined),
                     onTap: () => _edit(row),
                   ));
@@ -229,9 +229,11 @@ class _AlAniEditPublicationPageState
       if (!mounted) return;
       Navigator.of(context).pop(true);
     } catch (error) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-        content: Text('تعذر الحفظ؛ تحقق من الصلاحيات وجدول المحتوى.'),
-      ));
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text('تعذر الحفظ؛ تحقق من الصلاحيات وجدول المحتوى.'),
+        ));
+      }
     } finally {
       if (mounted) setState(() => _busy = false);
     }
