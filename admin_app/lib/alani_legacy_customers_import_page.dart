@@ -71,7 +71,7 @@ class _AlAniLegacyCustomersImportPageState
         type:FileType.custom,allowedExtensions:['csv']);
       if(picked==null)return;
       // Protect memory usage from unexpected files.
-      if(picked.size>7*1024*1024)throw const FormatException(
+      if((await picked.length() ?? 0)>7*1024*1024)throw const FormatException(
         'الملف أكبر من 7 ميغابايت، قسّمه إلى دفعات أصغر.');
       final bytes=await picked.readAsBytes();
       final source=utf8.decode(bytes,allowMalformed:false)
