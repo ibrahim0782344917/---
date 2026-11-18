@@ -8,7 +8,7 @@ void main(){
       storeId:'00000000-0000-4000-8000-000000000000',storeName:'محل اختبار')));
     await tester.pumpAndSettle();
     expect(find.text('شريط العروض المؤقتة'),findsOneWidget);
-    expect(find.textContaining('لم يُفعّل'),findsWidgets);
+    expect(find.textContaining('نظام العروض قيد التجهيز'),findsWidgets);
     expect(find.byType(FloatingActionButton),findsNothing);
   });
 }
