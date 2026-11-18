@@ -78,11 +78,11 @@ class _AlAniAdminAppState extends State<AlAniAdminApp> {
     ));
 
   Future<void> editProduct([Map<String,dynamic>? p])async{
-    final name=TextEditingController(text:p?['name'] as String???'');
-    final description=TextEditingController(text:p?['description'] as String???'');
+    final name=TextEditingController(text:p?['name'] as String? ?? '');
+    final description=TextEditingController(text:p?['description'] as String? ?? '');
     final price=TextEditingController(text:p?['price_iqd']?.toString()??'');
     final stock=TextEditingController(text:p?['stock_quantity']?.toString()??'');
-    final image=TextEditingController(text:p?['image_url'] as String???'');
+    final image=TextEditingController(text:p?['image_url'] as String? ?? '');
     bool active=p?['is_active']!=false;
     final changed=await showDialog<bool>(context:context,builder:(dialogContext)=>
       StatefulBuilder(builder:(ctx,setDialog)=>AlertDialog(
@@ -124,11 +124,11 @@ class _AlAniAdminAppState extends State<AlAniAdminApp> {
   }
 
   Future<void> editPost([Map<String,dynamic>? p])async{
-    final title=TextEditingController(text:p?['title'] as String???'');
-    final body=TextEditingController(text:p?['body'] as String???'');
-    final ingredients=TextEditingController(text:p?['ingredients'] as String???'');
-    final safety=TextEditingController(text:p?['safety_note'] as String???'');
-    final photo=TextEditingController(text:p?['image_url'] as String???'');
+    final title=TextEditingController(text:p?['title'] as String? ?? '');
+    final body=TextEditingController(text:p?['body'] as String? ?? '');
+    final ingredients=TextEditingController(text:p?['ingredients'] as String? ?? '');
+    final safety=TextEditingController(text:p?['safety_note'] as String? ?? '');
+    final photo=TextEditingController(text:p?['image_url'] as String? ?? '');
     final video=TextEditingController(text:p?['video_url'] as String? ?? '');
     String kind=p?['kind'] as String? ?? 'post';
     String status=p?['status'] as String? ?? 'draft';
