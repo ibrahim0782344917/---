@@ -6,8 +6,8 @@ import 'admin_pro_features.dart';
 import 'admin_ranks_levels_page.dart';
 import 'alani_store_admin_page.dart';
 
-const purple = Color(0xFF595FCB);
-const orange = Color(0xFFFFC071);
+const purple = Color(0xFF01BE5F);
+const orange = Color(0xFFF2AB3A);
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -748,27 +748,55 @@ class _AdminHomeState extends State<AdminHome> {
           const Padding(padding: EdgeInsets.all(24),
             child: Column(crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('شتريد | الإدارة', style: TextStyle(
+                Text('شتريد | الإدارة الموحّدة', style: TextStyle(
                   color: Colors.white, fontSize: 24,
                   fontWeight: FontWeight.w900)),
                 Text('مركز العمليات', style: TextStyle(
                   color: Colors.white70, fontSize: 13)),
               ])),
-          Expanded(child: ListView(children: sections.map((key) =>
-            Padding(padding: const EdgeInsets.symmetric(horizontal: 9),
+          Expanded(child: ListView(children: [
+            for(final key in sections) Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 9),
               child: ListTile(
-                selected: key == section,
-                selectedTileColor: const Color(0xFF3C4365),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(11)),
-                leading: Icon(menuIcons[key], color: Colors.white70),
-                title: Text(AdminAccess.sectionLabels[key] ?? key,
-                  style: const TextStyle(color: Colors.white)),
-                onTap: () {
+                selected:key==section,
+                selectedTileColor:const Color(0xFF20483A),
+                shape:RoundedRectangleBorder(
+                  borderRadius:BorderRadius.circular(11)),
+                leading:Icon(menuIcons[key],color:Colors.white70),
+                title:Text(AdminAccess.sectionLabels[key]??key,
+                  style:const TextStyle(color:Colors.white)),
+                onTap:(){
                   Navigator.pop(context);
                   changeSection(key);
                 },
-              ))).toList())),
+              )),
+            if(AdminAccess.canOpenAlAni(widget.role)) ...[
+              const Divider(color:Colors.white24),
+              ListTile(
+                leading:const Icon(Icons.spa_outlined,color:Colors.white70),
+                title:const Text('إدارة السيد إبراهيم العاني',
+                  style:TextStyle(color:Colors.white)),
+                onTap:(){
+                  Navigator.pop(context);
+                  Navigator.push(context,MaterialPageRoute<void>(
+                    builder:(_)=>const AlAniStoreAdminPage()));
+                },
+              ),
+            ],
+            if(widget.role=='super_admin') ...[
+              ListTile(
+                leading:const Icon(Icons.military_tech_outlined,
+                  color:Colors.white70),
+                title:const Text('إدارة الرتب والمستويات',
+                  style:TextStyle(color:Colors.white)),
+                onTap:(){
+                  Navigator.pop(context);
+                  Navigator.push(context,MaterialPageRoute<void>(
+                    builder:(_)=>const AdminRanksAndLevelsPage()));
+                },
+              ),
+            ],
+          ])),
           const Divider(color: Colors.white24),
           ListTile(
             leading: const Icon(Icons.logout, color: Colors.white70),
@@ -809,7 +837,7 @@ class _AdminHomeState extends State<AdminHome> {
         child: Column(children: [
           Container(width: double.infinity,
             padding: const EdgeInsets.all(12),
-            color: const Color(0xFFF1E8FA),
+            color: const Color(0xFFE8F9EE),
             child: Text('الصلاحية: ' +
               (AdminAccess.roleLabels[widget.role] ?? widget.role))),
           if (!narrow) SizedBox(height: 55, child: ListView(
@@ -820,7 +848,7 @@ class _AdminHomeState extends State<AdminHome> {
               child: ChoiceChip(
                 label: Text(AdminAccess.sectionLabels[key] ?? key),
                 selected: key == section,
-                selectedColor: const Color(0xFFFFE0B6),
+                selectedColor: const Color(0xFFE0F7E9),
                 onSelected: (_) => changeSection(key)))).toList())),
           if (section != 'overview') searchBar(),
           if (section == 'staff' && widget.role == 'super_admin')
