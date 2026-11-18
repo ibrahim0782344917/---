@@ -144,6 +144,19 @@ jobs:
           cache: true
       - name: Generate Android
         run: flutter create --org com.shitreed --project-name shitreed_admin --platforms android .
+      - name: Set only canonical Admin label and internet permission
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path("android/app/src/main/AndroidManifest.xml")
+          s=p.read_text()
+          s=s.replace('android:label="shitreed_admin"',
+            'android:label="إدارة شتريد والعاني"')
+          if 'android.permission.INTERNET' not in s:
+              s=s.replace('<application',
+                  '<uses-permission android:name="android.permission.INTERNET" />\n    <application',1)
+          p.write_text(s)
+          PY
       - name: Remove generated template test
         run: rm -f test/widget_test.dart
       - run: flutter pub get
