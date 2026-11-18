@@ -45,7 +45,7 @@ class _AlAniStoreAdminPageState extends State<AlAniStoreAdminPage> {
   @override
   void initState(){
     super.initState();
-    tab=widget.initialTab.clamp(0,4);
+    tab=widget.initialTab>=0 && widget.initialTab<=4 ? widget.initialTab : 0;
     reload();
   }
 
