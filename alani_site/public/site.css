@@ -270,3 +270,20 @@ body {background:#fff; color:var(--ink)}
 @media(prefers-reduced-motion:reduce) {
   .side-menu {transition:none}
 }
+
+
+.policy-navigation {display:grid;grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:14px;padding-block:35px}
+.policy-navigation a {display:flex;align-items:center;flex-direction:column;gap:6px;
+  border:1px solid #d5eedf;border-radius:16px;background:#f6fff9;
+  padding:22px 12px;text-align:center}
+.policy-navigation a span {font-size:30px;color:#06914b}
+.policy-navigation a strong {color:#184e32;font-size:15px}
+.policy-navigation a small {color:#52785e;font-size:11px}
+.policy-navigation a:hover {border-color:#01be5f}
+@media(max-width:650px) {
+  .policy-navigation {grid-template-columns:1fr;gap:10px;padding-block:25px}
+  .policy-navigation a {flex-direction:row;flex-wrap:wrap;text-align:right;padding:13px}
+  .policy-navigation a strong {flex:1}
+  .policy-navigation a small {flex-basis:100%;padding-right:45px}
+}
