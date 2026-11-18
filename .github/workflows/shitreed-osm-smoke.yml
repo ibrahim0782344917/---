@@ -1,0 +1,53 @@
+name: Shitreed OSM Discovery Smoke
+
+on:
+  push:
+    branches: [release/shitreed-production-readiness-20261114]
+    paths:
+      - 'supabase/functions/nearby-osm/**'
+      - '.github/workflows/shitreed-osm-smoke.yml'
+  pull_request:
+    paths:
+      - 'supabase/functions/nearby-osm/**'
+      - '.github/workflows/shitreed-osm-smoke.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  osm_public_preview:
+    name: OSM Baghdad preview request (one live query)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 3
+    steps:
+      - name: Verify published Supabase endpoint and OSM attribution
+        env:
+          SHITREED_OSM_URL: https://ltwncrewggdrjevakwpb.supabase.co/functions/v1/nearby-osm
+        run: |
+          set -euo pipefail
+          RESPONSE="$(mktemp)"
+          STATUS="$(curl --silent --show-error --max-time 28 --retry 0 \
+            -o "$RESPONSE" -w '%{http_code}' \
+            -H 'Content-Type: application/json' \
+            -d '{"latitude":33.3152,"longitude":44.3661}' \
+            "$SHITREED_OSM_URL")"
+          echo "OSM endpoint HTTP $STATUS"
+          python3 - "$RESPONSE" "$STATUS" <<'PY'
+          import json,sys
+          try:
+              p=json.load(open(sys.argv[1]))
+          except Exception as ex:
+              print('OSM endpoint returned invalid JSON:',type(ex).__name__)
+              sys.exit(1)
+          if sys.argv[2] != '200':
+              print('Backend status code:',p.get('code','UNKNOWN'))
+              sys.exit(1)
+          if p.get('source') != 'OpenStreetMap' or not isinstance(p.get('places'),list):
+              print('Wrong source or invalid results schema')
+              sys.exit(1)
+          print('Found places:',len(p['places']))
+          print('Attribution:',p.get('attribution'))
+          assert p.get('attribution')=='© OpenStreetMap contributors'
+          assert 1 <= len(p['places']) <= 50, 'No live indexed Baghdad places returned'
+          PY

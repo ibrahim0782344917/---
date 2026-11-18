@@ -1,0 +1,5 @@
+# Google Places nearby browsing is public; in-function quota is mandatory.
+# Supabase publishable keys are not JWTs, so JWT verification is disabled
+# only for this function. Never enable without DB rate limits and Google quotas.
+[functions.nearby-shops]
+verify_jwt = false

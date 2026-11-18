@@ -1,0 +1,68 @@
+name: Al Ani Herbal Store - Android Preview
+
+on:
+  push:
+    branches:
+      - feature/alani-herbal-store-app-20261118
+    paths:
+      - 'lib/**'
+      - 'test/alani_shop_test.dart'
+      - 'pubspec.yaml'
+      - '.github/workflows/alani-herbal-preview.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  SUPABASE_URL: https://ltwncrewggdrjevakwpb.supabase.co
+  # Public, RLS-protected key already in existing Shitreed preview workflow.
+  SUPABASE_PUBLISHABLE_KEY: sb_publishable_Tao4VcnXR93Ne9KUBJ76tg_o-Pmd75_
+  ALANI_STORE_ID: 25091ca2-c0da-416c-b634-81b188ee66be
+
+jobs:
+  android:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: '3.47.9'
+          cache: true
+      - name: Generate Android preview project
+        run: flutter create --org com.ibrahimalani --project-name shitreed_customer --platforms android .
+      - name: Configure Google Maps only if existing use was approved
+        env:
+          MAPS_ANDROID_KEY: ${{ secrets.SHITREED_GOOGLE_MAPS_ANDROID_KEY }}
+          MAPS_APPROVED: ${{ vars.SHITREED_GOOGLE_MAPS_APPROVED }}
+        run: |
+          if [[ "$MAPS_APPROVED" == "true" && -n "$MAPS_ANDROID_KEY" ]]; then
+            GOOGLE_MAPS_API_KEY="$MAPS_ANDROID_KEY" python3 scripts/configure_android_maps.py
+          else
+            python3 scripts/configure_android_maps.py
+          fi
+      - run: flutter pub get
+      - name: Analyze storefront and tests
+        run: flutter analyze --no-fatal-infos lib test
+      - name: Run UI test
+        run: flutter test test/alani_shop_test.dart
+      - name: Build connected Android preview (not AAB)
+        env:
+          MAPS_ANDROID_KEY: ${{ secrets.SHITREED_GOOGLE_MAPS_ANDROID_KEY }}
+          MAPS_APPROVED: ${{ vars.SHITREED_GOOGLE_MAPS_APPROVED }}
+        run: |
+          MAPS_ENABLED=false
+          if [[ "$MAPS_APPROVED" == "true" && -n "$MAPS_ANDROID_KEY" ]]; then MAPS_ENABLED=true; fi
+          flutter build apk --debug \
+            --dart-define="SUPABASE_URL=$SUPABASE_URL" \
+            --dart-define="SUPABASE_PUBLISHABLE_KEY=$SUPABASE_PUBLISHABLE_KEY" \
+            --dart-define="ALANI_STORE_ID=$ALANI_STORE_ID" \
+            --dart-define="GOOGLE_MAPS_ENABLED=$MAPS_ENABLED"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: AlAni-Shitreed-Store-Android-PREVIEW
+          path: build/app/outputs/flutter-apk/app-debug.apk
+          if-no-files-found: error
+          retention-days: 14
