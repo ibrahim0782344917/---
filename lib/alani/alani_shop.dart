@@ -304,7 +304,7 @@ class _AlAniShopHomeState extends State<AlAniShopHome> {
 
   bool _categoryMatch(MarketplaceProduct product) {
     if (_category == 'الكل') return true;
-    final text = (product.name + ' ' + product.description).toLowerCase();
+    final text = ('${product.name} ${product.description}').toLowerCase();
     switch (_category) {
       case 'الزيوت': return text.contains('زيت') || text.contains('زيوت');
       case 'الأعشاب': return text.contains('عشب') || text.contains('أعشاب');
@@ -332,8 +332,8 @@ class _AlAniShopHomeState extends State<AlAniShopHome> {
         }
         var filtered = (snapshot.data ?? []).where((product) =>
           _categoryMatch(product) &&
-          (_query.isEmpty || (product.name + ' ' + product.description)
-              .toLowerCase().contains(_query.toLowerCase())),
+          (_query.isEmpty || ('${product.name} ${product.description}')
+              .toLowerCase().contains(_query.toLowerCase())), 
         ).toList();
         if (limit != null) {
           filtered = filtered.take(limit).toList();
@@ -470,8 +470,7 @@ class _AlAniShopHomeState extends State<AlAniShopHome> {
       ),
       title: Text(item.title, maxLines: 2, overflow: TextOverflow.ellipsis,
         style: const TextStyle(fontWeight: FontWeight.bold)),
-      subtitle: Text(_kindTitle(item.kind) +
-          (item.body.isEmpty ? '' : ' • ' + item.body),
+      subtitle: Text('${_kindTitle(item.kind)} • ${item.body}',
         maxLines: 2, overflow: TextOverflow.ellipsis),
       trailing: const Icon(Icons.chevron_left),
       onTap: () => Navigator.of(context).push<void>(
@@ -585,7 +584,7 @@ class AlAniPublicationPage extends StatelessWidget {
           const SizedBox(height: 20),
           Card(color: const Color(0xFFFFF2DE),
             child: Padding(padding: const EdgeInsets.all(14),
-              child: Text('تنبيه: ' + item.safetyNote))),
+              child: Text('تنبيه: ${item.safetyNote}'))),
         ],
         if (item.kind == 'recipe') const Padding(
           padding: EdgeInsets.only(top: 16),
