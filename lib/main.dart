@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:shitreed_customer/alani/alani_shop.dart';
 import 'package:shitreed_customer/auth/customer_auth_page.dart';
 import 'package:shitreed_customer/backend/marketplace_backend.dart';
 import 'package:shitreed_customer/maps/osm_discovery_page.dart';
@@ -47,7 +48,7 @@ class ShitreedApp extends StatelessWidget {
   const ShitreedApp({super.key});
   @override
   Widget build(BuildContext context) => MaterialApp(
-        title: 'شتريد؟ موجود!',
+        title: 'السيد إبراهيم العاني',
         debugShowCheckedModeBanner: false,
         locale: const Locale('ar'),
         builder: (context, child) => Directionality(
@@ -61,7 +62,7 @@ class ShitreedApp extends StatelessWidget {
           appBarTheme: const AppBarTheme(
             backgroundColor: darkPurple, foregroundColor: Colors.white),
         ),
-        home: const WelcomePage(),
+        home: const AlAniShopHome(),
       );
 }
 
