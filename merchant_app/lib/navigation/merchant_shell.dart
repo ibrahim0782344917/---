@@ -4,6 +4,7 @@ import 'package:shitreed_merchant/account/merchant_account_page.dart';
 import 'package:shitreed_merchant/commerce/commerce_service.dart';
 import 'package:shitreed_merchant/merchant/merchant_dashboard.dart';
 import 'package:shitreed_merchant/reports/merchant_reports.dart';
+import 'package:shitreed_merchant/merchant/merchant_control_center.dart';
 import 'package:shitreed_merchant/shared/merchant_widgets.dart';
 
 class MerchantShellPage extends StatefulWidget {
@@ -101,6 +102,48 @@ class _MerchantOverviewPageState extends State<MerchantOverviewPage> {
 
   @override
   Widget build(BuildContext context)=>Scaffold(
+    drawer:Drawer(
+      child:SafeArea(child:ListView(children:[
+        const DrawerHeader(
+          decoration:BoxDecoration(color:merchantDark),
+          child:Column(crossAxisAlignment:CrossAxisAlignment.start,
+            mainAxisAlignment:MainAxisAlignment.center,children:[
+            Icon(Icons.storefront_outlined,color:merchantOrange,size:42),
+            SizedBox(height:8),
+            Text('شتريد تاجر',style:TextStyle(color:Colors.white,
+              fontWeight:FontWeight.w900,fontSize:23)),
+            Text('إدارة متاجرك ومنتجاتك وطلباتك',
+              style:TextStyle(color:Colors.white70,fontSize:12)),
+          ]),
+        ),
+        ListTile(leading:const Icon(Icons.admin_panel_settings_outlined),
+          title:const Text('مركز إدارة المتاجر'),
+          onTap:(){
+            Navigator.of(context).pop();
+            Navigator.of(context).push(MaterialPageRoute<void>(
+              builder:(_)=>const MerchantControlCenter()));
+          }),
+        ListTile(leading:const Icon(Icons.storefront_outlined),
+          title:const Text('متاجري'),
+          onTap:(){Navigator.of(context).pop();widget.onNavigate(1);}),
+        ListTile(leading:const Icon(Icons.inventory_2_outlined),
+          title:const Text('المنتجات والمخزون'),
+          onTap:(){Navigator.of(context).pop();widget.onNavigate(2);}),
+        ListTile(leading:const Icon(Icons.receipt_long_outlined),
+          title:const Text('الطلبات'),
+          onTap:(){Navigator.of(context).pop();widget.onNavigate(3);}),
+        ListTile(leading:const Icon(Icons.assessment_outlined),
+          title:const Text('تقارير المبيعات'),
+          onTap:(){
+            Navigator.of(context).pop();
+            Navigator.of(context).push(MaterialPageRoute<void>(
+              builder:(_)=>const MerchantReportsPage()));
+          }),
+        ListTile(leading:const Icon(Icons.person_outline),
+          title:const Text('حسابي والبروفايل والدعم'),
+          onTap:(){Navigator.of(context).pop();widget.onNavigate(4);}),
+      ])),
+    ),
     appBar:AppBar(title:const Text('الرئيسية • شتريد تاجر')),
     body:SafeArea(child:RefreshIndicator(
       onRefresh:_refresh,
@@ -182,6 +225,18 @@ class _MerchantOverviewPageState extends State<MerchantOverviewPage> {
           const Text('إدارة سريعة',style:TextStyle(
             color:merchantDark,fontSize:21,fontWeight:FontWeight.w900)),
           const SizedBox(height:10),
+          Card(color:const Color(0xFFE7F9EE),child:ListTile(
+            leading:const Icon(Icons.admin_panel_settings_outlined,
+              color:merchantPurple),
+            title:const Text('مركز إدارة المتجر',
+              style:TextStyle(fontWeight:FontWeight.w900)),
+            subtitle:const Text('تعديل بيانات متاجرك ومنتجاتك '
+              'ومخزونك وطلباتك من شاشة واحدة'),
+            trailing:const Icon(Icons.chevron_left),
+            onTap:()=>Navigator.of(context).push(
+              MaterialPageRoute<void>(
+                builder:(_)=>const MerchantControlCenter())),
+          )),
           _action('إدارة المحلات','إضافة محلك وتعديل أوقات الدوام', 
             Icons.storefront_outlined,1),
           _action('المنتجات والمخزون','أضف الأسعار والصور وتابع الكميات',
