@@ -10,6 +10,7 @@
   <script src="/site.js" defer></script>
 </head>
 <body>
+  <div class="noticebar"><div class="wrap noticebar-inner"><span>🌿 مرحباً بكم في متجر السيد إبراهيم العاني</span><span>بغداد — الغزالية <span aria-hidden="true">•</span> الأسعار بالدينار العراقي</span></div></div>
   <header class="site-header">
     <div class="wrap header-row">
       <a href="/" class="brand" aria-label="السيد إبراهيم العاني - الرئيسية"><span class="brand-mark">✳</span><span><strong>السيد إبراهيم العاني</strong><small>للزيوت والأعشاب الطبيعية</small></span></a>
@@ -38,12 +39,29 @@
       </div>
     </section>
 
+    <section class="wrap source-promos" aria-label="استكشف أقسام متجرنا">
+      <div class="source-promos-heading"><span>مستوحى من ترتيب عروض StoreKing</span><div class="promo-controls"><button type="button" id="promo-prev" aria-label="العرض السابق">‹</button><button type="button" id="promo-next" aria-label="العرض التالي">›</button></div></div>
+      <div class="promo-carousel" id="promo-carousel" aria-live="off">
+        <article class="promo-slide is-active" data-promo-slide>
+          <div class="promo-content"><span class="promo-eyebrow">زيوت وأعشاب طبيعية</span><h2>كل ما تحتاجه من منتجات الطبيعة</h2><p>تعرّف على المنتجات المتاحة وأسعارها المحدثة من متجرنا.</p><a href="#products" class="button primary">تصفح المنتجات</a></div><span class="promo-illustration" aria-hidden="true">🌿</span>
+        </article>
+        <article class="promo-slide" data-promo-slide hidden>
+          <div class="promo-content"><span class="promo-eyebrow">مكتبة الفيديو</span><h2>فيديوهات السيد إبراهيم العاني</h2><p>مواد تعريفية بالزيوت والأعشاب ومعلومات الاستخدام.</p><a href="#videos" class="button primary">شاهد الفيديوهات</a></div><span class="promo-illustration" aria-hidden="true">▶</span>
+        </article>
+        <article class="promo-slide" data-promo-slide hidden>
+          <div class="promo-content"><span class="promo-eyebrow">الوصفات والمقالات</span><h2>اقرأ وصفاتنا ومقالاتنا</h2><p>مكونات وخطوات وملاحظات السلامة في مكان واحد.</p><a href="#recipes" class="button primary">اكتشف الوصفات</a></div><span class="promo-illustration" aria-hidden="true">📖</span>
+        </article>
+      </div>
+      <div class="promo-dots" id="promo-dots" aria-label="اختيار العرض"></div>
+    </section>
+
     <section class="wrap">
+      <div class="category-heading"><div><span class="overline">تصفح حسب القسم</span><h2>أقسام متجرنا</h2></div><a href="#products">جميع المنتجات ←</a></div>
       <div class="category-strip" aria-label="التصنيفات">
-        <a href="#products" data-category="الزيوت"><span>💧</span> الزيوت الطبيعية</a>
-        <a href="#products" data-category="الأعشاب"><span>🌿</span> الأعشاب</a>
-        <a href="#products" data-category="العسل"><span>🍯</span> العسل</a>
-        <a href="#products" data-category="العناية"><span>🧴</span> العناية الطبيعية</a>
+        <a href="#products" data-category="الزيوت"><span class="category-icon">💧</span><strong>الزيوت الطبيعية</strong><small>اكتشف الزيوت المتاحة</small></a>
+        <a href="#products" data-category="الأعشاب"><span class="category-icon">🌿</span><strong>الأعشاب</strong><small>أصناف من الطبيعة</small></a>
+        <a href="#products" data-category="العسل"><span class="category-icon">🍯</span><strong>العسل</strong><small>منتجات العسل</small></a>
+        <a href="#products" data-category="العناية"><span class="category-icon">🧴</span><strong>العناية الطبيعية</strong><small>منتجات العناية</small></a>
       </div>
     </section>
 
@@ -87,6 +105,13 @@
       </div>
     </section>
 
+    <section class="wrap benefits" aria-label="مميزات المتجر">
+      <div class="benefit"><span class="benefit-icon">✓</span><div><strong>منتجات المتجر الفعلية</strong><p>نعرض المنتجات المنشورة فقط، دون إنشاء منتجات وهمية.</p></div></div>
+      <div class="benefit"><span class="benefit-icon">د.ع</span><div><strong>أسعار واضحة</strong><p>الأسعار بالدينار العراقي وتتحدث من بيانات المتجر.</p></div></div>
+      <div class="benefit"><span class="benefit-icon">▣</span><div><strong>فيديوهات ومقالات</strong><p>محتوى تعليمي تُديره من لوحة الإدارة.</p></div></div>
+      <div class="benefit"><span class="benefit-icon">◎</span><div><strong>هوية متجر محلي</strong><p>السيد إبراهيم العاني — بغداد، الغزالية.</p></div></div>
+    </section>
+
     <section class="about-block" id="about"><div class="wrap about-grid">
       <div><span class="overline light">عن متجرنا</span><h2>السيد إبراهيم العاني</h2><p>متجر متخصص بالزيوت الطبيعية والأعشاب والعسل ومنتجات الطبيعة في بغداد، الغزالية. نعرض المنتجات المتوفرة وننشر محتوى تعليمياً عنها.</p><p class="small">لا تُعتبر معلومات الأعشاب والوصفات بديلاً عن المشورة الطبية، ولا تقدّم وعوداً بعلاج الأمراض.</p></div>
       <div class="about-emblem" aria-hidden="true">🌿</div>
@@ -97,6 +122,7 @@
     <div class="footer-links"><a href="/privacy">سياسة الخصوصية</a><a href="/terms">الشروط والأحكام</a><a href="/admin">لوحة الإدارة</a><a href="#products">المنتجات</a></div>
     <div class="footer-note">© <span id="year">2026</span> السيد إبراهيم العاني. جميع الحقوق محفوظة.<p>هذه نسخة أولية؛ لا يتم قبول طلبات شراء قبل اكتمال التحقق.</p></div>
   </div></footer>
+  <nav class="mobile-shop-nav" aria-label="التنقل السريع للمتجر"><a href="#products"><span>▦</span>المتجر</a><a href="#videos"><span>▶</span>فيديوهات</a><a href="#recipes"><span>☘</span>وصفاتي</a><a href="#basket"><span>▤</span>السلة</a></nav>
   <dialog id="details" class="details-dialog"><div id="details-content"></div><form method="dialog"><button class="button ghost">إغلاق</button></form></dialog>
 </body>
 </html>
