@@ -6,6 +6,7 @@ import 'admin_pro_features.dart';
 import 'admin_ranks_levels_page.dart';
 import 'alani_store_admin_page.dart';
 import 'alani_campaign_admin_page.dart';
+import 'alani_legacy_customers_import_page.dart';
 
 const purple = Color(0xFF01BE5F);
 const orange = Color(0xFFF2AB3A);
@@ -818,6 +819,17 @@ class _AdminHomeState extends State<AdminHome> {
               ),
             ],
             if(widget.role=='super_admin') ...[
+              ListTile(
+                leading:const Icon(Icons.people_alt_outlined,
+                  color:Colors.white70),
+                title:const Text('الزبائن القدامى — استيراد ومراجعة',
+                  style:TextStyle(color:Colors.white)),
+                onTap:(){
+                  Navigator.pop(context);
+                  Navigator.push(context,MaterialPageRoute<void>(
+                    builder:(_)=>const AlAniLegacyCustomersImportPage()));
+                },
+              ),
               ListTile(
                 leading:const Icon(Icons.military_tech_outlined,
                   color:Colors.white70),
