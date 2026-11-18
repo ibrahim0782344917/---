@@ -23,78 +23,62 @@ class AlAniWelcomePage extends StatelessWidget {
   Widget build(BuildContext context) => Scaffold(
     backgroundColor: _cream,
     body: SafeArea(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 26, vertical: 25),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            const Spacer(),
-            Container(
-              width: 150, height: 150,
-              alignment: Alignment.center,
-              decoration: const BoxDecoration(
-                shape: BoxShape.circle,
-                color: Color(0xFFD6F7E2),
+      child: ListView(
+        padding: const EdgeInsets.symmetric(horizontal: 26, vertical: 27),
+        children: [
+          const SizedBox(height: 20),
+          const Center(child: CircleAvatar(
+            radius: 63,
+            backgroundColor: Color(0xFFD6F7E2),
+            child: Icon(Icons.spa_outlined,color:_green,size:77),
+          )),
+          const SizedBox(height: 25),
+          const Text('أهلاً وسهلاً بكم',
+            textAlign:TextAlign.center,
+            style:TextStyle(color:_green,fontSize:18,fontWeight:FontWeight.w800)),
+          const SizedBox(height:10),
+          const Text(AlAniSettings.title,
+            textAlign:TextAlign.center,
+            style:TextStyle(color:_ink,fontSize:29,fontWeight:FontWeight.w900)),
+          const SizedBox(height:8),
+          const Text('للزيوت الطبيعية والأعشاب والعسل',
+            textAlign:TextAlign.center,
+            style:TextStyle(color:_ink,fontSize:16,fontWeight:FontWeight.w600)),
+          const SizedBox(height:17),
+          const Text('من الطبيعة إلى بيتك. اكتشف منتجاتنا المتوفرة '
+            'وأسعارها، وشاهد الفيديوهات والوصفات والمقالات.',
+            textAlign:TextAlign.center,
+            style:TextStyle(fontSize:15,height:1.7)),
+          const SizedBox(height:25),
+          Card(color:Colors.white,child:Padding(
+            padding:const EdgeInsets.all(14),
+            child:Column(children:[
+              const Text('الدفع نقداً عند الاستلام',
+                style:TextStyle(color:_ink,fontWeight:FontWeight.bold)),
+              const SizedBox(height:5),
+              const Text('التوصيل ٥٬٠٠٠ د.ع — الرجوع الاختياري ٥٬٠٠٠ د.ع',
+                textAlign:TextAlign.center,
+                style:TextStyle(fontSize:12)),
+              TextButton(
+                onPressed:()=>Navigator.push(context,MaterialPageRoute<void>(
+                  builder:(_)=>const AlAniInfoPage(type:'returns'))),
+                child:const Text('اطلع على سياسة الاسترجاع والتعويض'),
               ),
-              child: const Icon(Icons.spa_outlined,
-                color: _green, size: 89),
-            ),
-            const SizedBox(height: 35),
-            const Text('أهلاً وسهلاً بكم',
-              style: TextStyle(color: _green, fontSize: 18,
-                fontWeight: FontWeight.w800),
-              textAlign: TextAlign.center),
-            const SizedBox(height: 12),
-            const Text(AlAniSettings.title,
-              style: TextStyle(color: _ink, fontSize: 30,
-                fontWeight: FontWeight.w900),
-              textAlign: TextAlign.center),
-            const SizedBox(height: 10),
-            const Text('للزيوت الطبيعية والأعشاب والعسل',
-              style: TextStyle(color: _ink, fontSize: 17,
-                fontWeight: FontWeight.w600),
-              textAlign: TextAlign.center),
-            const SizedBox(height: 19),
-            const Text(
-              'من الطبيعة إلى بيتك. اكتشف منتجاتنا المتوفرة '
-              'وأسعارها، وشاهد الفيديوهات والوصفات والمقالات.',
-              textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 15, height: 1.7)),
-            const Spacer(),
-            Card(
-              color: Colors.white,
-              child: Padding(
-                padding: const EdgeInsets.all(14),
-                child: Column(children: [
-                  const Text('الدفع نقداً عند الاستلام',
-                    style: TextStyle(color: _ink, fontWeight: FontWeight.bold)),
-                  const SizedBox(height: 5),
-                  const Text('التوصيل ٥٬٠٠٠ د.ع — الرجوع الاختياري ٥٬٠٠٠ د.ع',
-                    style: TextStyle(fontSize: 12), textAlign: TextAlign.center),
-                  TextButton(
-                    onPressed: () => Navigator.push(
-                      context, MaterialPageRoute<void>(
-                        builder: (_) => const AlAniInfoPage(type: 'returns'))),
-                    child: const Text('اطلع على سياسة الاسترجاع والتعويض')),
-                ]),
-              ),
-            ),
-            const SizedBox(height: 14),
-            FilledButton.icon(
-              style: FilledButton.styleFrom(
-                backgroundColor: _green,
-                foregroundColor: _ink,
-                padding: const EdgeInsets.symmetric(vertical: 15),
-              ),
-              onPressed: () => Navigator.of(context).pushReplacement<void, void>(
-                MaterialPageRoute(builder: (_) => const AlAniShopHome()),
-              ),
-              icon: const Icon(Icons.shopping_bag_outlined),
-              label: const Text('الدخول إلى المتجر',
-                style: TextStyle(fontWeight: FontWeight.w800)),
-            ),
-          ],
-        ),
+            ]),
+          )),
+          const SizedBox(height:14),
+          FilledButton.icon(
+            style:FilledButton.styleFrom(
+              backgroundColor:_green, foregroundColor:_ink,
+              padding:const EdgeInsets.symmetric(vertical:15)),
+            onPressed:()=>Navigator.of(context).pushReplacement<void,void>(
+              MaterialPageRoute(builder:(_)=>const AlAniShopHome())),
+            icon:const Icon(Icons.shopping_bag_outlined),
+            label:const Text('الدخول إلى المتجر',
+              style:TextStyle(fontWeight:FontWeight.w800)),
+          ),
+          const SizedBox(height:22),
+        ],
       ),
     ),
   );
