@@ -29,10 +29,12 @@
     <div class="metric"><strong id="m-orders">–</strong><span>الطلبات المسجلة</span></div>
     <div class="metric"><strong id="m-posts">–</strong><span>المحتوى المنشور</span></div>
     <div class="metric"><strong id="m-low">–</strong><span>منتجات بمخزون قليل (≤ 5)</span></div>
+    <div class="metric"><strong id="m-returns">–</strong><span>طلبات استرجاع قيد المتابعة</span></div>
   </div>
   <nav class="admin-nav" aria-label="أقسام الإدارة">
     <button type="button" class="active" data-tab="products">المنتجات والمخزون</button>
     <button type="button" data-tab="orders">الطلبات</button>
+    <button type="button" data-tab="returns">الاسترجاع والتعويض</button>
     <button type="button" data-tab="posts">الفيديوهات والوصفات</button>
     <button type="button" data-tab="settings">التقارير والإعدادات</button>
   </nav>
@@ -80,6 +82,15 @@
     <div class="table-scroll"><table class="admin-table"><thead><tr><th>الطلب</th><th>الإجمالي</th><th>الحالة</th><th>العنوان</th><th>إجراء</th></tr></thead><tbody id="orders-table"></tbody></table></div>
   </section>
 
+  <section class="admin-panel" id="tab-returns" hidden>
+    <h2>استرجاع المنتجات وتعويض الضرر</h2>
+    <p class="small">يمكن مراجعة طلبات الاسترجاع وسببها وحالتها. لا تعني الموافقة تغيير رصيد مالي أو تنفيذ استرداد تلقائي. لا تفرض خصم رسوم الإرجاع الاختياري عند ثبوت خطأ المتجر.</p>
+    <p id="returns-availability" class="status-note"></p>
+    <div class="table-scroll"><table class="admin-table">
+      <thead><tr><th>رقم الطلب</th><th>السبب</th><th>التفاصيل</th><th>الحالة</th><th>الإجراء</th></tr></thead>
+      <tbody id="returns-table"></tbody>
+    </table></div>
+  </section>
   <section class="admin-panel" id="tab-posts" hidden>
     <h2>إدارة الفيديوهات والوصفات والمدونة</h2>
     <p class="small">المحتوى يظهر في الموقع بعد نشره. لا تستخدم ادعاءات علاجية مضللة في الوصفات والمنتجات.</p>
