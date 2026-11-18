@@ -171,6 +171,11 @@ class AdminAccess {
     _ => const [],
   };
 
+  /// Store-specific controls are shown only to authorized platform operators.
+  /// The Al-Ani backend separately verifies actual store ownership.
+  static bool canOpenAlAni(String? role) =>
+      role == 'super_admin' || role == 'operations';
+
   static bool canChange(String? role, String section) {
     if (role == 'super_admin' || role == 'operations') {
       return section == 'stores' ||
