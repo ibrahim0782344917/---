@@ -42,3 +42,16 @@ test('unconfigured checkout is not accepting orders', async () => {
   });
   assert.equal(response.status,503);
 });
+
+test('StoreKing-inspired storefront layout has accessible sections', async () => {
+  const html = await (await fetch(root+'/')).text();
+  assert.match(html,/id="promo-carousel"/);
+  assert.equal((html.match(/data-promo-slide/g) || []).length,3);
+  assert.equal((html.match(/data-category="/g) || []).length,4);
+  assert.match(html,/class="mobile-shop-nav"/);
+  assert.match(html,/id="video-grid"/);
+  assert.match(html,/id="recipe-grid"/);
+  const css = await (await fetch(root+'/site.css')).text();
+  assert.match(css,/--pine:\s*#01BE5F/i);
+  assert.match(css,/\.category-strip\s+a/);
+});
