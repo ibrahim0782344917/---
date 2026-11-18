@@ -310,6 +310,11 @@ export const server = createServer(async (req,res) => {
   }
 });
 if (process.env.NODE_ENV !== 'test') {
-  server.listen(PORT, '0.0.0.0',
-    () => console.log('Al-Ani independent store listening on '+PORT));
+  server.listen(PORT, '0.0.0.0', () => {
+    console.log('Al-Ani independent store listening on '+PORT);
+    publicShop().then(data => {
+      console.log('Al-Ani catalog probe: approved='+Boolean(data.store)+
+        ', published products='+data.products.length);
+    }).catch(error => console.error('Al-Ani catalog probe failed:',error.message));
+  });
 }
