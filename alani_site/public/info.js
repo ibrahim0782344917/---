@@ -122,6 +122,22 @@ function applySettings(){
 }
 function setupReturnForm(){
   const form=document.getElementById('return-form');
+  const button=document.getElementById('return-submit');
+  const result=document.getElementById('return-result');
+  button.disabled=true;
+  result.textContent='جارٍ التحقق من تفعيل استقبال طلبات الاسترجاع…';
+  fetch('/api/returns/config').then(response=>response.json())
+    .then(config=>{
+      button.disabled=config.enabled!==true;
+      button.textContent=config.enabled===true
+        ? 'إرسال طلب المراجعة':'استقبال الاسترجاع الإلكتروني قيد التجهيز';
+      result.textContent=config.enabled===true
+        ? 'يمكنك تقديم الطلب بعد تسجيل الدخول بحساب الشراء.'
+        : 'صفحة الاسترجاع جاهزة، لكن إرسال الطلبات غير مفعل حتى نختبر الحماية.';
+    }).catch(()=>{
+      button.disabled=true;
+      result.textContent='تعذر التحقق من خدمة الاسترجاع حالياً.';
+    });
   form.addEventListener('submit',async(event)=>{
     event.preventDefault();
     const result=document.getElementById('return-result');
