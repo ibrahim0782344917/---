@@ -32,7 +32,7 @@ class _AlAniBranchPageState extends State<AlAniBranchPage> {
     if(store.latitude==null||store.longitude==null)return;
     final uri=Uri.https('www.google.com','/maps/dir/',{
       'api':'1',
-      'destination':store.latitude.toString()+','+store.longitude.toString()
+      'destination':'${store.latitude},${store.longitude}'
     });
     if(!await launchUrl(uri,mode:LaunchMode.externalApplication)&&mounted){
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
@@ -48,14 +48,18 @@ class _AlAniBranchPageState extends State<AlAniBranchPage> {
         if(snapshot.connectionState!=ConnectionState.done){
           return const Center(child:CircularProgressIndicator());
         }
-        if(snapshot.hasError)return const Center(
-          child:Text('تعذر قراءة بيانات الفرع. تحقق من اتصال الإنترنت.'));
+        if(snapshot.hasError){
+          return const Center(
+            child:Text('تعذر قراءة بيانات الفرع. تحقق من اتصال الإنترنت.'));
+        }
         final store=snapshot.data;
-        if(store==null)return const Center(child:Padding(
-          padding:EdgeInsets.all(24),
-          child:Text('لم يتم العثور على فرع معتمد تابع للسيد إبراهيم العاني. '
-            'لن نعرض فروعاً أو مواقع عشوائية.',
-            textAlign:TextAlign.center)));
+        if(store==null){
+          return const Center(child:Padding(
+            padding:EdgeInsets.all(24),
+            child:Text('لم يتم العثور على فرع معتمد تابع للسيد إبراهيم العاني. '
+              'لن نعرض فروعاً أو مواقع عشوائية.',
+              textAlign:TextAlign.center)));
+        }
         final lat=store.latitude,long=store.longitude;
         final hasPoint=lat!=null&&long!=null &&
           lat>=-90&&lat<=90&&long>=-180&&long<=180;
