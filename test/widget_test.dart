@@ -13,7 +13,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('من الطبيعة إلى بيتك'), findsOneWidget);
     expect(find.byType(NavigationBar), findsOneWidget);
-    await tester.tap(find.byTooltip('Open navigation menu'));
+    await tester.tap(find.byIcon(Icons.menu));
     await tester.pumpAndSettle();
     expect(find.text('سياسة الاسترجاع'), findsOneWidget);
     expect(find.text('طلب استرجاع'), findsOneWidget);
