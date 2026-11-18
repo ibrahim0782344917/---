@@ -28,6 +28,7 @@
     <div class="metric"><strong id="m-products">–</strong><span>المنتجات المسجلة</span></div>
     <div class="metric"><strong id="m-orders">–</strong><span>الطلبات المسجلة</span></div>
     <div class="metric"><strong id="m-posts">–</strong><span>المحتوى المنشور</span></div>
+    <div class="metric"><strong id="m-low">–</strong><span>منتجات بمخزون قليل (≤ 5)</span></div>
   </div>
   <nav class="admin-nav" aria-label="أقسام الإدارة">
     <button type="button" class="active" data-tab="products">المنتجات والمخزون</button>
@@ -40,6 +41,15 @@
   <section class="admin-panel" id="tab-products">
     <h2>المنتجات والمخزون</h2>
     <p class="small">أضف منتجاً أو عدّل السعر والمخزون. استخدم روابط الصور المعتمدة في تخزين شتريد. لا يمكن تعديل منتجات متاجر أخرى.</p>
+    <div class="admin-filter-bar">
+      <label>ابحث بالاسم أو الوصف<input type="search" id="admin-product-search" placeholder="بحث عن منتج…"></label>
+      <label>المخزون<select id="admin-inventory-filter">
+        <option value="all">جميع المنتجات</option>
+        <option value="low">مخزون قليل</option>
+        <option value="out">منتهي</option>
+        <option value="hidden">مخفي</option>
+      </select></label>
+    </div>
     <div class="table-scroll"><table class="admin-table"><thead><tr><th>المنتج</th><th>السعر</th><th>المخزون</th><th>الحالة</th><th>إجراء</th></tr></thead><tbody id="products-table"></tbody></table></div>
     <h3 id="product-heading" style="margin-top:30px">إضافة منتج جديد</h3>
     <form class="admin-form" id="product-form">
@@ -56,6 +66,17 @@
 
   <section class="admin-panel" id="tab-orders" hidden>
     <h2>طلبات الزبائن</h2><p class="small">انتقالات حالة الطلب تتم على الخادم. لا تُعدّل الأسعار أو المخزون يدوياً عند تغيير الحالة.</p>
+    <div class="admin-filter-bar">
+      <label>بحث برقم الطلب أو العنوان<input type="search" id="admin-order-search" placeholder="بحث عن طلب…"></label>
+      <label>حالة الطلب<select id="admin-order-filter">
+        <option value="all">كل الحالات</option>
+        <option value="placed">جديد</option>
+        <option value="accepted">مقبول</option>
+        <option value="preparing">قيد التجهيز</option>
+        <option value="ready">جاهز</option>
+        <option value="rejected">مرفوض</option>
+      </select></label>
+    </div>
     <div class="table-scroll"><table class="admin-table"><thead><tr><th>الطلب</th><th>الإجمالي</th><th>الحالة</th><th>العنوان</th><th>إجراء</th></tr></thead><tbody id="orders-table"></tbody></table></div>
   </section>
 
@@ -63,6 +84,15 @@
     <h2>إدارة الفيديوهات والوصفات والمدونة</h2>
     <p class="small">المحتوى يظهر في الموقع بعد نشره. لا تستخدم ادعاءات علاجية مضللة في الوصفات والمنتجات.</p>
     <div id="posts-availability" class="status-note"></div>
+    <div class="admin-filter-bar">
+      <label>نوع المحتوى<select id="admin-post-filter">
+        <option value="all">الكل</option>
+        <option value="video">فيديو</option>
+        <option value="recipe">وصفة</option>
+        <option value="article">مقال</option>
+        <option value="post">منشور</option>
+      </select></label>
+    </div>
     <div class="table-scroll"><table class="admin-table"><thead><tr><th>العنوان</th><th>النوع</th><th>الحالة</th><th>إجراء</th></tr></thead><tbody id="posts-table"></tbody></table></div>
     <h3 id="post-heading" style="margin-top:30px">إضافة محتوى جديد</h3>
     <form id="post-form" class="admin-form">
