@@ -63,8 +63,7 @@ class _AlAniCartPageState extends State<AlAniCartPage> {
     bytes[6]=(bytes[6]&0x0f)|0x40;
     bytes[8]=(bytes[8]&0x3f)|0x80;
     final hex=bytes.map((value)=>value.toRadixString(16).padLeft(2,'0')).join();
-    return hex.substring(0,8)+'-'+hex.substring(8,12)+'-'+
-      hex.substring(12,16)+'-'+hex.substring(16,20)+'-'+hex.substring(20);
+    return '${hex.substring(0,8)}-${hex.substring(8,12)}-${hex.substring(12,16)}-${hex.substring(16,20)}-${hex.substring(20)}';
   }
 
   void notice(String message){
@@ -113,10 +112,7 @@ class _AlAniCartPageState extends State<AlAniCartPage> {
     final confirmed=await showDialog<bool>(
       context:context,builder:(ctx)=>AlertDialog(
         title:const Text('تأكيد الطلب — الدفع عند الاستلام'),
-        content:Text('المنتجات: '+priceText(cart.totalIqd)+
-          '\nالتوصيل: ٥٬٠٠٠ د.ع'+
-          '\nالإجمالي المتوقع: '+priceText(cart.totalIqd+deliveryFee)+
-          '\nسيحسب الخادم المبلغ النهائي من أسعار المنتجات الحالية.'),
+        content:Text('المنتجات: ${priceText(cart.totalIqd)}\nالتوصيل: ٥٬٠٠٠ د.ع\nالإجمالي المتوقع: ${priceText(cart.totalIqd+deliveryFee)}\nسيحسب الخادم المبلغ النهائي من أسعار المنتجات الحالية.'),
         actions:[
           TextButton(onPressed:()=>Navigator.pop(ctx,false),
             child:const Text('إلغاء')),
@@ -148,8 +144,7 @@ class _AlAniCartPageState extends State<AlAniCartPage> {
       cart.clear();
       address.clear();phone.clear();notes.clear();
       requestKey=null;lastPayload=null;
-      notice('تم تسجيل الطلب بنجاح. رقمه: '+id.substring(0,8)+
-        '. الدفع عند الاستلام.');
+      notice('تم تسجيل الطلب بنجاح. رقمه: ${id.substring(0,8)}. الدفع عند الاستلام.');
     } catch(error) {
       if(!mounted)return;
       if(error is StateError&&error.message=='ORDER_TOTAL_NOT_VERIFIED'){
