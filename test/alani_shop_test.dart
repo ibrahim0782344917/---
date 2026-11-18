@@ -4,7 +4,22 @@ import 'package:shitreed_customer/alani/alani_content.dart';
 import 'package:shitreed_customer/alani/alani_shop.dart';
 import 'package:shitreed_customer/alani/alani_video.dart';
 
+import 'package:shitreed_customer/alani/catalog_filters.dart';
+import 'package:shitreed_customer/backend/marketplace_backend.dart';
 void main() {
+  test('customer catalog sorts by price and stock availability', () {
+    final source = [
+      const MarketplaceProduct(id:'a',name:'زيت',priceIqd:25000,
+        storeId:AlAniSettings.storeId,stockQuantity:2),
+      const MarketplaceProduct(id:'b',name:'عسل',priceIqd:20000,
+        storeId:AlAniSettings.storeId,stockQuantity:0),
+    ];
+    final cheap=AlAniCatalogFilters.apply(source,sort:'price_asc');
+    expect(cheap.map((p)=>p.id).toList(),['b','a']);
+    expect(AlAniCatalogFilters.apply(source,inStockOnly:true).single.id,'a');
+    expect(source.first.id,'a');
+  });
+
   test('in-app video accepts direct HTTPS media only', () {
     expect(isDirectMediaUrl(Uri.parse('https://example.org/clip.mp4')), isTrue);
     expect(isDirectMediaUrl(Uri.parse('https://example.org/live.m3u8')), isTrue);
