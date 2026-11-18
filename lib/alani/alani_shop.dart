@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:shitreed_customer/alani/alani_content.dart';
+import 'package:shitreed_customer/alani/alani_editor.dart';
 import 'package:shitreed_customer/auth/customer_auth_page.dart';
 import 'package:shitreed_customer/backend/marketplace_backend.dart';
 import 'package:shitreed_customer/commerce/commerce_service.dart';
@@ -27,12 +28,14 @@ class _AlAniShopHomeState extends State<AlAniShopHome> {
   String _category = 'الكل';
   late Future<List<MarketplaceProduct>> _products;
   late Future<List<AlAniPublication>> _publications;
+  late Future<bool> _canEdit;
 
   @override
   void initState() {
     super.initState();
     _products = AlAniStoreData.products();
     _publications = AlAniStoreData.publications();
+    _canEdit = AlAniEditorService.isOwner();
   }
 
   Future<void> _refresh() async {
@@ -64,7 +67,7 @@ class _AlAniShopHomeState extends State<AlAniShopHome> {
     } else {
       _showOrders();
     }
-    if (mounted) setState(() {});
+    if (mounted) setState(() => _canEdit = AlAniEditorService.isOwner());
   }
 
   void _add(MarketplaceProduct product) {
@@ -103,6 +106,21 @@ class _AlAniShopHomeState extends State<AlAniShopHome> {
             ],
           ),
           actions: [
+            FutureBuilder<bool>(
+              future: _canEdit,
+              builder: (context, snapshot) => snapshot.data == true
+                ? IconButton(
+                    tooltip: 'إدارة الفيديوهات والمدونة',
+                    icon: const Icon(Icons.edit_note_outlined),
+                    onPressed: () async {
+                      await Navigator.of(context).push<void>(MaterialPageRoute(
+                        builder: (_) => const AlAniEditorPage(),
+                      ));
+                      if (mounted) await _refresh();
+                    },
+                  )
+                : const SizedBox.shrink(),
+            ),
             IconButton(
               tooltip: 'خرائط Google',
               onPressed: () => Navigator.of(context).push<void>(
