@@ -70,3 +70,40 @@ test('owner Admin has stock alerts and order/content controls', async () => {
   const unauth=await fetch(root+'/api/admin/overview');
   assert.equal(unauth.status,401);
 });
+
+
+test('all customer policy pages are routed and menu is discoverable', async () => {
+  const home=await (await fetch(root+'/')).text();
+  assert.match(home,/id="menu-trigger"/);
+  assert.match(home,/\/return-request/);
+  for(const route of [
+    '/welcome','/about-us','/payment-policy','/return-policy',
+    '/return-request','/broken-product','/help','/settings',
+  ]) {
+    const response=await fetch(root+route);
+    assert.equal(response.status,200,'Page '+route+' should exist');
+    assert.match(await response.text(),/id="page-content"/);
+  }
+  const menu=await fetch(root+'/menu.js');
+  assert.equal(menu.status,200);
+  const script=await fetch(root+'/info.js');
+  assert.equal(script.status,200);
+  const content=await script.text();
+  assert.match(content,/٥٬٠٠٠/);
+  assert.match(content,/المنتج مكسور/);
+});
+
+test('returns are feature-disabled until a secure database rollout', async () => {
+  const config=await (await fetch(root+'/api/returns/config')).json();
+  assert.equal(config.enabled,false);
+  assert.equal(config.initialDeliveryFeeIqd,5000);
+  assert.equal(config.feeForVoluntaryReturnIqd,5000);
+  const noStore=await fetch(root+'/api/return-requests',{
+    method:'POST',headers:{'content-type':'application/json'},body:'{}'
+  });
+  assert.equal(noStore.status,503);
+  const admin=await fetch(root+'/api/admin/return',{
+    method:'POST',headers:{'content-type':'application/json'},body:'{}'
+  });
+  assert.equal(admin.status,401);
+});
