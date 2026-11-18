@@ -159,3 +159,25 @@ body {background:#fff; color:var(--ink)}
 @media (prefers-reduced-motion:reduce){
   .product-card,.content-card,.category-strip a {transition:none}
 }
+
+
+/* Management controls shared by desktop and mobile Admin. */
+.admin-filter-bar {
+  display:flex; align-items:flex-end; flex-wrap:wrap; gap:12px;
+  border-radius:13px; padding:14px; margin-block:16px;
+  background:#f4faf6; border:1px solid #def1e5;
+}
+.admin-filter-bar label {display:flex; flex-direction:column; flex:1 1 200px;
+  font-size:12px; font-weight:800; color:#1c5836; gap:6px}
+.admin-filter-bar select,.admin-filter-bar input {
+  width:100%; background:#fff; border:1px solid #d4e7db;
+  border-radius:9px; padding:9px 12px; min-height:42px;
+}
+.admin-filter-bar select:focus,.admin-filter-bar input:focus {
+  outline:2px solid #01be5f; outline-offset:1px;
+}
+.admin-metrics {grid-template-columns:repeat(4,minmax(0,1fr))}
+@media(max-width:750px) {
+  .admin-metrics {grid-template-columns:repeat(2,minmax(0,1fr))}
+  .admin-filter-bar {padding:9px;gap:9px}
+}
