@@ -8,6 +8,7 @@
   <title>السيد إبراهيم العاني | للزيوت والأعشاب الطبيعية</title>
   <link rel="stylesheet" href="/site.css">
   <script src="/site.js" defer></script>
+  <script src="/menu.js" defer></script>
 </head>
 <body>
   <div class="noticebar"><div class="wrap noticebar-inner"><span>🌿 مرحباً بكم في متجر السيد إبراهيم العاني</span><span>بغداد — الغزالية <span aria-hidden="true">•</span> الأسعار بالدينار العراقي</span></div></div>
@@ -17,9 +18,29 @@
       <nav class="primary-nav" aria-label="أقسام الموقع">
         <a href="#products">المنتجات</a><a href="#videos">الفيديوهات</a><a href="#recipes">الوصفات</a><a href="#articles">المدونة</a><a href="#about">عن المتجر</a>
       </nav>
-      <div class="header-actions"><a href="/admin" class="minor-link">إدارة المتجر</a><a href="#basket" class="cart-pill">السلة <span id="cart-count">0</span></a></div>
+      <div class="header-actions">
+        <a href="/admin" class="minor-link">إدارة المتجر</a>
+        <a href="#basket" class="cart-pill">السلة <span id="cart-count">0</span></a>
+        <button type="button" id="menu-trigger" class="menu-trigger" aria-label="فتح قائمة الصفحات" aria-controls="main-side-menu" aria-expanded="false">☰</button>
+      </div>
     </div>
   </header>
+  <div class="side-menu-overlay" id="main-menu-overlay" hidden></div>
+  <nav class="side-menu" id="main-side-menu" aria-label="جميع صفحات المتجر" aria-hidden="true">
+    <div class="side-menu-head"><strong>القائمة الرئيسية</strong><button type="button" id="menu-close" aria-label="إغلاق القائمة">×</button></div>
+    <a href="/">⌂ الرئيسية والمتجر</a>
+    <a href="/welcome">✳ صفحة الترحيب</a>
+    <a href="/about-us">ⓘ معلومات المتجر</a>
+    <a href="/payment-policy">▣ الدفع والتوصيل — ٥٬٠٠٠ د.ع</a>
+    <a href="/return-policy">↺ سياسة الاسترجاع</a>
+    <a href="/return-request">▤ تقديم طلب استرجاع</a>
+    <a href="/broken-product">✚ ضمان التعويض عن الكسر</a>
+    <a href="/help">؟ الأسئلة الشائعة</a>
+    <a href="/settings">⚙ الإعدادات</a>
+    <a href="/privacy">♢ سياسة الخصوصية</a>
+    <a href="/terms">☑ الشروط والأحكام</a>
+    <a href="/admin">♙ لوحة الإدارة</a>
+  </nav>
 
   <main>
     <section class="hero">
@@ -117,9 +138,20 @@
       <div class="about-emblem" aria-hidden="true">🌿</div>
     </div></section>
   </main>
+  <section class="wrap policy-navigation" aria-label="الدفع والاسترجاع">
+    <a href="/payment-policy"><span>💵</span><strong>الدفع عند الاستلام</strong><small>أجور التوصيل ٥٬٠٠٠ د.ع</small></a>
+    <a href="/return-policy"><span>↺</span><strong>الاسترجاع بعد الاستلام</strong><small>أجور الرجوع الاختياري ٥٬٠٠٠ د.ع</small></a>
+    <a href="/broken-product"><span>🛡️</span><strong>تعويض الكسر</strong><small>نعالج التلف المثبت دون رسوم خطأ المتجر</small></a>
+  </section>
   <footer class="footer"><div class="wrap footer-grid">
     <div><strong>السيد إبراهيم العاني</strong><p>للزيوت والأعشاب والمنتجات الطبيعية</p><small>بغداد — الغزالية — العراق</small></div>
-    <div class="footer-links"><a href="/privacy">سياسة الخصوصية</a><a href="/terms">الشروط والأحكام</a><a href="/admin">لوحة الإدارة</a><a href="#products">المنتجات</a></div>
+    <div class="footer-links">
+      <a href="/about-us">من نحن</a><a href="/payment-policy">الدفع والتوصيل</a>
+      <a href="/return-policy">سياسة الاسترجاع</a><a href="/return-request">تقديم استرجاع</a>
+      <a href="/broken-product">تعويض المنتج المكسور</a><a href="/help">الأسئلة الشائعة</a>
+      <a href="/settings">الإعدادات</a><a href="/privacy">سياسة الخصوصية</a>
+      <a href="/terms">الشروط والأحكام</a><a href="/admin">لوحة الإدارة</a>
+    </div>
     <div class="footer-note">© <span id="year">2026</span> السيد إبراهيم العاني. جميع الحقوق محفوظة.<p>هذه نسخة أولية؛ لا يتم قبول طلبات شراء قبل اكتمال التحقق.</p></div>
   </div></footer>
   <nav class="mobile-shop-nav" aria-label="التنقل السريع للمتجر"><a href="#products"><span>▦</span>المتجر</a><a href="#videos"><span>▶</span>فيديوهات</a><a href="#recipes"><span>☘</span>وصفاتي</a><a href="#basket"><span>▤</span>السلة</a></nav>
