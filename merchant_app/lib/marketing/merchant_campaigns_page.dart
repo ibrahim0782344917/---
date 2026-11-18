@@ -26,8 +26,9 @@ class _MerchantCampaignsPageState extends State<MerchantCampaignsPage> {
     try{await _campaigns;}catch(_){/* FutureBuilder displays errors */ }
   }
   void _notice(String s){
-    if(mounted)ScaffoldMessenger.of(context)
-      .showSnackBar(SnackBar(content:Text(s)));
+    if(mounted){
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text(s)));
+    }
   }
   Future<void> _create() async {
     final title=TextEditingController(),details=TextEditingController();
@@ -120,7 +121,7 @@ class _MerchantCampaignsPageState extends State<MerchantCampaignsPage> {
     }catch(_){_notice('تعذر تعديل العرض؛ تحقق من صلاحية المتجر.');}
   }
   @override Widget build(BuildContext context)=>Scaffold(
-    appBar:AppBar(title:Text('عروض '+widget.storeName)),
+    appBar:AppBar(title:Text('عروض ${widget.storeName}')),
     floatingActionButton:enabled?FloatingActionButton.extended(
       onPressed:_create,icon:const Icon(Icons.add),label:const Text('عرض مؤقت')):null,
     body:ListView(padding:const EdgeInsets.all(16),children:[
@@ -138,18 +139,19 @@ class _MerchantCampaignsPageState extends State<MerchantCampaignsPage> {
           if(snapshot.connectionState!=ConnectionState.done){
             return const Center(child:CircularProgressIndicator());
           }
-          if(snapshot.hasError)return const Card(
-            child:Padding(padding:EdgeInsets.all(17),
-              child:Text('تعذر تحميل العروض. تأكد من تفعيل قاعدة البيانات.')));
+          if(snapshot.hasError){
+            return const Card(
+              child:Padding(padding:EdgeInsets.all(17),
+                child:Text('تعذر تحميل العروض. تأكد من تفعيل قاعدة البيانات.')));
+          }
           final list=snapshot.data??[];
-          if(list.isEmpty)return const ListTile(
-            title:Text('لا توجد عروض مسجلة بعد.'));
+          if(list.isEmpty){
+            return const ListTile(title:Text('لا توجد عروض مسجلة بعد.'));
+          }
           return Column(children:[
             for(final row in list)Card(child:ListTile(
               title:Text(row['title']?.toString()??''),
-              subtitle:Text((row['description']?.toString()??'')+'\n'+
-                (row['starts_at']?.toString()??'')+' — '+
-                (row['ends_at']?.toString()??'')),
+              subtitle:Text("${row['description'] ?? ''}\n${row['starts_at'] ?? ''} — ${row['ends_at'] ?? ''}"),
               isThreeLine:true,
               trailing:Switch(value:row['is_published']==true,
                 onChanged:(_)=>_toggle(row)),
