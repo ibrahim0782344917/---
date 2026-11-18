@@ -4,6 +4,7 @@ import 'package:shitreed_customer/alani/alani_editor.dart';
 import 'package:shitreed_customer/alani/alani_video.dart';
 import 'package:shitreed_customer/alani/alani_product.dart';
 import 'package:shitreed_customer/alani/catalog_filters.dart';
+import 'package:shitreed_customer/alani/alani_pages.dart';
 import 'package:shitreed_customer/auth/customer_auth_page.dart';
 import 'package:shitreed_customer/backend/marketplace_backend.dart';
 import 'package:shitreed_customer/commerce/commerce_service.dart';
@@ -99,6 +100,7 @@ class _AlAniShopHomeState extends State<AlAniShopHome> {
       ),
       child: Scaffold(
         backgroundColor: _cream,
+        drawer: const AlAniStoreDrawer(),
         appBar: AppBar(
           titleSpacing: 12,
           title: const Column(
@@ -224,6 +226,27 @@ class _AlAniShopHomeState extends State<AlAniShopHome> {
         _heading('فيديوهات ووصفات', onMore: () => setState(() => _tab = 2)),
         const SizedBox(height: 9),
         _publicationPreview(),
+        const SizedBox(height: 12),
+        Card(
+          child: ListTile(
+            leading: const Icon(Icons.local_shipping_outlined, color: _pine),
+            title: const Text('الدفع نقداً عند الاستلام'),
+            subtitle: const Text('التوصيل ٥٬٠٠٠ د.ع — إرجاع اختياري ٥٬٠٠٠ د.ع'),
+            trailing: const Icon(Icons.chevron_left),
+            onTap: () => Navigator.push(context, MaterialPageRoute<void>(
+              builder: (_) => const AlAniInfoPage(type: 'payments'))),
+          ),
+        ),
+        Card(
+          child: ListTile(
+            leading: const Icon(Icons.assignment_return_outlined, color: _pine),
+            title: const Text('الاسترجاع والتعويض عن الكسر'),
+            subtitle: const Text('راجع الشروط وقدّم طلب استرجاع'),
+            trailing: const Icon(Icons.chevron_left),
+            onTap: () => Navigator.push(context, MaterialPageRoute<void>(
+              builder: (_) => const AlAniInfoPage(type: 'returns'))),
+          ),
+        ),
         const SizedBox(height: 18),
         Card(
           color: Colors.white, elevation: 0,
