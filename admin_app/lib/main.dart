@@ -567,7 +567,7 @@ class _AdminHomeState extends State<AdminHome> {
             Text('إدارة المتاجر والطلبات والمنتجات والصلاحيات من مكان واحد',
               style: TextStyle(color: Colors.white70)),
           ])),
-      if (widget.role == 'super_admin' || widget.role == 'operations')
+      if (AdminAccess.canOpenAlAni(widget.role))
         Card(
           color: const Color(0xFFE8F8ED),
           child: ListTile(
@@ -781,7 +781,7 @@ class _AdminHomeState extends State<AdminHome> {
       appBar: AppBar(
         title: const Text('شتريد | الإدارة الموحدة'),
         actions: [
-          if (widget.role == 'super_admin' || widget.role == 'operations')
+          if (AdminAccess.canOpenAlAni(widget.role))
             IconButton(
               tooltip: 'متجر السيد إبراهيم العاني',
               icon: const Icon(Icons.spa_outlined),
