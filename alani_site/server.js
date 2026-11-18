@@ -10,8 +10,11 @@ const SB_KEY = process.env.SUPABASE_PUBLISHABLE_KEY || '';
 const STORE_ID = process.env.ALANI_STORE_ID || '25091ca2-c0da-416c-b634-81b188ee66be';
 // Shipping-inclusive totals must be verified in an isolated DB before orders
 // can be accepted. Enabling ALANI_CHECKOUT_ENABLED alone is insufficient.
-const CHECKOUT_ENABLED = process.env.ALANI_CHECKOUT_ENABLED === 'true'
-  && process.env.ALANI_DELIVERY_TOTALS_VERIFIED === 'true';
+export function checkoutAllowed(env) {
+  return env.ALANI_CHECKOUT_ENABLED === 'true'
+    && env.ALANI_DELIVERY_TOTALS_VERIFIED === 'true';
+}
+const CHECKOUT_ENABLED = checkoutAllowed(process.env);
 const RETURNS_ENABLED = process.env.ALANI_RETURNS_ENABLED === 'true';
 const root = join(dirname(fileURLToPath(import.meta.url)), 'public');
 const uuid = /^[a-f0-9]{8}-[a-f0-9]{4}-[1-8][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i;
