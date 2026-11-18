@@ -36,13 +36,16 @@ class _MerchantOsmClaimsPageState extends State<MerchantOsmClaimsPage> {
   Future<void> refresh() async {
     final uid = db.auth.currentUser?.id;
     if (uid == null) {
-      if (mounted) setState(() {
+      if (mounted) {
+        setState(() {
         error = 'سجّل الدخول بحساب التاجر أولاً.';
         loading = false;
-      });
+        });
+      }
       return;
     }
-    if (mounted) setState(() { loading = true; error = null; });
+    if (mounted) {
+        setState(() { loading = true; error = null; });
     try {
       final ownStores = await CommerceService.myStores();
       final ownClaims = await db.from('shitreed_osm_claim_requests')
@@ -56,12 +59,15 @@ class _MerchantOsmClaimsPageState extends State<MerchantOsmClaimsPage> {
           storeId = stores.isEmpty ? null : stores.first['id'] as String;
         }
         loading = false;
-      });
+        });
+      }
     } catch (_) {
-      if (mounted) setState(() {
+      if (mounted) {
+        setState(() {
         loading = false;
         error = 'تعذر تحميل بيانات مطالبات المتاجر. حاول لاحقاً.';
-      });
+        });
+      }
     }
   }
 
@@ -137,7 +143,7 @@ class _MerchantOsmClaimsPageState extends State<MerchantOsmClaimsPage> {
             const Text('أولاً سجّل متجرك داخل شتريد تاجر حتى تقدم مطالبة.'),
           if (stores.isNotEmpty) ...[
             DropdownButtonFormField<String>(
-              value: storeId,
+              initialValue: storeId,
               decoration: const InputDecoration(labelText: 'متجري'),
               items: [
                 for (final store in stores)
