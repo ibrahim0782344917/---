@@ -421,13 +421,22 @@ class AlAniStoreDrawer extends StatelessWidget {
     child:SafeArea(child:ListView(children:[
       const DrawerHeader(
         decoration:BoxDecoration(color:Color(0xFFE5F9EB)),
-        child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
-          Icon(Icons.eco,color:_green,size:45),
-          SizedBox(height:11),
-          Text('السيد إبراهيم العاني',
-            style:TextStyle(fontWeight:FontWeight.w900,fontSize:21,color:_ink)),
-          Text('الزيوت والأعشاب الطبيعية — بغداد',
-            style:TextStyle(color:_ink,fontSize:12)),
+        child:Row(children:[
+          Icon(Icons.eco,color:_green,size:38),
+          SizedBox(width:12),
+          Expanded(child:Column(
+            mainAxisAlignment:MainAxisAlignment.center,
+            crossAxisAlignment:CrossAxisAlignment.start,
+            children:[
+              Text('السيد إبراهيم العاني',maxLines:2,
+                style:TextStyle(fontWeight:FontWeight.w900,
+                  fontSize:17,color:_ink)),
+              SizedBox(height:5),
+              Text('الزيوت والأعشاب الطبيعية — بغداد',
+                maxLines:2,overflow:TextOverflow.ellipsis,
+                style:TextStyle(color:_ink,fontSize:11)),
+            ],
+          )),
         ]),
       ),
       ListTile(leading:const Icon(Icons.home_outlined),
