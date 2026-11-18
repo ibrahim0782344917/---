@@ -1,0 +1,40 @@
+name: Al-Ani Publishing Preflight (no production changes)
+on:
+  push:
+    branches:
+      - feature/alani-publish-preflight-20261118
+  pull_request:
+    paths:
+      - 'alani_site/**'
+      - 'scripts/configure_android_release.py'
+      - 'scripts/test_configure_android_release.py'
+      - '.github/workflows/alani-*'
+permissions:
+  contents: read
+jobs:
+  web-and-signing-preflight:
+    name: Website checkout and signing safety tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: JavaScript syntax check
+        run: npm run check
+        working-directory: alani_site
+      - name: Checkout and policies integration tests (localhost)
+        run: npm test
+        working-directory: alani_site
+        env:
+          ALANI_CHECKOUT_ENABLED: 'false'
+          ALANI_RETURNS_ENABLED: 'false'
+      - name: Release signing secret-handling unit tests
+        run: python3 -m unittest discover -s scripts -p test_configure_android_release.py -v
+      - name: Confirm production release setup is manual only
+        run: |
+          grep -q 'workflow_dispatch:' .github/workflows/alani-play-release-candidate.yml
+          ! grep -q 'google-github-actions/auth' .github/workflows/alani-play-release-candidate.yml
+          ! grep -q 'r0adkll/upload-google-play' .github/workflows/alani-play-release-candidate.yml
+          test -f docs/ALANI_PLAY_RELEASE_GATES_AR.md
