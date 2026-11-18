@@ -3,7 +3,29 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:alani_admin_app/main.dart';
 import 'package:alani_admin_app/api.dart';
 
+import 'package:alani_admin_app/dashboard_filters.dart';
 void main() {
+  test('filters low stock and out-of-stock accurately', () {
+    final products = <Map<String, dynamic>>[
+      {'name':'عسل أصلي','description':'عسل طبيعي','stock_quantity':0,'is_active':true},
+      {'name':'زيت حبة البركة','description':'زيت طبيعي','stock_quantity':3,'is_active':true},
+      {'name':'أعشاب','description':'خلطة','stock_quantity':25,'is_active':false},
+    ];
+    expect(AlAniAdminFilters.products(products,inventory:'low').length,2);
+    expect(AlAniAdminFilters.products(products,inventory:'out').length,1);
+    expect(AlAniAdminFilters.products(products,inventory:'hidden').length,1);
+    expect(AlAniAdminFilters.products(products,search:'زيت').single['stock_quantity'],3);
+  });
+
+  test('order searches are scoped to the loaded data', () {
+    final orders = <Map<String, dynamic>>[
+      {'id':'order01','status':'placed','delivery_address':'الغزالية'},
+      {'id':'order02','status':'ready','delivery_address':'المنصور'},
+    ];
+    expect(AlAniAdminFilters.orders(orders,status:'placed').length,1);
+    expect(AlAniAdminFilters.orders(orders,search:'المنصور').single['id'],'order02');
+  });
+
   test('order transitions respect server-side flow', () {
     expect(AlAniAdminApi.nextStatuses('placed'), ['accepted','rejected']);
     expect(AlAniAdminApi.nextStatuses('accepted'), ['preparing']);
