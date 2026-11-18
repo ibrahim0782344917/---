@@ -5,6 +5,7 @@ import 'package:shitreed_customer/alani/alani_video.dart';
 import 'package:shitreed_customer/alani/alani_product.dart';
 import 'package:shitreed_customer/alani/catalog_filters.dart';
 import 'package:shitreed_customer/alani/alani_pages.dart';
+import 'package:shitreed_customer/alani/alani_cart.dart';
 import 'package:shitreed_customer/auth/customer_auth_page.dart';
 import 'package:shitreed_customer/backend/marketplace_backend.dart';
 import 'package:shitreed_customer/commerce/commerce_service.dart';
@@ -148,7 +149,7 @@ class _AlAniShopHomeState extends State<AlAniShopHome> {
             _catalog(),
             _contentPanel({'video'}, 'فيديوهات السيد إبراهيم العاني'),
             _contentPanel({'recipe', 'article', 'post'}, 'الوصفات والمدونة'),
-            const LiveCartPage(),
+            const AlAniCartPage(),
           ]),
         ),
         bottomNavigationBar: NavigationBar(
