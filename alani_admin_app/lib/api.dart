@@ -60,10 +60,11 @@ class AlAniAdminApi {
       'content-type':'application/json',
       if (authenticated) 'authorization':'Bearer $_token',
     };
-    final response = await _client.send(http.Request(method,uri)
-      ..headers.addAll(headers)
-      ..body = jsonEncode(body ?? {}))
-      .timeout(const Duration(seconds:18));
+    final request = http.Request(method, uri);
+    request.headers.addAll(headers);
+    if (body != null) request.body = jsonEncode(body);
+    final response = await _client.send(request)
+        .timeout(const Duration(seconds:18));
     final data = await http.Response.fromStream(response);
     dynamic parsed;
     try { parsed = jsonDecode(data.body); } catch (_) { parsed={}; }
