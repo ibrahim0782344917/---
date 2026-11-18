@@ -7,7 +7,7 @@ class AlAniCampaignAdminPage extends StatefulWidget {
   final String storeId,storeName;
   const AlAniCampaignAdminPage({super.key,
     this.storeId='25091ca2-c0da-416c-b634-81b188ee66be',
-    this.storeName='السيد إبراهيم العاني'};
+    this.storeName='السيد إبراهيم العاني'});
   @override State<AlAniCampaignAdminPage> createState()=>_AlAniCampaignAdminPageState();
 }
 class _AlAniCampaignAdminPageState extends State<AlAniCampaignAdminPage> {
