@@ -74,7 +74,7 @@ class AlAniCartPage extends StatelessWidget {
               ),
             ),
             const SizedBox(height:8),
-            const FilledButton.icon(
+            FilledButton.icon(
               onPressed:null,
               icon:Icon(Icons.lock_outline),
               label:Text('الطلب عند الاستلام غير متاح بعد'),
