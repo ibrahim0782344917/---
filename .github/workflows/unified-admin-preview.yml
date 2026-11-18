@@ -6,6 +6,10 @@ on:
     paths:
       - 'admin_app/**'
       - '.github/workflows/unified-admin-preview.yml'
+  pull_request:
+    paths:
+      - 'admin_app/**'
+      - '.github/workflows/unified-admin-preview.yml'
   workflow_dispatch:
 permissions:
   contents: read
@@ -39,6 +43,8 @@ jobs:
           if "android.permission.INTERNET" not in text:
               text=text.replace("<application",
                 '<uses-permission android:name="android.permission.INTERNET" />\n    <application',1)
+          text=text.replace('android:label="shitreed_admin"',
+              'android:label="إدارة شتريد والعاني"')
           manifest.write_text(text)
           PY
       - run: flutter pub get
