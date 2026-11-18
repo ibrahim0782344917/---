@@ -3,6 +3,7 @@ import 'package:shitreed_customer/alani/alani_content.dart';
 import 'package:shitreed_customer/alani/alani_editor.dart';
 import 'package:shitreed_customer/alani/alani_video.dart';
 import 'package:shitreed_customer/alani/alani_product.dart';
+import 'package:shitreed_customer/alani/catalog_filters.dart';
 import 'package:shitreed_customer/auth/customer_auth_page.dart';
 import 'package:shitreed_customer/backend/marketplace_backend.dart';
 import 'package:shitreed_customer/commerce/commerce_service.dart';
@@ -28,6 +29,8 @@ class _AlAniShopHomeState extends State<AlAniShopHome> {
   int _tab = 0;
   String _query = '';
   String _category = 'الكل';
+  String _sort = 'default';
+  bool _onlyAvailable = false;
   late Future<List<MarketplaceProduct>> _products;
   late Future<List<AlAniPublication>> _publications;
   late Future<bool> _canEdit;
@@ -321,6 +324,30 @@ class _AlAniShopHomeState extends State<AlAniShopHome> {
             ),
           ]),
         ),
+        const SizedBox(height: 12),
+        Row(children: [
+          Expanded(child: DropdownButtonFormField<String>(
+            initialValue: _sort,
+            decoration: const InputDecoration(
+              labelText: 'ترتيب المنتجات',
+              border: OutlineInputBorder(),
+              isDense: true,
+            ),
+            items: const [
+              DropdownMenuItem(value: 'default', child: Text('الترتيب الأصلي')),
+              DropdownMenuItem(value: 'price_asc', child: Text('السعر: الأقل أولاً')),
+              DropdownMenuItem(value: 'price_desc', child: Text('السعر: الأعلى أولاً')),
+              DropdownMenuItem(value: 'name', child: Text('حسب الاسم')),
+            ],
+            onChanged: (value) => setState(() => _sort = value ?? 'default'),
+          )),
+          const SizedBox(width: 8),
+          FilterChip(
+            label: const Text('المتوفر فقط'),
+            selected: _onlyAvailable,
+            onSelected: (value) => setState(() => _onlyAvailable = value),
+          ),
+        ]),
         const SizedBox(height: 14),
         _productResults(),
       ],
@@ -360,6 +387,11 @@ class _AlAniShopHomeState extends State<AlAniShopHome> {
           (_query.isEmpty || ('${product.name} ${product.description}')
               .toLowerCase().contains(_query.toLowerCase())), 
         ).toList();
+        filtered = AlAniCatalogFilters.apply(
+          filtered,
+          sort: _sort,
+          inStockOnly: _onlyAvailable,
+        );
         if (limit != null) {
           filtered = filtered.take(limit).toList();
         }
