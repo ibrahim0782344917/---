@@ -67,7 +67,7 @@ class _AlAniLegacyCustomersImportPageState
     if(selecting)return;
     setState(()=>selecting=true);
     try{
-      final picked=await FilePicker.platform.pickFile(
+      final picked=await FilePicker.pickFile(
         type:FileType.custom,allowedExtensions:['csv']);
       if(picked==null)return;
       // Protect memory usage from unexpected files.
