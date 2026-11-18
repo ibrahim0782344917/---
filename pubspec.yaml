@@ -1,5 +1,5 @@
 name: shitreed_customer
-description: "شتريد؟ موجود! — تطبيق الزبون في بغداد"
+description: "السيد إبراهيم العاني — متجر الزيوت والأعشاب (نسخة تطوير من شتريد)"
 publish_to: none
 version: 0.5.0+5
 environment:
@@ -13,6 +13,7 @@ dependencies:
   flutter_map: ^8.3.2
   latlong2: ^0.9.1
   url_launcher: ^6.3.2
+  video_player: ^2.14.1
   image_picker: ^1.2.1
 dev_dependencies:
   flutter_test:
