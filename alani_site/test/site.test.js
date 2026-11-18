@@ -55,3 +55,18 @@ test('StoreKing-inspired storefront layout has accessible sections', async () =>
   assert.match(css,/--pine:\s*#01BE5F/i);
   assert.match(css,/\.category-strip\s+a/);
 });
+
+
+test('owner Admin has stock alerts and order/content controls', async () => {
+  const html=await (await fetch(root+'/admin')).text();
+  for(const id of [
+    'm-low','admin-product-search','admin-inventory-filter',
+    'admin-order-search','admin-order-filter','admin-post-filter',
+  ]) assert.match(html,new RegExp('id="'+id+'"'));
+  const js=await (await fetch(root+'/admin.js')).text();
+  assert.match(js,/function filteredProducts\(/);
+  assert.match(js,/function filteredOrders\(/);
+  assert.match(js,/function filteredPosts\(/);
+  const unauth=await fetch(root+'/api/admin/overview');
+  assert.equal(unauth.status,401);
+});
