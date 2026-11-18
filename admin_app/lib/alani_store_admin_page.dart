@@ -6,7 +6,8 @@ import 'alani_campaign_admin_page.dart';
 const _pine=Color(0xFF01BE5F);
 
 class AlAniStoreAdminPage extends StatefulWidget {
-  const AlAniStoreAdminPage({super.key});
+  final int initialTab;
+  const AlAniStoreAdminPage({super.key,this.initialTab=0});
   @override
   State<AlAniStoreAdminPage> createState()=>_AlAniStoreAdminPageState();
 }
@@ -16,7 +17,7 @@ class _AlAniStoreAdminPageState extends State<AlAniStoreAdminPage> {
   Map<String,dynamic> data={};
   String? error;
   bool loading=true;
-  int tab=0;
+  late int tab;
   String productSearch='', stockFilter='all', orderSearch='', orderFilter='all', contentFilter='all';
 
   @override
@@ -44,6 +45,7 @@ class _AlAniStoreAdminPageState extends State<AlAniStoreAdminPage> {
   @override
   void initState(){
     super.initState();
+    tab=widget.initialTab.clamp(0,4);
     reload();
   }
 
