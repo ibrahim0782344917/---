@@ -5,6 +5,7 @@ on:
     branches:
       - release/shitreed-production-readiness-20261114
       - feature/alani-unified-admin-20261118
+      - feature/shitreed-alani-three-app-suite-20261118
   pull_request:
     paths:
       - '.github/workflows/shitreed-three-app-readiness.yml'

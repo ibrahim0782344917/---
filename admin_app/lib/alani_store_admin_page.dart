@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'alani_store_api.dart';
 import 'alani_dashboard_filters.dart';
+import 'alani_campaign_admin_page.dart';
 
 const _pine=Color(0xFF01BE5F);
 
 class AlAniStoreAdminPage extends StatefulWidget {
-  const AlAniStoreAdminPage({super.key});
+  final int initialTab;
+  const AlAniStoreAdminPage({super.key,this.initialTab=0});
   @override
   State<AlAniStoreAdminPage> createState()=>_AlAniStoreAdminPageState();
 }
@@ -15,7 +17,7 @@ class _AlAniStoreAdminPageState extends State<AlAniStoreAdminPage> {
   Map<String,dynamic> data={};
   String? error;
   bool loading=true;
-  int tab=0;
+  late int tab;
   String productSearch='', stockFilter='all', orderSearch='', orderFilter='all', contentFilter='all';
 
   @override
@@ -43,6 +45,7 @@ class _AlAniStoreAdminPageState extends State<AlAniStoreAdminPage> {
   @override
   void initState(){
     super.initState();
+    tab=widget.initialTab>=0 && widget.initialTab<=4 ? widget.initialTab : 0;
     reload();
   }
 
@@ -195,6 +198,16 @@ class _AlAniStoreAdminPageState extends State<AlAniStoreAdminPage> {
       rows('products'),search:productSearch,inventory:stockFilter);
     final lowCount=rows('products').where(AlAniAdminFilters.lowStock).length;
     return ListView(padding:const EdgeInsets.all(13),children:[
+      Card(color:const Color(0xFFE7F8EE),child:ListTile(
+        leading:const Icon(Icons.campaign_outlined,color:_pine),
+        title:const Text('إدارة شريط العروض المؤقتة',
+          style:TextStyle(fontWeight:FontWeight.w800)),
+        subtitle:const Text('جدولة إعلان يظهر للزبائن في فترة محددة '
+          'بعد تفعيل قاعدة العروض'),
+        trailing:const Icon(Icons.chevron_left),
+        onTap:()=>Navigator.of(context).push(MaterialPageRoute<void>(
+          builder:(_)=>const AlAniCampaignAdminPage())),
+      )),
       Row(children:[
         const Expanded(child:Text('المنتجات والمخزون',
           style:TextStyle(fontSize:21,fontWeight:FontWeight.w900,color:_pine))),

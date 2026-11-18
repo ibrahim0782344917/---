@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'admin_api.dart';
 
 const _navy = Color(0xFF192A43);
-const _blue = Color(0xFF416FC4);
+const _blue = Color(0xFF01BE5F);
 
 /// Admin-only controls. Every write is re-authorized by Supabase:
 /// super_admin role + verified MFA AAL2 + immutable audit entry.

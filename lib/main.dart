@@ -14,7 +14,7 @@ Future<void> main() async {
   runApp(const ShitreedApp());
 }
 
-const purple = Color(0xFF0C946B);
+const purple = Color(0xFF01BE5F);
 const darkPurple = Color(0xFF15251F);
 const orange = Color(0xFFF2AB3A);
 const canvas = Color(0xFFF6F8F7);

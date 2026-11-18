@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-const merchantPurple = Color(0xFF0C946B);
+const merchantPurple = Color(0xFF01BE5F);
 const merchantOrange = Color(0xFFF2AB3A);
 const merchantCanvas = Color(0xFFF6F8F7);
 const merchantDark = Color(0xFF163E32);
