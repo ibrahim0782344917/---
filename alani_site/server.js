@@ -16,7 +16,7 @@ const staticRoutes = {
   '/':'index.html', '/index.html':'index.html', '/admin':'admin.html',
   '/admin/':'admin.html', '/privacy':'privacy.html', '/terms':'terms.html',
   '/site.css':'site.css', '/site.js':'site.js', '/admin.js':'admin.js',
-  '/info.js':'info.js',
+  '/info.js':'info.js','/menu.js':'menu.js',
   '/welcome':'info.html','/about-us':'info.html',
   '/payment-policy':'info.html','/return-policy':'info.html',
   '/return-request':'info.html','/broken-product':'info.html',
