@@ -113,5 +113,14 @@ class AlAniAdminApi {
     await _request('/api/admin/post',method:'POST',body:values);
   }
 
+  Future<void> reviewReturn({
+    required String id,
+    required String status,
+    required String note,
+  }) async {
+    await _request('/api/admin/return',method:'POST',
+      body:{'id':id,'status':status,'note':note});
+  }
+
   void dispose() => _client.close();
 }
