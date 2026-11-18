@@ -157,8 +157,52 @@ function renderPosts() {
     else items.forEach(p=>element.append(makePostCard(p)));
   }
 }
+
+/* StoreKing home-slider behavior adapted for the independent Al-Ani website.
+ * Does not create fictitious promotions or claim unverified discounts. */
+function setupPromoCarousel() {
+  const slides=[...document.querySelectorAll('[data-promo-slide]')];
+  const target=$('promo-dots');
+  if (!slides.length || !target) return;
+  let selected=0;
+  const dots=[];
+  function select(index) {
+    selected=(index+slides.length)%slides.length;
+    slides.forEach((slide,i)=>{
+      slide.hidden=i!==selected;
+      slide.classList.toggle('is-active',i===selected);
+    });
+    dots.forEach((button,i)=>button.setAttribute('aria-current',String(i===selected)));
+  }
+  slides.forEach((_,i)=>{
+    const button=node('button',null);
+    button.type='button';
+    button.setAttribute('aria-label','اذهب إلى العرض '+(i+1));
+    button.addEventListener('click',()=>select(i));
+    target.append(button);dots.push(button);
+  });
+  $('promo-next')?.addEventListener('click',()=>select(selected+1));
+  $('promo-prev')?.addEventListener('click',()=>select(selected-1));
+  select(0);
+  const carousel=$('promo-carousel');
+  if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return;
+  let interval=setInterval(()=>select(selected+1),6200);
+  const pause=()=>{clearInterval(interval);interval=null;};
+  const resume=()=>{
+    if(interval===null && !document.hidden) {
+      interval=setInterval(()=>select(selected+1),6200);
+    }
+  };
+  carousel.addEventListener('mouseenter',pause);
+  carousel.addEventListener('mouseleave',resume);
+  carousel.addEventListener('focusin',pause);
+  carousel.addEventListener('focusout',resume);
+  document.addEventListener('visibilitychange',()=>document.hidden?pause():resume());
+}
+
 async function init() {
   $('year').textContent=String(new Date().getFullYear());
+  setupPromoCarousel();
   $('search').addEventListener('input',e=>{
     searchTerm=e.target.value.trim().toLowerCase();renderProducts();
   });
