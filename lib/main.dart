@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:shitreed_customer/alani/alani_shop.dart';
 import 'package:shitreed_customer/alani/alani_pages.dart';
 import 'package:shitreed_customer/auth/customer_auth_page.dart';
 import 'package:shitreed_customer/backend/marketplace_backend.dart';
