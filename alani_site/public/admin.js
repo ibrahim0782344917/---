@@ -1,7 +1,7 @@
 const $=id=>document.getElementById(id);
 let accessToken=null;
 let sessionExpires=0;
-let adminData={products:[],orders:[],posts:{available:false,items:[]}};
+let adminData={products:[],orders:[],posts:{available:false,items:[]},returns:{available:false,items:[]}};
 let productQuery='', inventoryFilter='all', orderQuery='', orderFilter='all', postFilter='all';
 const lowStock=p=>Number(p.stock_quantity||0)<=5;
 function filteredProducts() {
@@ -46,7 +46,7 @@ function active(){
   return true;
 }
 function resetSession() {
-  accessToken=null;sessionExpires=0;adminData={products:[],orders:[],posts:{available:false,items:[]}};
+  accessToken=null;sessionExpires=0;adminData={products:[],orders:[],posts:{available:false,items:[]},returns:{available:false,items:[]}};
   $('admin-section').hidden=true;$('login-section').hidden=false;$('logout').hidden=true;
   $('password').value='';
 }
@@ -141,6 +141,54 @@ function renderPosts() {
   }
   $('post-submit').disabled=!enabled;
 }
+const returnReasons={change_mind:'منتج سليم',damaged:'مكسور/متضرر',
+  wrong_item:'منتج مختلف',defective:'عيب'};
+const returnStatuses={submitted:'مُقدّم',reviewing:'قيد المراجعة',
+  approved:'مقبول',declined:'مرفوض',resolved:'تمت المعالجة'};
+function returnNext(current){
+  if(current==='submitted')return ['reviewing'];
+  if(current==='reviewing')return ['approved','declined'];
+  if(current==='approved')return ['resolved'];
+  return [];
+}
+async function changeReturn(entry,status){
+  const note=prompt('اكتب ملاحظة للمراجعة (10 حروف على الأقل):');
+  if(!note||note.trim().length<10)return;
+  try{
+    active();
+    await api('/api/admin/return',{
+      method:'POST',body:JSON.stringify({id:entry.id,status,note:note.trim()})
+    });
+    await refresh();message('تم تحديث حالة مراجعة الاسترجاع فقط، دون دفع مبالغ.');
+  }catch(e){message(e.message,true);}
+}
+function renderReturns(){
+  const section=adminData.returns||{available:false,items:[]};
+  $('returns-availability').textContent=section.available
+    ? 'طلبات الاسترجاع المسجلة (تُراجع من مالك المتجر).'
+    : 'نظام استقبال الاسترجاع غير مفعل بعد؛ لا توجد عمليات استرداد مالي.';
+  const table=$('returns-table');table.replaceChildren();
+  for(const entry of section.items||[]){
+    const row=document.createElement('tr');
+    [
+      String(entry.order_id||'').slice(0,8),
+      returnReasons[entry.reason]||entry.reason,
+      String(entry.details||'').slice(0,150),
+      returnStatuses[entry.status]||entry.status
+    ].forEach(v=>row.append(text('td',v)));
+    const actions=document.createElement('td');
+    for(const next of returnNext(entry.status)){
+      const btn=text('button',returnStatuses[next]||next);
+      btn.addEventListener('click',()=>changeReturn(entry,next));
+      actions.append(btn);
+    }
+    row.append(actions);table.append(row);
+  }
+  if(!(section.items||[]).length){
+    const row=document.createElement('tr'),cell=text('td','لا توجد طلبات استرجاع مسجلة حالياً.');
+    cell.colSpan=5;row.append(cell);table.append(row);
+  }
+}
 function reports(){
   const total=adminData.orders.reduce((sum,o)=>sum+(Number(o.total_iqd)||0),0);
   const pending=adminData.orders.filter(o=>o.status==='placed').length;
@@ -156,14 +204,16 @@ async function refresh(){
   $('m-orders').textContent=String(response.orders.length);
   $('m-posts').textContent=String((response.posts.items||[]).filter(p=>p.status==='published').length);
   $('m-low').textContent=String(response.products.filter(lowStock).length);
-  renderProducts();renderOrders();renderPosts();reports();
+  $('m-returns').textContent=String((response.returns?.items||[]).filter(x=>
+    !['resolved','declined'].includes(x.status)).length);
+  renderProducts();renderOrders();renderPosts();renderReturns();reports();
   message('تم تحديث البيانات. جميع العمليات تقتصر على المتجر الذي تملكه.');
 }
 function showTab(tab){
   for(const element of document.querySelectorAll('[data-tab]')){
     element.classList.toggle('active',element.dataset.tab===tab);
   }
-  for(const name of ['products','orders','posts','settings']){
+  for(const name of ['products','orders','returns','posts','settings']){
     $('tab-'+name).hidden=name!==tab;
   }
 }
