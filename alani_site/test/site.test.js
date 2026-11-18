@@ -1,6 +1,6 @@
 import test, { before, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { server } from '../server.js';
+import { server, checkoutAllowed } from '../server.js';
 
 let root;
 before(async () => {
@@ -106,4 +106,14 @@ test('returns are feature-disabled until a secure database rollout', async () =>
     method:'POST',headers:{'content-type':'application/json'},body:'{}'
   });
   assert.equal(admin.status,401);
+});
+
+test('cash checkout never opens before shipping-inclusive totals are verified', () => {
+  assert.equal(checkoutAllowed({}),false);
+  assert.equal(checkoutAllowed({ALANI_CHECKOUT_ENABLED:'true'}),false);
+  assert.equal(checkoutAllowed({ALANI_DELIVERY_TOTALS_VERIFIED:'true'}),false);
+  assert.equal(checkoutAllowed({ALANI_CHECKOUT_ENABLED:'yes',
+    ALANI_DELIVERY_TOTALS_VERIFIED:'true'}),false);
+  assert.equal(checkoutAllowed({ALANI_CHECKOUT_ENABLED:'true',
+    ALANI_DELIVERY_TOTALS_VERIFIED:'true'}),true);
 });
