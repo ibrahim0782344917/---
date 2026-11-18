@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:alani_admin_app/api.dart';
+import 'package:alani_admin_app/dashboard_filters.dart';
 
 void main() => runApp(const AlAniAdminApp());
 const _pine=Color(0xFF01BE5F);
@@ -18,6 +19,7 @@ class _AlAniAdminAppState extends State<AlAniAdminApp> {
   String? error;
   bool busy=false,signedIn=false;
   int tab=0;
+  String productSearch='', stockFilter='all', orderSearch='', orderFilter='all', contentFilter='all';
 
   @override
   void dispose(){email.dispose();password.dispose();api.dispose();super.dispose();}
@@ -235,7 +237,9 @@ class _AlAniAdminAppState extends State<AlAniAdminApp> {
   );
 
   Widget productsView(){
-    final all=rows('products');
+    final all=AlAniAdminFilters.products(
+      rows('products'),search:productSearch,inventory:stockFilter);
+    final lowCount=rows('products').where(AlAniAdminFilters.lowStock).length;
     return ListView(padding:const EdgeInsets.all(13),children:[
       Row(children:[
         const Expanded(child:Text('المنتجات والمخزون',
@@ -243,7 +247,34 @@ class _AlAniAdminAppState extends State<AlAniAdminApp> {
         FilledButton.icon(onPressed:()=>editProduct(),
           icon:const Icon(Icons.add),label:const Text('إضافة')),
       ]),
-      if(all.isEmpty)const ListTile(title:Text('لا توجد منتجات مسجلة')),
+      Card(color:const Color(0xFFEDF9F1),child:ListTile(
+        leading:const Icon(Icons.inventory_2_outlined,color:_pine),
+        title:const Text('تنبيه المخزون'),
+        subtitle:Text('منتجات بكمية 5 أو أقل: $lowCount'),
+        onTap:()=>setState(()=>stockFilter='low'),
+      )),
+      const SizedBox(height:10),
+      TextField(
+        decoration:const InputDecoration(
+          labelText:'ابحث عن اسم المنتج أو الوصف',
+          prefixIcon:Icon(Icons.search),
+          border:OutlineInputBorder(),
+        ),
+        onChanged:(value)=>setState(()=>productSearch=value),
+      ),
+      const SizedBox(height:10),
+      Wrap(spacing:7,children:[
+        for(final filter in const {
+          'all':'الكل','low':'مخزون قليل',
+          'out':'نفد المخزون','hidden':'مخفي',
+        }.entries)
+          ChoiceChip(
+            label:Text(filter.value),
+            selected:stockFilter==filter.key,
+            onSelected:(_)=>setState(()=>stockFilter=filter.key),
+          ),
+      ]),
+      if(all.isEmpty)const ListTile(title:Text('لا توجد منتجات مطابقة للبحث')),
       for(final p in all)Card(color:Colors.white,child:ListTile(
         title:Text(p['name'] as String? ?? ''),
         subtitle:Text(money(p['price_iqd'])+' • المخزون: '+
@@ -256,11 +287,34 @@ class _AlAniAdminAppState extends State<AlAniAdminApp> {
   }
 
   Widget ordersView(){
-    final all=rows('orders');
+    final all=AlAniAdminFilters.orders(
+      rows('orders'),search:orderSearch,status:orderFilter);
     return ListView(padding:const EdgeInsets.all(13),children:[
       const Text('طلبات الزبائن',style:TextStyle(
         fontSize:22,fontWeight:FontWeight.w900,color:_pine)),
-      if(all.isEmpty)const ListTile(title:Text('لا توجد طلبات حتى الآن')),
+      const SizedBox(height:10),
+      TextField(
+        decoration:const InputDecoration(
+          labelText:'بحث برقم الطلب أو عنوان التوصيل',
+          prefixIcon:Icon(Icons.search),
+          border:OutlineInputBorder(),
+        ),
+        onChanged:(v)=>setState(()=>orderSearch=v),
+      ),
+      const SizedBox(height:10),
+      Wrap(spacing:7,children:[
+        for(final filter in const {
+          'all':'الكل','placed':'جديد','accepted':'مقبول',
+          'preparing':'التجهيز','ready':'جاهز',
+          'rejected':'مرفوض',
+        }.entries)
+          ChoiceChip(
+            label:Text(filter.value),
+            selected:orderFilter==filter.key,
+            onSelected:(_)=>setState(()=>orderFilter=filter.key),
+          ),
+      ]),
+      if(all.isEmpty)const ListTile(title:Text('لا توجد طلبات مطابقة')),
       for(final o in all) Card(color:Colors.white,child:Padding(
         padding:const EdgeInsets.all(12),child:Column(
           crossAxisAlignment:CrossAxisAlignment.stretch,children:[
@@ -288,11 +342,21 @@ class _AlAniAdminAppState extends State<AlAniAdminApp> {
       FilledButton.icon(onPressed:contentEnabled?()=>editPost():null,
         icon:const Icon(Icons.add),label:const Text('إضافة')),
     ]),
+    Wrap(spacing:7,children:[
+      for(final filter in const {
+        'all':'كل المحتوى','video':'فيديوهات',
+        'recipe':'وصفات','article':'مقالات','post':'منشورات',
+      }.entries)
+        ChoiceChip(label:Text(filter.value),
+          selected:contentFilter==filter.key,
+          onSelected:(_)=>setState(()=>contentFilter=filter.key)),
+    ]),
     if(!contentEnabled)const Card(child:Padding(
       padding:EdgeInsets.all(20),child:Text(
         'جدول نشر المحتوى لم يُفعّل بعد. '
         'لن تتاح الكتابة قبل اكتمال اختبارات الصلاحيات.'))),
-    for(final p in posts)Card(color:Colors.white,child:ListTile(
+    for(final p in AlAniAdminFilters.posts(posts,kind:contentFilter))
+      Card(color:Colors.white,child:ListTile(
       title:Text(p['title'] as String? ?? ''),
       subtitle:Text(AlAniAdminApi.kindLabel(p['kind'] as String? ?? '')+
         ' • '+(p['status']=='published'?'منشور':'مسودة')),
@@ -314,6 +378,8 @@ class _AlAniAdminAppState extends State<AlAniAdminApp> {
         trailing:Text(orders.length.toString()))),
       Card(child:ListTile(title:const Text('الطلبات الجديدة'),
         trailing:Text(orders.where((o)=>o['status']=='placed').length.toString()))),
+      Card(child:ListTile(title:const Text('منتجات بمخزون قليل أو منتهٍ'),
+        trailing:Text(products.where(AlAniAdminFilters.lowStock).length.toString()))),
       Card(child:ListTile(title:const Text('قيمة الطلبات المسجلة'),
         trailing:Text(money(total)))),
       const Text('قيمة الطلبات ليست إيراداً تم تحصيله فعلياً.',
