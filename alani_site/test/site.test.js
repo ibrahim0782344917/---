@@ -90,7 +90,7 @@ test('all customer policy pages are routed and menu is discoverable', async () =
   assert.equal(script.status,200);
   const content=await script.text();
   assert.match(content,/٥٬٠٠٠/);
-  assert.match(content,/المنتج مكسور/);
+  assert.match(content,/منتج مكسور/);
 });
 
 test('returns are feature-disabled until a secure database rollout', async () => {
