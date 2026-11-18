@@ -77,6 +77,7 @@ function renderBasket() {
     controls.append(minus,node('strong',qty),plus);row.append(descr,controls);list.append(row);
   }
   $('basket-total').textContent=formatPrice(total);
+  $('basket-estimate').textContent=formatPrice(items.length ? total+5000 : 0);
   const btn=$('checkout-button');
   btn.disabled=!checkoutEnabled || !items.length;
   btn.textContent=checkoutEnabled?'تأكيد الطلب — الدفع عند الاستلام':'الشراء غير مفعّل بعد';
