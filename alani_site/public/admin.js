@@ -2,6 +2,29 @@ const $=id=>document.getElementById(id);
 let accessToken=null;
 let sessionExpires=0;
 let adminData={products:[],orders:[],posts:{available:false,items:[]}};
+let productQuery='', inventoryFilter='all', orderQuery='', orderFilter='all', postFilter='all';
+const lowStock=p=>Number(p.stock_quantity||0)<=5;
+function filteredProducts() {
+  return adminData.products.filter(p=>{
+    const haystack=(String(p.name||'')+' '+String(p.description||'')).toLowerCase();
+    if(productQuery&&!haystack.includes(productQuery))return false;
+    if(inventoryFilter==='low'&&!lowStock(p))return false;
+    if(inventoryFilter==='out'&&Number(p.stock_quantity)!==0)return false;
+    if(inventoryFilter==='hidden'&&p.is_active===true)return false;
+    return true;
+  });
+}
+function filteredOrders() {
+  return adminData.orders.filter(o=>{
+    if(orderFilter!=='all'&&o.status!==orderFilter)return false;
+    const haystack=(String(o.id||'')+' '+String(o.delivery_address||'')).toLowerCase();
+    return !orderQuery||haystack.includes(orderQuery);
+  });
+}
+function filteredPosts() {
+  return (adminData.posts.items||[]).filter(p=>
+    postFilter==='all'||p.kind===postFilter);
+}
 const money=n=>new Intl.NumberFormat('ar-IQ').format(Number(n||0))+' د.ع';
 const text=(tag,value,klass)=>{const e=document.createElement(tag);e.textContent=String(value??'');if(klass)e.className=klass;return e;};
 function message(value,error=false) {
@@ -47,7 +70,7 @@ function resetProduct(){
 }
 function renderProducts(){
   const t=$('products-table');t.replaceChildren();
-  for(const p of adminData.products){
+  for(const p of filteredProducts()){
     const row=document.createElement('tr');
     const edit=text('button','تعديل');edit.addEventListener('click',()=>editProduct(p));
     for(const v of [p.name,money(p.price_iqd),p.stock_quantity,p.is_active?'منشور':'مخفي']){
@@ -55,7 +78,7 @@ function renderProducts(){
     }
     const cell=document.createElement('td');cell.append(edit);row.append(cell);t.append(row);
   }
-  if(!adminData.products.length){
+  if(!filteredProducts().length){
     const row=text('tr');const col=text('td','لا توجد منتجات مسجلة');col.colSpan=5;
     row.append(col);t.append(row);
   }
@@ -69,7 +92,7 @@ function statusOptions(status) {
 const statuses={placed:'جديد',accepted:'مقبول',preparing:'قيد التجهيز',ready:'جاهز',rejected:'مرفوض',cancelled:'ملغي'};
 function renderOrders(){
   const table=$('orders-table');table.replaceChildren();
-  for(const o of adminData.orders){
+  for(const o of filteredOrders()){
     const row=document.createElement('tr');
     [o.id?.slice(0,8),money(o.total_iqd),statuses[o.status]||o.status,o.delivery_address||''].forEach(v=>row.append(text('td',v)));
     const cell=document.createElement('td');
@@ -79,7 +102,7 @@ function renderOrders(){
     }
     row.append(cell);table.append(row);
   }
-  if(!adminData.orders.length){
+  if(!filteredOrders().length){
     const row=document.createElement('tr'),col=text('td','لا توجد طلبات مسجلة');
     col.colSpan=5;row.append(col);table.append(row);
   }
@@ -110,7 +133,7 @@ function renderPosts() {
   $('posts-availability').textContent=enabled
     ? 'نظام المحتوى متصل بقاعدة البيانات.'
     : 'قاعدة الفيديوهات والمدونة لم تُفعّل بعد؛ لا يمكن حفظ المحتوى حالياً.';
-  for(const p of adminData.posts.items||[]){
+  for(const p of filteredPosts()){
     const row=document.createElement('tr');
     [p.title,p.kind,p.status==='published'?'منشور':'مسودة'].forEach(value=>row.append(text('td',value)));
     const cell=document.createElement('td');const edit=text('button','تعديل');
@@ -132,6 +155,7 @@ async function refresh(){
   $('m-products').textContent=String(response.products.length);
   $('m-orders').textContent=String(response.orders.length);
   $('m-posts').textContent=String((response.posts.items||[]).filter(p=>p.status==='published').length);
+  $('m-low').textContent=String(response.products.filter(lowStock).length);
   renderProducts();renderOrders();renderPosts();reports();
   message('تم تحديث البيانات. جميع العمليات تقتصر على المتجر الذي تملكه.');
 }
@@ -161,6 +185,21 @@ $('logout').addEventListener('click',resetSession);
 $('refresh').addEventListener('click',async()=>{try{await refresh();}catch(e){message(e.message,true);}});
 document.querySelectorAll('[data-tab]').forEach(btn=>
   btn.addEventListener('click',()=>showTab(btn.dataset.tab)));
+$('admin-product-search').addEventListener('input',event=>{
+  productQuery=event.target.value.trim().toLowerCase();renderProducts();
+});
+$('admin-inventory-filter').addEventListener('change',event=>{
+  inventoryFilter=event.target.value;renderProducts();
+});
+$('admin-order-search').addEventListener('input',event=>{
+  orderQuery=event.target.value.trim().toLowerCase();renderOrders();
+});
+$('admin-order-filter').addEventListener('change',event=>{
+  orderFilter=event.target.value;renderOrders();
+});
+$('admin-post-filter').addEventListener('change',event=>{
+  postFilter=event.target.value;renderPosts();
+});
 $('reset-product').addEventListener('click',resetProduct);
 $('product-form').addEventListener('submit',async e=>{
   e.preventDefault();
