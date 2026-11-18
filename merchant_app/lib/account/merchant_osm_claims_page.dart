@@ -45,20 +45,22 @@ class _MerchantOsmClaimsPageState extends State<MerchantOsmClaimsPage> {
       return;
     }
     if (mounted) {
-        setState(() { loading = true; error = null; });
+      setState(() { loading = true; error = null; });
+    }
     try {
       final ownStores = await CommerceService.myStores();
       final ownClaims = await db.from('shitreed_osm_claim_requests')
           .select('id,store_id,osm_object_id,note,status,review_reason,created_at')
           .order('created_at', ascending: false)
           .limit(30);
-      if (mounted) setState(() {
-        stores = ownStores;
-        claims = ownClaims;
-        if (!stores.any((s) => s['id'] == storeId)) {
-          storeId = stores.isEmpty ? null : stores.first['id'] as String;
-        }
-        loading = false;
+      if (mounted) {
+        setState(() {
+          stores = ownStores;
+          claims = ownClaims;
+          if (!stores.any((s) => s['id'] == storeId)) {
+            storeId = stores.isEmpty ? null : stores.first['id'] as String;
+          }
+          loading = false;
         });
       }
     } catch (_) {
