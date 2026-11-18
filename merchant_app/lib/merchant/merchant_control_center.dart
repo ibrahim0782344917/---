@@ -3,6 +3,7 @@ import 'package:shitreed_merchant/commerce/commerce_service.dart';
 import 'package:shitreed_merchant/merchant/merchant_dashboard.dart';
 import 'package:shitreed_merchant/merchant/merchant_settings_pages.dart';
 import 'package:shitreed_merchant/reports/merchant_reports.dart';
+import 'package:shitreed_merchant/marketing/merchant_campaigns_page.dart';
 import 'package:shitreed_merchant/shared/merchant_widgets.dart';
 
 /// Only owner-owned stores are loaded through CommerceService.myStores().
@@ -93,6 +94,8 @@ class _MerchantControlCenterState extends State<MerchantControlCenter> {
               ()=>_open(MerchantProductsPage(storeId:id,storeName:name))),
             _action('طلبات المتجر',Icons.receipt_long_outlined,
               ()=>_open(MerchantOrdersPage(storeId:id))),
+            _action('العروض المؤقتة',Icons.campaign_outlined,
+              ()=>_open(MerchantCampaignsPage(storeId:id,storeName:name))),
           ]),
         ]),
       ),
