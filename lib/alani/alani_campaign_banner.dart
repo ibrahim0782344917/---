@@ -65,7 +65,9 @@ class _AlAniCampaignBannerState extends State<AlAniCampaignBanner> {
     return FutureBuilder<List<Map<String,dynamic>>>(
       future:_campaigns,builder:(context,snapshot){
         if(snapshot.connectionState!=ConnectionState.done||
-            snapshot.hasError)return const SizedBox.shrink();
+            snapshot.hasError){
+          return const SizedBox.shrink();
+        }
         final now=DateTime.now().toUtc();
         final active=(snapshot.data??[]).where((row){
           final start=DateTime.tryParse(row['starts_at']?.toString()??'');
@@ -104,7 +106,7 @@ class _AlAniCampaignBannerState extends State<AlAniCampaignBanner> {
                     maxLines:2,overflow:TextOverflow.ellipsis,
                     style:const TextStyle(color:Colors.white70,fontSize:12)),
                   const Spacer(),
-                  Text(ends==null?'':'ينتهي: '+ends.toLocal().toString().substring(0,16),
+                  Text(ends==null?'':'ينتهي: ${ends.toLocal().toString().substring(0,16)}',
                     style:const TextStyle(color:Colors.white70,fontSize:11)),
                 ]),
               );
@@ -112,8 +114,7 @@ class _AlAniCampaignBannerState extends State<AlAniCampaignBanner> {
           )),
           if(active.length>1)Padding(
             padding:const EdgeInsets.only(top:9),
-            child:Center(child:Text('العرض '+(_page+1).toString()+
-              ' من '+active.length.toString(),
+            child:Center(child:Text('العرض ${_page+1} من ${active.length}',
               style:const TextStyle(fontSize:11,color:Colors.black54))),
           ),
           const SizedBox(height:12),
