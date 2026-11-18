@@ -365,6 +365,102 @@ class _AlAniAdminAppState extends State<AlAniAdminApp> {
     )),
   ]);
 
+
+  Future<void> reviewReturn(Map<String,dynamic> request,String status) async {
+    final note=TextEditingController();
+    final confirmed=await showDialog<bool>(
+      context:context,builder:(ctx)=>AlertDialog(
+        title:Text('مراجعة الاسترجاع: '+status),
+        content:TextField(
+          controller:note,maxLines:3,maxLength:1000,
+          decoration:const InputDecoration(
+            labelText:'ملاحظة المراجعة (10 أحرف على الأقل)',
+            border:OutlineInputBorder()),
+        ),
+        actions:[
+          TextButton(onPressed:()=>Navigator.pop(ctx,false),
+            child:const Text('إلغاء')),
+          FilledButton(onPressed:()=>Navigator.pop(ctx,true),
+            child:const Text('تأكيد تغيير الحالة')),
+        ],
+      ),
+    );
+    final text=note.text.trim();
+    note.dispose();
+    if(confirmed!=true||text.length<10) {
+      if(confirmed==true)notify('اكتب ملاحظة واضحة قبل المراجعة.');
+      return;
+    }
+    try{
+      await api.reviewReturn(id:request['id'] as String,status:status,note:text);
+      await reload();
+      notify('تم تسجيل قرار المراجعة. لم يُنفذ استرداد مالي تلقائي.');
+    }catch(_){
+      notify('تعذرت مراجعة الطلب؛ نظام الاسترجاع قد يكون غير مفعل.');
+    }
+  }
+
+  Widget returnsView(){
+    final dataReturns=data['returns'] as Map?;
+    final enabled=dataReturns?['available']==true;
+    final requests=((dataReturns?['items'] as List<dynamic>?)??const [])
+      .map((e)=>Map<String,dynamic>.from(e as Map)).toList();
+    String reason(String value)=>switch(value){
+      'change_mind'=>'إرجاع منتج سليم',
+      'damaged'=>'منتج مكسور/تالف',
+      'wrong_item'=>'منتج مختلف',
+      'defective'=>'منتج معيب',
+      _=>value
+    };
+    String status(String value)=>switch(value){
+      'submitted'=>'قُدّم','reviewing'=>'قيد المراجعة',
+      'approved'=>'مقبول','declined'=>'مرفوض','resolved'=>'تمت المعالجة',
+      _=>value
+    };
+    List<String> next(String current)=>switch(current){
+      'submitted'=>const ['reviewing'],
+      'reviewing'=>const ['approved','declined'],
+      'approved'=>const ['resolved'],
+      _=>const []
+    };
+    return ListView(padding:const EdgeInsets.all(13),children:[
+      const Text('الاسترجاع والتعويض',style:TextStyle(
+        fontSize:22,fontWeight:FontWeight.w900,color:_pine)),
+      const SizedBox(height:10),
+      const Text('لا تُطبق أجور الرجوع الاختياري عند ثبوت تلف '
+        'يرجع إلى المتجر أو شركة التوصيل. '
+        'قرارات المراجعة هنا لا تنفذ استرداد مبالغ تلقائياً.',
+        style:TextStyle(fontSize:13,height:1.6)),
+      if(!enabled)const Card(child:Padding(
+        padding:EdgeInsets.all(18),
+        child:Text('قاعدة طلبات الاسترجاع لم تُفعّل بعد. '
+          'لا يمكن استقبال أو معالجة الطلبات من التطبيق حالياً.'))),
+      if(enabled&&requests.isEmpty)const ListTile(
+        title:Text('لا توجد طلبات استرجاع حتى الآن.')),
+      for(final item in requests)
+        Card(color:Colors.white,child:Padding(
+          padding:const EdgeInsets.all(14),
+          child:Column(crossAxisAlignment:CrossAxisAlignment.stretch,children:[
+            Text('طلب: '+(item['order_id']??'').toString().substring(0,8),
+              style:const TextStyle(fontWeight:FontWeight.w900)),
+            const SizedBox(height:5),
+            Text(reason(item['reason'] as String? ?? '')),
+            Text('الحالة: '+status(item['status'] as String? ?? '')),
+            const SizedBox(height:5),
+            Text(item['details'] as String? ?? '',
+              style:const TextStyle(fontSize:13)),
+            Wrap(spacing:8,children:[
+              for(final value in next(item['status'] as String? ?? ''))
+                OutlinedButton(
+                  onPressed:()=>reviewReturn(item,value),
+                  child:Text(status(value)),
+                ),
+            ]),
+          ]),
+        )),
+    ]);
+  }
+
   Widget reportsView(){
     final products=rows('products'),orders=rows('orders');
     final total=orders.fold<int>(0,(sum,o)=>
@@ -407,7 +503,7 @@ class _AlAniAdminAppState extends State<AlAniAdminApp> {
           icon:const Icon(Icons.logout)),
       ]),
       body:IndexedStack(index:tab,children:[
-        productsView(),ordersView(),postsView(),reportsView()
+        productsView(),ordersView(),returnsView(),postsView(),reportsView()
       ]),
       bottomNavigationBar:NavigationBar(
         selectedIndex:tab,onDestinationSelected:(v)=>setState(()=>tab=v),
@@ -416,6 +512,8 @@ class _AlAniAdminAppState extends State<AlAniAdminApp> {
             label:'المنتجات'),
           NavigationDestination(icon:Icon(Icons.receipt_long_outlined),
             label:'الطلبات'),
+          NavigationDestination(icon:Icon(Icons.assignment_return_outlined),
+            label:'الاسترجاع'),
           NavigationDestination(icon:Icon(Icons.menu_book_outlined),
             label:'المحتوى'),
           NavigationDestination(icon:Icon(Icons.assessment_outlined),
