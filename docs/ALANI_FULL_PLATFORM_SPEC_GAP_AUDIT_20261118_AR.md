@@ -22,7 +22,7 @@
 |---|---|---|
 | المصدر الأساسي | GitHub: ibrahim0782344917/--- | موجود |
 | فرع تطوير المتجر | feature/alani-herbal-store-app-20261118 | موجود؛ **181 commit أمام main عند الفحص**، ولا يُدمج تلقائياً |
-| نسخة رجوع من الكود | backup/alani-before-full-spec-20261118 | **تم إنشاؤها دون تعديل المصدر** |
+| نسخة رجوع من الكود | backup/alani-before-full-spec-20261118 | **تم إنشاؤها دون تعديل المصدر؛ نقطة الرجوع عند commit 014cb5e348d01024c3f2abfa6b375e48b3593fc5** |
 | Android للزبون | lib/alani و lib/commerce و lib/main.dart | كود حقيقي؛ البناء النهائي والتجربة على جهاز لم يثبت اكتمالهما |
 | تطبيق التاجر | merchant_app | موجود ضمن شتريد؛ يحتاج تخصيصاً لمتجر السيد إبراهيم العاني |
 | تطبيق Admin مستقل | alani_admin_app | كود Flutter، وبناء Preview نجح وأنتج artifact؛ ليس AAB موقعاً |
@@ -44,6 +44,7 @@
 
 - كل الجداول العامة الـ 21 التي أظهرها فحص pg_class لديها RLS مفعل.
 - أربع جداول عامة ليس لها سياسات SELECT/INSERT مباشرة وقت الفحص: shitreed_admin_activity، shitreed_admin_staff، shitreed_profile_admin_audit، store_review_audit. هذا قد يكون عزلاً مقصوداً لا ثغرة، ويحتاج مراجعة طريقة الوصول الإدارية.
+- Supabase Security Advisor أشار أيضاً إلى **تعطيل حماية كلمات المرور المسرّبة (Leaked Password Protection)**؛ تحتاج فحص توفرها ضمن الخطة الحالية وتفعيلها بعد تقييم أثرها على تسجيل الدخول، ولا ندّعي أنها مفعّلة. المرجع: https://supabase.com/docs/guides/auth/password-security#password-strength-and-leaked-password-protection
 - Supabase Security Advisor أعاد 22 تحذيراً عن دوال SECURITY DEFINER يمكن استدعاؤها من دور authenticated. **هذا لا يثبت استغلالاً أو تسريباً**؛ تُراجع كل دالة وتفويضاتها ومعرّف المستخدم والتحقق من ملكية الموارد والتسجيل. لا نسحب EXECUTE عشوائياً دون اختبار؛ قد يتسبب ذلك في قطع الطلبات والإدارة.
 - Performance Advisor: 9 علاقات FK دون فهارس مقترحة، 7 فهارس غير مستخدمة، و2 تحذير من سياسات permissive متعددة؛ لا نحذف أي فهرس قبل قياس الأداء واختبار الاستعلامات.
 - RLS لكل جدول جديد قبل تعريضه لـ REST. لا تضع service_role داخل Flutter أو في المتصفح. الإدارة على الخادم وفي RLS؛ إخفاء زر غير كافٍ.
