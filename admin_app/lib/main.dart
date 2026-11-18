@@ -5,6 +5,7 @@ import 'admin_api.dart';
 import 'admin_pro_features.dart';
 import 'admin_ranks_levels_page.dart';
 import 'alani_store_admin_page.dart';
+import 'alani_campaign_admin_page.dart';
 
 const purple = Color(0xFF01BE5F);
 const orange = Color(0xFFF2AB3A);
@@ -780,6 +781,39 @@ class _AdminHomeState extends State<AdminHome> {
                   Navigator.pop(context);
                   Navigator.push(context,MaterialPageRoute<void>(
                     builder:(_)=>const AlAniStoreAdminPage()));
+                },
+              ),
+              ListTile(
+                leading:const Icon(Icons.video_library_outlined,
+                  color:Colors.white70),
+                title:const Text('الفيديوهات والمقالات',
+                  style:TextStyle(color:Colors.white)),
+                onTap:(){
+                  Navigator.pop(context);
+                  Navigator.push(context,MaterialPageRoute<void>(
+                    builder:(_)=>const AlAniStoreAdminPage(initialTab:3)));
+                },
+              ),
+              ListTile(
+                leading:const Icon(Icons.assignment_return_outlined,
+                  color:Colors.white70),
+                title:const Text('الاسترجاع والتعويض',
+                  style:TextStyle(color:Colors.white)),
+                onTap:(){
+                  Navigator.pop(context);
+                  Navigator.push(context,MaterialPageRoute<void>(
+                    builder:(_)=>const AlAniStoreAdminPage(initialTab:2)));
+                },
+              ),
+              ListTile(
+                leading:const Icon(Icons.campaign_outlined,
+                  color:Colors.white70),
+                title:const Text('العروض والإعلانات',
+                  style:TextStyle(color:Colors.white)),
+                onTap:(){
+                  Navigator.pop(context);
+                  Navigator.push(context,MaterialPageRoute<void>(
+                    builder:(_)=>const AlAniCampaignAdminPage()));
                 },
               ),
             ],
