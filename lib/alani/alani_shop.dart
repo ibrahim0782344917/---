@@ -10,10 +10,10 @@ import 'package:shitreed_customer/commerce/customer_commerce_pages.dart';
 import 'package:shitreed_customer/maps/baghdad_map_page.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-const _pine = Color(0xFF1C503B);
-const _deep = Color(0xFF113D2C);
-const _cream = Color(0xFFF9F5EC);
-const _gold = Color(0xFFD1A75E);
+const _pine = Color(0xFF01BE5F);
+const _deep = Color(0xFF1F1F39);
+const _cream = Color(0xFFFFFFFF);
+const _gold = Color(0xFFF6A609);
 
 /// Al-Ani's own storefront. The shared Shitreed customer/merchant/admin
 /// implementation remains intact in the repository.
@@ -204,12 +204,15 @@ class _AlAniShopHomeState extends State<AlAniShopHome> {
         const SizedBox(height: 20),
         _heading('تسوق حسب القسم'),
         const SizedBox(height: 10),
-        Wrap(spacing: 8, runSpacing: 8, children: [
-          _categoryButton('الزيوت', Icons.water_drop_outlined),
-          _categoryButton('الأعشاب', Icons.grass_outlined),
-          _categoryButton('العسل', Icons.spa_outlined),
-          _categoryButton('العناية', Icons.local_florist_outlined),
-        ]),
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: Row(children: [
+            _categoryButton('الزيوت', Icons.water_drop_outlined),
+            _categoryButton('الأعشاب', Icons.grass_outlined),
+            _categoryButton('العسل', Icons.spa_outlined),
+            _categoryButton('العناية', Icons.local_florist_outlined),
+          ]),
+        ),
         const SizedBox(height: 23),
         _heading('منتجات المتجر', onMore: () => setState(() => _tab = 1)),
         const SizedBox(height: 10),
@@ -241,14 +244,36 @@ class _AlAniShopHomeState extends State<AlAniShopHome> {
     ),
   );
 
-  Widget _categoryButton(String label, IconData icon) => ActionChip(
-    avatar: Icon(icon, size: 18, color: _pine),
-    label: Text(label),
-    onPressed: () => setState(() {
-      _category = label;
-      _query = '';
-      _tab = 1;
-    }),
+  Widget _categoryButton(String label, IconData icon) => Padding(
+    padding: const EdgeInsetsDirectional.only(end: 10),
+    child: InkWell(
+      onTap: () => setState(() {
+        _category = label;
+        _query = '';
+        _tab = 1;
+      }),
+      borderRadius: BorderRadius.circular(14),
+      child: Container(
+        width: 94,
+        height: 104,
+        padding: const EdgeInsets.all(9),
+        decoration: BoxDecoration(
+          color: const Color(0xFFF7F7FC),
+          borderRadius: BorderRadius.circular(14),
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, size: 34, color: _pine),
+            const SizedBox(height: 10),
+            Text(label, maxLines: 1, overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                fontSize: 12, color: _deep, fontWeight: FontWeight.w700,
+              )),
+          ],
+        ),
+      ),
+    ),
   );
 
   Widget _heading(String title, {VoidCallback? onMore}) => Row(
