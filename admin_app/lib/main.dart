@@ -4,6 +4,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'admin_api.dart';
 import 'admin_pro_features.dart';
 import 'admin_ranks_levels_page.dart';
+import 'alani_store_admin_page.dart';
 
 const purple = Color(0xFF595FCB);
 const orange = Color(0xFFFFC071);
@@ -18,7 +19,7 @@ class ShitreedAdminApp extends StatelessWidget {
   const ShitreedAdminApp({super.key});
   @override
   Widget build(BuildContext context) => MaterialApp(
-    title: 'شتريد — الإدارة',
+    title: 'شتريد — الإدارة الموحدة',
     debugShowCheckedModeBanner: false,
     locale: const Locale('ar'),
     builder: (_, child) => Directionality(
@@ -566,6 +567,24 @@ class _AdminHomeState extends State<AdminHome> {
             Text('إدارة المتاجر والطلبات والمنتجات والصلاحيات من مكان واحد',
               style: TextStyle(color: Colors.white70)),
           ])),
+      if (widget.role == 'super_admin' || widget.role == 'operations')
+        Card(
+          color: const Color(0xFFE8F8ED),
+          child: ListTile(
+            leading: const Icon(Icons.spa_outlined,
+              size: 36,color:Color(0xFF16884B)),
+            title: const Text('إدارة متجر السيد إبراهيم العاني',
+              style: TextStyle(fontWeight:FontWeight.w900)),
+            subtitle: const Text('المنتجات والطلبات والفيديوهات '
+              'والوصفات والاسترجاع — داخل تطبيق Admin نفسه'),
+            trailing: const Icon(Icons.chevron_left),
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute<void>(
+                builder: (_) => const AlAniStoreAdminPage(),
+              ),
+            ),
+          ),
+        ),
       const SizedBox(height: 15),
       Text('نظرة عامة', style: Theme.of(context).textTheme.headlineSmall),
       const Text('قيمة الطلبات ليست أرباحاً أو مدفوعات محصلة.',
@@ -760,8 +779,18 @@ class _AdminHomeState extends State<AdminHome> {
         ])),
       ) : null,
       appBar: AppBar(
-        title: const Text('شتريد | لوحة الإدارة'),
+        title: const Text('شتريد | الإدارة الموحدة'),
         actions: [
+          if (widget.role == 'super_admin' || widget.role == 'operations')
+            IconButton(
+              tooltip: 'متجر السيد إبراهيم العاني',
+              icon: const Icon(Icons.spa_outlined),
+              onPressed: () => Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (_) => const AlAniStoreAdminPage(),
+                ),
+              ),
+            ),
           if (widget.role == 'super_admin')
             IconButton(
               tooltip: 'إدارة الرتب والتوثيق والمستويات',
