@@ -181,3 +181,92 @@ body {background:#fff; color:var(--ink)}
   .admin-metrics {grid-template-columns:repeat(2,minmax(0,1fr))}
   .admin-filter-bar {padding:9px;gap:9px}
 }
+
+
+/* Welcome, store information, returns and compensation pages. */
+.menu-trigger {display:inline-grid;place-items:center;height:42px;width:46px;
+  background:#e6f9ed;border:1px solid #c8eed6;border-radius:12px;
+  color:#124b2d;font-size:24px;font-weight:800;cursor:pointer}
+.side-menu-overlay {position:fixed;inset:0;background:#0b1a15a6;z-index:59}
+.side-menu {position:fixed;right:0;top:0;bottom:0;width:min(345px,88vw);
+  z-index:60;display:flex;flex-direction:column;gap:1px;overflow:auto;
+  padding:12px 16px 26px;background:white;box-shadow:-20px 0 45px #001d1b30;
+  transform:translateX(105%);visibility:hidden;
+  transition:transform .2s ease,visibility .2s}
+.side-menu.open {transform:translateX(0);visibility:visible}
+.side-menu-head {display:flex;justify-content:space-between;align-items:center;
+  padding:18px 5px 16px;color:#13472b;font-weight:900;font-size:18px}
+.side-menu-head button {height:40px;width:40px;border:1px solid #e2efea;
+  background:#f6faf7;border-radius:12px;font-size:28px}
+.side-menu>a {padding:12px 14px;border-radius:10px;font-size:14px;
+  color:#1b4130;font-weight:700;min-height:46px}
+.side-menu>a:hover,.side-menu>a[aria-current=page] {background:#edf9f1;color:#047642}
+.info-layout {padding-top:26px;padding-bottom:100px}
+.info-top {display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:18px}
+.info-top .overline {margin:0}
+.info-back {font-size:13px;color:#4d7559}
+.info-grid {display:grid;grid-template-columns:240px minmax(0,1fr);align-items:start;gap:24px}
+.info-sidebar {position:sticky;top:120px;background:#f6fbf8;padding:16px;
+  border:1px solid #e3eee7;border-radius:18px;display:grid;gap:2px}
+.info-sidebar h3 {font-size:17px;margin:0 0 10px;color:#234937}
+.info-sidebar a {padding:10px 14px;font-size:13px;border-radius:10px;font-weight:700}
+.info-sidebar a:hover,.info-sidebar a[aria-current=page] {
+  background:#dff9e8;color:#087844}
+.info-article {background:#fff;border:1px solid #e9f0e9;border-radius:22px;
+  padding:clamp(22px,4.5vw,50px);box-shadow:0 7px 30px #114a2210;min-height:500px}
+.info-article h1 {font-size:clamp(28px,3.8vw,42px);line-height:1.4;
+  color:#14452d;font-weight:900;margin-bottom:19px}
+.info-article h2 {color:#194c32;font-size:22px;margin:28px 0 8px;font-weight:900}
+.info-article p,.info-article li {font-size:14px;color:#3c5244;line-height:2}
+.info-article .lead {font-size:17px;color:#557464;line-height:1.95}
+.info-article ol {padding-inline-start:24px}
+.info-article a:not(.button) {text-decoration:underline;color:#047844}
+.info-article details {padding:15px 0;border-bottom:1px solid #e9efe9}
+.info-article details summary {font-weight:800;cursor:pointer;color:#1f4830}
+.info-article details p {margin:7px 0 0}
+.welcome-visual {border-radius:20px;padding:clamp(26px,4vw,43px);
+  background:linear-gradient(115deg,#e4f8e9,#f7fff7);
+  border:1px solid #dcf3e4;text-align:center}
+.welcome-visual h1 {color:#15472c}
+.welcome-visual p {max-width:630px;margin:0 auto 23px}
+.welcome-icon {display:block;font-size:55px;margin-bottom:9px}
+.welcome-buttons {display:flex;justify-content:center;gap:10px;flex-wrap:wrap}
+.info-tiles {display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:22px}
+.info-tiles a {padding:17px;border:1px solid #daeddf;border-radius:14px;
+  text-decoration:none!important;background:white}
+.info-tiles a strong {display:block;font-size:13px;color:#175332}
+.info-tiles a span {display:block;font-size:11px;color:#647c6b;margin-top:5px}
+.rate-card {display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:23px 0}
+.rate-card>div {background:#edfbf1;border:1px solid #cff1d9;padding:20px;border-radius:14px}
+.rate-card span {font-size:12px;color:#4f725e;display:block}
+.rate-card strong {font-size:21px;font-weight:900;color:#11693c}
+.policy-note {background:#fff8e8;border:1px solid #efddad;border-radius:14px;
+  padding:16px 18px;margin:20px 0;font-size:13px;color:#655024;line-height:1.9}
+.return-form {display:grid;grid-template-columns:1fr 1fr;gap:16px;
+  margin-top:25px;padding:24px;border:1px solid #e6eee9;border-radius:17px;background:#fafefa}
+.return-form label {display:grid;gap:6px;font-size:13px;color:#21442e;font-weight:800}
+.return-form label:nth-child(n+5),.return-form .policy-note,.return-form button,
+.return-form .form-message {grid-column:1/-1}
+.return-form input,.return-form select,.return-form textarea,
+.setting-line select {width:100%;padding:12px;border:1px solid #cbded1;
+  border-radius:11px;background:white;color:#213b2d;min-width:0}
+.return-form textarea {resize:vertical}
+.setting-line {padding:19px 0;border-bottom:1px solid #e8f0e9;
+  display:flex;justify-content:space-between;align-items:center;gap:10px}
+.setting-line label {font-size:14px;font-weight:800;color:#1e5637}
+.setting-line select {width:160px}
+.large-text .info-article p,.large-text .info-article li {font-size:18px}
+.high-contrast .info-article,.high-contrast .info-sidebar {border:2px solid #103e2a}
+.high-contrast .info-article p,.high-contrast .info-article li {color:#102e1b}
+@media(max-width:800px) {
+  .info-grid {grid-template-columns:1fr}
+  .info-sidebar {display:none}
+  .info-top {align-items:flex-start}
+  .info-article {padding:24px 19px;min-height:400px}
+  .info-tiles {grid-template-columns:1fr}
+  .return-form {grid-template-columns:1fr;padding:16px}
+  .rate-card {grid-template-columns:1fr}
+}
+@media(prefers-reduced-motion:reduce) {
+  .side-menu {transition:none}
+}
