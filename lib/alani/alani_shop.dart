@@ -7,11 +7,13 @@ import 'package:shitreed_customer/alani/catalog_filters.dart';
 import 'package:shitreed_customer/alani/alani_pages.dart';
 import 'package:shitreed_customer/alani/alani_cart.dart';
 import 'package:shitreed_customer/alani/alani_campaign_banner.dart';
+import 'package:shitreed_customer/profile/shitreed_profile_page.dart';
+import 'package:shitreed_customer/alani/alani_branch.dart';
 import 'package:shitreed_customer/auth/customer_auth_page.dart';
 import 'package:shitreed_customer/backend/marketplace_backend.dart';
 import 'package:shitreed_customer/commerce/commerce_service.dart';
 import 'package:shitreed_customer/commerce/customer_commerce_pages.dart';
-import 'package:shitreed_customer/maps/baghdad_map_page.dart';
+
 import 'package:url_launcher/url_launcher.dart';
 
 const _pine = Color(0xFF01BE5F);
@@ -72,8 +74,12 @@ class _AlAniShopHomeState extends State<AlAniShopHome> {
       await Navigator.of(context).push<bool>(MaterialPageRoute(
         builder: (_) => const CustomerAuthPage(),
       ));
-    } else {
-      _showOrders();
+    }
+    if (!mounted) return;
+    if (MarketplaceBackend.currentUser != null) {
+      await Navigator.of(context).push<void>(MaterialPageRoute(
+        builder: (_) => const ShitreedProfilePage(),
+      ));
     }
     if (mounted) setState(() => _canEdit = AlAniEditorService.isOwner());
   }
@@ -133,12 +139,17 @@ class _AlAniShopHomeState extends State<AlAniShopHome> {
             IconButton(
               tooltip: 'خرائط Google',
               onPressed: () => Navigator.of(context).push<void>(
-                MaterialPageRoute(builder: (_) => const BaghdadMapPage()),
+                MaterialPageRoute(builder: (_) => const AlAniBranchPage()),
               ),
               icon: const Icon(Icons.map_outlined),
             ),
             IconButton(
-              tooltip: 'حسابي وطلباتي',
+              tooltip: 'طلباتي',
+              onPressed: _showOrders,
+              icon: const Icon(Icons.receipt_long_outlined),
+            ),
+            IconButton(
+              tooltip: 'حسابي والبروفايل',
               onPressed: _openProfile,
               icon: const Icon(Icons.person_outline),
             ),
@@ -259,7 +270,7 @@ class _AlAniShopHomeState extends State<AlAniShopHome> {
             subtitle: const Text('شاهد موقع المحل والمتاجر على الخرائط'),
             trailing: const Icon(Icons.chevron_left),
             onTap: () => Navigator.of(context).push<void>(
-              MaterialPageRoute(builder: (_) => const BaghdadMapPage()),
+              MaterialPageRoute(builder: (_) => const AlAniBranchPage()),
             ),
           ),
         ),
