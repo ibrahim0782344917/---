@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:alani_admin_app/api.dart';
 
 void main() => runApp(const AlAniAdminApp());
-const _pine=Color(0xFF1C503B);
-const _cream=Color(0xFFF7F4EA);
+const _pine=Color(0xFF01BE5F);
+const _cream=Color(0xFFFFFFFF);
 
 class AlAniAdminApp extends StatefulWidget {
   const AlAniAdminApp({super.key});
@@ -332,7 +332,7 @@ class _AlAniAdminAppState extends State<AlAniAdminApp> {
       colorScheme:ColorScheme.fromSeed(seedColor:_pine),
       scaffoldBackgroundColor:_cream,
       appBarTheme:const AppBarTheme(backgroundColor:_pine,
-        foregroundColor:Colors.white)),
+        foregroundColor:Color(0xFF1F1F39))),
     home:!signedIn?loginView():Scaffold(
       appBar:AppBar(title:const Text('إدارة السيد إبراهيم العاني'),actions:[
         IconButton(onPressed:reload,tooltip:'تحديث',
