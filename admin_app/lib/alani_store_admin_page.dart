@@ -1,28 +1,25 @@
 import 'package:flutter/material.dart';
-import 'package:alani_admin_app/api.dart';
-import 'package:alani_admin_app/dashboard_filters.dart';
+import 'alani_store_api.dart';
+import 'alani_dashboard_filters.dart';
 
-void main() => runApp(const AlAniAdminApp());
 const _pine=Color(0xFF01BE5F);
-const _cream=Color(0xFFFFFFFF);
 
-class AlAniAdminApp extends StatefulWidget {
-  const AlAniAdminApp({super.key});
+class AlAniStoreAdminPage extends StatefulWidget {
+  const AlAniStoreAdminPage({super.key});
   @override
-  State<AlAniAdminApp> createState()=>_AlAniAdminAppState();
+  State<AlAniStoreAdminPage> createState()=>_AlAniStoreAdminPageState();
 }
 
-class _AlAniAdminAppState extends State<AlAniAdminApp> {
+class _AlAniStoreAdminPageState extends State<AlAniStoreAdminPage> {
   final api=AlAniAdminApi();
-  final email=TextEditingController(),password=TextEditingController();
   Map<String,dynamic> data={};
   String? error;
-  bool busy=false,signedIn=false;
+  bool loading=true;
   int tab=0;
   String productSearch='', stockFilter='all', orderSearch='', orderFilter='all', contentFilter='all';
 
   @override
-  void dispose(){email.dispose();password.dispose();api.dispose();super.dispose();}
+  void dispose(){api.dispose();super.dispose();}
 
   List<Map<String,dynamic>> rows(String key) =>
     ((data[key] as List<dynamic>?)??const [])
@@ -43,33 +40,23 @@ class _AlAniAdminAppState extends State<AlAniAdminApp> {
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text(message)));
   }
 
-  Future<void> logIn()async{
-    if(busy)return;
-    if(!email.text.contains('@')||password.text.length<8){
-      setState(()=>error='تحقق من البريد الإلكتروني وكلمة المرور.');
-      return;
-    }
-    setState((){busy=true;error=null;});
-    try{
-      await api.login(email.text,password.text);
-      final result=await api.overview();
-      if(mounted)setState((){signedIn=true;data=result;tab=0;});
-      password.clear();
-    }catch(_){
-      if(mounted)setState(()=>error='تعذر الدخول؛ استخدم حساب مالك المتجر.');
-    }finally{if(mounted)setState(()=>busy=false);}
+  @override
+  void initState(){
+    super.initState();
+    reload();
   }
 
   Future<void> reload()async{
+    if(!mounted)return;
+    setState((){loading=true;error=null;});
     try{
       final result=await api.overview();
       if(mounted)setState(()=>data=result);
-    }catch(_){notify('تعذر تحديث البيانات؛ راجع اتصال الإنترنت والجلسة.');}
-  }
-
-  void logOut(){
-    api.logOut();
-    if(mounted)setState((){signedIn=false;data={};tab=0;error=null;});
+    }catch(e){
+      if(mounted)setState(()=>error=e.toString().replaceFirst('Bad state: ',''));
+    }finally{
+      if(mounted)setState(()=>loading=false);
+    }
   }
 
   Widget field(TextEditingController c,String title,{int lines=1,bool number=false}) =>
@@ -202,39 +189,6 @@ class _AlAniAdminAppState extends State<AlAniAdminApp> {
       await reload();notify('تم تحديث الطلب.');
     }catch(_){notify('حالة الطلب غير مسموح بها أو حدث خطأ اتصال.');}
   }
-
-  Widget loginView()=>Scaffold(
-    backgroundColor:_cream,
-    body:SafeArea(child:Center(child:SingleChildScrollView(
-      padding:const EdgeInsets.all(24),
-      child:ConstrainedBox(constraints:const BoxConstraints(maxWidth:440),
-        child:Column(mainAxisSize:MainAxisSize.min,children:[
-          const Icon(Icons.eco,size:70,color:_pine),
-          const SizedBox(height:17),
-          const Text('السيد إبراهيم العاني',
-            style:TextStyle(fontSize:27,fontWeight:FontWeight.w900,color:_pine)),
-          const Text('تطبيق الإدارة الخاص بالمتجر'),
-          const SizedBox(height:26),
-          field(email,'البريد الإلكتروني'),
-          TextField(controller:password,obscureText:true,
-            decoration:const InputDecoration(labelText:'كلمة المرور',
-              border:OutlineInputBorder())),
-          if(error!=null)Padding(
-            padding:const EdgeInsets.all(12),
-            child:Text(error!,style:const TextStyle(color:Colors.red))),
-          const SizedBox(height:14),
-          SizedBox(width:double.infinity,child:FilledButton.icon(
-            onPressed:busy?null:logIn,
-            icon:const Icon(Icons.lock_open),
-            label:Text(busy?'جارٍ التحقق…':'دخول مالك المتجر'),
-          )),
-          const SizedBox(height:14),
-          const Text('المدير هو مالك المتجر المسجل في Supabase فقط.',
-            textAlign:TextAlign.center,style:TextStyle(color:Colors.black54)),
-        ]),
-      ),
-    ))),
-  );
 
   Widget productsView(){
     final all=AlAniAdminFilters.products(
@@ -484,23 +438,20 @@ class _AlAniAdminAppState extends State<AlAniAdminApp> {
   }
 
   @override
-  Widget build(BuildContext context)=>MaterialApp(
-    title:'إدارة السيد إبراهيم العاني',
-    debugShowCheckedModeBanner:false,
-    locale:const Locale('ar'),
-    builder:(ctx,child)=>Directionality(
-      textDirection:TextDirection.rtl,child:child??const SizedBox.shrink()),
-    theme:ThemeData(useMaterial3:true,
-      colorScheme:ColorScheme.fromSeed(seedColor:_pine),
-      scaffoldBackgroundColor:_cream,
-      appBarTheme:const AppBarTheme(backgroundColor:_pine,
-        foregroundColor:Color(0xFF1F1F39))),
-    home:!signedIn?loginView():Scaffold(
+  Widget build(BuildContext context) => loading
+    ? const Scaffold(body:Center(child:CircularProgressIndicator()))
+    : error!=null
+      ? Scaffold(appBar:AppBar(title:const Text('صلاحيات متجر السيد إبراهيم العاني')),
+          body:Center(child:Padding(padding:const EdgeInsets.all(22),
+            child:Column(mainAxisSize:MainAxisSize.min,children:[
+              Text(error!,textAlign:TextAlign.center),
+              const SizedBox(height:12),
+              OutlinedButton(onPressed:reload,child:const Text('إعادة التحقق')),
+            ]))))
+      : Scaffold(
       appBar:AppBar(title:const Text('إدارة السيد إبراهيم العاني'),actions:[
         IconButton(onPressed:reload,tooltip:'تحديث',
           icon:const Icon(Icons.refresh)),
-        IconButton(onPressed:logOut,tooltip:'خروج',
-          icon:const Icon(Icons.logout)),
       ]),
       body:IndexedStack(index:tab,children:[
         productsView(),ordersView(),returnsView(),postsView(),reportsView()
@@ -520,6 +471,5 @@ class _AlAniAdminAppState extends State<AlAniAdminApp> {
             label:'التقارير'),
         ],
       ),
-    ),
-  );
+    );
 }

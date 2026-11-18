@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'admin_api.dart';
 
 /// The backend verifies Supabase Auth and shop ownership for every operation.
 /// This app contains no service_role credential or private API key.
@@ -12,16 +13,8 @@ class AlAniAdminApi {
   );
 
   final http.Client _client;
-  String? _token;
-  DateTime? _expiresAt;
-
-  bool get signedIn => _token != null &&
-      _expiresAt != null && DateTime.now().isBefore(_expiresAt!);
-
-  void logOut() {
-    _token = null;
-    _expiresAt = null;
-  }
+  /// Reuse the already verified Supabase session from Shitreed Admin.
+  bool get signedIn => AdminApi.client.auth.currentSession != null;
 
   static List<String> nextStatuses(String current) => switch (current) {
     'placed' => const ['accepted','rejected'],
@@ -58,7 +51,8 @@ class AlAniAdminApi {
     final headers = <String,String>{
       'accept':'application/json',
       'content-type':'application/json',
-      if (authenticated) 'authorization':'Bearer $_token',
+      if (authenticated) 'authorization':
+        'Bearer ${AdminApi.client.auth.currentSession!.accessToken}',
     };
     final request = http.Request(method, uri);
     request.headers.addAll(headers);
@@ -73,26 +67,6 @@ class AlAniAdminApi {
       throw StateError(message ?? 'فشل الاتصال بالخادم (رمز: ${data.statusCode})');
     }
     return parsed;
-  }
-
-  Future<void> login(String email,String password) async {
-    logOut();
-    final result = await _request('/api/login',
-      method:'POST',
-      authenticated:false,
-      body:{'email':email.trim(),'password':password},
-    ) as Map<String,dynamic>;
-    final access = result['access_token'];
-    if (access is! String || access.isEmpty) throw StateError('لم تصل جلسة صالحة.');
-    _token=access;
-    final seconds=(result['expires_in'] as num?)?.toInt() ?? 3600;
-    _expiresAt=DateTime.now().add(Duration(seconds:seconds));
-    try {
-      await overview();
-    } catch (_) {
-      logOut();
-      rethrow;
-    }
   }
 
   Future<Map<String,dynamic>> overview() async {

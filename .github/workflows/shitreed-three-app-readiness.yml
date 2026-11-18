@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - release/shitreed-production-readiness-20261114
+      - feature/alani-unified-admin-20261118
   pull_request:
     paths:
       - '.github/workflows/shitreed-three-app-readiness.yml'
@@ -127,7 +128,7 @@ jobs:
           retention-days: 14
 
   admin:
-    name: Admin Android branch - verify and preview APK
+    name: Unified Shitreed + AlAni Admin Android - verify and preview APK
     runs-on: ubuntu-latest
     timeout-minutes: 40
     defaults:
@@ -135,8 +136,7 @@ jobs:
         working-directory: admin_app
     steps:
       - uses: actions/checkout@v4
-        with:
-          ref: feature/shitreed-complete-admin
+        # Build the reviewed unified admin from this exact commit, not a stale branch.
       - uses: subosito/flutter-action@v2
         with:
           channel: stable
@@ -144,6 +144,19 @@ jobs:
           cache: true
       - name: Generate Android
         run: flutter create --org com.shitreed --project-name shitreed_admin --platforms android .
+      - name: Set only canonical Admin label and internet permission
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path("android/app/src/main/AndroidManifest.xml")
+          s=p.read_text()
+          s=s.replace('android:label="shitreed_admin"',
+            'android:label="إدارة شتريد والعاني"')
+          if 'android.permission.INTERNET' not in s:
+              s=s.replace('<application',
+                  '<uses-permission android:name="android.permission.INTERNET" />\n    <application',1)
+          p.write_text(s)
+          PY
       - name: Remove generated template test
         run: rm -f test/widget_test.dart
       - run: flutter pub get
@@ -165,7 +178,7 @@ jobs:
           test -n "$TARGET" && test "$TARGET" -ge 36
       - uses: actions/upload-artifact@v4
         with:
-          name: Shitreed-Admin-PREVIEW-NOT-FOR-PRODUCTION
+          name: Unified-Shitreed-AlAni-Admin-PREVIEW-NOT-FOR-PRODUCTION
           path: admin_app/build/app/outputs/flutter-apk/app-debug.apk
           if-no-files-found: error
           retention-days: 14
