@@ -55,8 +55,8 @@ class _MerchantControlCenterState extends State<MerchantControlCenter> {
         padding:const EdgeInsets.all(15),
         child:Column(crossAxisAlignment:CrossAxisAlignment.stretch,children:[
           Row(children:[
-            CircleAvatar(
-              backgroundColor:const Color(0xFFE4FAED),
+            const CircleAvatar(
+              backgroundColor:Color(0xFFE4FAED),
               child:Icon(Icons.storefront_outlined,color:merchantPurple)),
             const SizedBox(width:11),
             Expanded(child:Column(
@@ -148,14 +148,16 @@ class _MerchantControlCenterState extends State<MerchantControlCenter> {
                   padding:EdgeInsets.all(35),
                   child:Center(child:CircularProgressIndicator()));
               }
-              if(snapshot.hasError)return const Card(
-                child:Padding(padding:EdgeInsets.all(18),
+              if(snapshot.hasError){
+                return const Card(child:Padding(padding:EdgeInsets.all(18),
                   child:Text('تعذر تحميل متاجرك. تحقق من الاتصال وحساب التاجر.')));
+              }
               final rows=(snapshot.data??[]).where((s)=>
                 (s['name']??'').toString().toLowerCase().contains(_search)).toList();
-              if(rows.isEmpty)return const Card(
-                child:Padding(padding:EdgeInsets.all(18),
+              if(rows.isEmpty){
+                return const Card(child:Padding(padding:EdgeInsets.all(18),
                   child:Text('لا توجد متاجر مطابقة لحسابك وبحثك.')));
+              }
               return Column(children:[
                 for(final store in rows)_storeCard(store),
               ]);
@@ -163,7 +165,7 @@ class _MerchantControlCenterState extends State<MerchantControlCenter> {
           ),
           const SizedBox(height:10),
           ListTile(
-            leading:Icon(Icons.assessment_outlined,color:merchantPurple),
+            leading:const Icon(Icons.assessment_outlined,color:merchantPurple),
             title:const Text('تقارير متاجري'),
             subtitle:const Text('أرقام طلبات حقيقية، لا تعني مبالغ محصّلة'),
             trailing:const Icon(Icons.chevron_left),
