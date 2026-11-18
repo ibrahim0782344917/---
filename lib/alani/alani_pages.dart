@@ -268,10 +268,14 @@ class _AlAniReturnPageState extends State<AlAniReturnPage> {
         Navigator.pop(context);
       }
     } catch(_) {
-      if(mounted)setState(()=>_error='تعذر تسجيل الطلب الآن. '
-        'تحقق من الحساب أو تفعيل نظام الاسترجاع.');
+      if (mounted) {
+        setState(() => _error='تعذر تسجيل الطلب الآن. '
+          'تحقق من الحساب أو تفعيل نظام الاسترجاع.');
+      }
     } finally {
-      if(mounted)setState(()=>_sending=false);
+      if (mounted) {
+        setState(() => _sending=false);
+      }
     }
   }
 
