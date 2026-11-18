@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:shitreed_customer/alani/alani_content.dart';
 import 'package:shitreed_customer/alani/alani_editor.dart';
+import 'package:shitreed_customer/alani/alani_video.dart';
 import 'package:shitreed_customer/auth/customer_auth_page.dart';
 import 'package:shitreed_customer/backend/marketplace_backend.dart';
 import 'package:shitreed_customer/commerce/commerce_service.dart';
@@ -528,11 +529,25 @@ class AlAniPublicationPage extends StatelessWidget {
       ));
       return;
     }
-    final opened = await launchUrl(uri, mode: LaunchMode.externalApplication);
-    if (!opened && context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-        content: Text('تعذر فتح الفيديو.'),
+    if (isDirectMediaUrl(uri)) {
+      await Navigator.of(context).push<void>(MaterialPageRoute(
+        builder: (_) => AlAniVideoPage(title: item.title, url: uri),
       ));
+      return;
+    }
+    try {
+      final opened = await launchUrl(uri, mode: LaunchMode.externalApplication);
+      if (!opened && context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text('تعذر فتح الفيديو.'),
+        ));
+      }
+    } catch (_) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text('تعذر فتح رابط الفيديو.'),
+        ));
+      }
     }
   }
 
