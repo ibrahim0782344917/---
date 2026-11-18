@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:shitreed_customer/alani/alani_pages.dart';
 import 'package:shitreed_customer/auth/customer_auth_page.dart';
 import 'package:shitreed_customer/backend/marketplace_backend.dart';
 import 'package:shitreed_customer/maps/osm_discovery_page.dart';
@@ -46,13 +47,24 @@ String dinars(int value) {
 class ShitreedApp extends StatelessWidget {
   const ShitreedApp({super.key});
   @override
-  Widget build(BuildContext context) => MaterialApp(
-        title: 'شتريد؟ موجود!',
+  Widget build(BuildContext context) => AnimatedBuilder(
+        animation: Listenable.merge([
+          AlAniUiSettings.darkMode, AlAniUiSettings.largeText,
+        ]),
+        builder: (context, _) => MaterialApp(
+        title: 'السيد إبراهيم العاني',
         debugShowCheckedModeBanner: false,
         locale: const Locale('ar'),
-        builder: (context, child) => Directionality(
-          textDirection: TextDirection.rtl,
-          child: child ?? const SizedBox.shrink(),
+        builder: (context, child) => MediaQuery(
+          data: MediaQuery.of(context).copyWith(
+            textScaler: TextScaler.linear(
+              AlAniUiSettings.largeText.value ? 1.15 : 1.0,
+            ),
+          ),
+          child: Directionality(
+            textDirection: TextDirection.rtl,
+            child: child ?? const SizedBox.shrink(),
+          ),
         ),
         theme: ThemeData(
           useMaterial3: true,
@@ -61,7 +73,17 @@ class ShitreedApp extends StatelessWidget {
           appBarTheme: const AppBarTheme(
             backgroundColor: darkPurple, foregroundColor: Colors.white),
         ),
-        home: const WelcomePage(),
+        darkTheme: ThemeData(
+          useMaterial3: true,
+          colorScheme: ColorScheme.fromSeed(
+            seedColor: const Color(0xFF01BE5F),
+            brightness: Brightness.dark,
+          ),
+        ),
+        themeMode: AlAniUiSettings.darkMode.value
+            ? ThemeMode.dark : ThemeMode.light,
+        home: const AlAniWelcomePage(),
+      ),
       );
 }
 

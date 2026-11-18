@@ -1,0 +1,27 @@
+name: Al Ani Website and Admin CI
+on:
+  push:
+    branches:
+      - feature/alani-herbal-store-app-20261118
+    paths:
+      - 'alani_site/**'
+      - '.github/workflows/alani-web-ci.yml'
+  pull_request:
+    paths:
+      - 'alani_site/**'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  website:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: alani_site
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm run check
+      - run: NODE_ENV=test npm test

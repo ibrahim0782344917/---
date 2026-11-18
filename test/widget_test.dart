@@ -3,19 +3,19 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shitreed_customer/main.dart';
 
 void main() {
-  testWidgets('welcome opens customer marketplace', (tester) async {
+  testWidgets('welcome opens Al-Ani store and menu shows return policy',
+      (tester) async {
     await tester.pumpWidget(const ShitreedApp());
-    expect(find.text('ابدأ الآن'), findsOneWidget);
-    await tester.tap(find.text('ابدأ الآن'));
     await tester.pumpAndSettle();
+    expect(find.text('أهلاً وسهلاً بكم'), findsOneWidget);
+    expect(find.text('الدخول إلى المتجر'), findsOneWidget);
+    await tester.tap(find.text('الدخول إلى المتجر'));
+    await tester.pumpAndSettle();
+    expect(find.text('من الطبيعة إلى بيتك'), findsOneWidget);
     expect(find.byType(NavigationBar), findsOneWidget);
-    expect(find.text('شتريد؟'), findsOneWidget);
-    expect(
-      find.byWidgetPredicate(
-        (widget) => widget is SafeArea && widget.top && !widget.bottom,
-      ),
-      findsOneWidget,
-    );
-    expect(find.textContaining('سجّله وانشر منتجاتك'), findsOneWidget);
+    await tester.tap(find.byIcon(Icons.menu));
+    await tester.pumpAndSettle();
+    expect(find.text('سياسة الاسترجاع'), findsOneWidget);
+    expect(find.text('طلب استرجاع'), findsOneWidget);
   });
 }

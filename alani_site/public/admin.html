@@ -1,0 +1,135 @@
+<!doctype html><html lang="ar" dir="rtl"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow"><meta name="theme-color" content="#173f32">
+<title>لوحة إدارة السيد إبراهيم العاني</title>
+<link rel="stylesheet" href="/site.css"><script defer src="/admin.js"></script></head>
+<body class="admin-body">
+<header class="site-header"><div class="wrap header-row">
+  <a class="brand" href="/"><span class="brand-mark">✳</span><span><strong>السيد إبراهيم العاني</strong><small>لوحة إدارة المتجر</small></span></a>
+  <div class="header-actions"><a class="minor-link" href="/">عرض المتجر</a><button id="logout" class="button ghost" hidden>تسجيل الخروج</button></div>
+</div></header>
+<main class="wrap">
+<section id="login-section" class="admin-login">
+  <span class="overline">الإدارة المحمية</span><h1>تسجيل دخول مالك المتجر</h1>
+  <p class="small">فقط حساب مالك متجر السيد إبراهيم العاني يمكنه تعديل المنتجات والطلبات والمحتوى. تُراجع الصلاحيات على الخادم وقاعدة البيانات.</p>
+  <form id="login-form">
+    <label>البريد الإلكتروني<input type="email" id="email" autocomplete="username" required></label>
+    <label>كلمة المرور<input type="password" id="password" autocomplete="current-password" minlength="8" required></label>
+    <button id="login-button" class="button primary full">دخول الإدارة</button>
+    <p id="login-message" class="form-message" role="status"></p>
+  </form>
+</section>
+<section id="admin-section" hidden>
+  <div class="section-head" style="padding-top:33px">
+    <div><span class="overline">التحكم بالمتجر</span><h2>إدارة السيد إبراهيم العاني</h2><p>المنتجات والطلبات والفيديوهات والمدونة والوصفات — صلاحيات المالك فقط.</p></div>
+    <button class="button ghost" id="refresh">تحديث البيانات</button>
+  </div>
+  <div class="admin-metrics">
+    <div class="metric"><strong id="m-products">–</strong><span>المنتجات المسجلة</span></div>
+    <div class="metric"><strong id="m-orders">–</strong><span>الطلبات المسجلة</span></div>
+    <div class="metric"><strong id="m-posts">–</strong><span>المحتوى المنشور</span></div>
+    <div class="metric"><strong id="m-low">–</strong><span>منتجات بمخزون قليل (≤ 5)</span></div>
+    <div class="metric"><strong id="m-returns">–</strong><span>طلبات استرجاع قيد المتابعة</span></div>
+  </div>
+  <nav class="admin-nav" aria-label="أقسام الإدارة">
+    <button type="button" class="active" data-tab="products">المنتجات والمخزون</button>
+    <button type="button" data-tab="orders">الطلبات</button>
+    <button type="button" data-tab="returns">الاسترجاع والتعويض</button>
+    <button type="button" data-tab="posts">الفيديوهات والوصفات</button>
+    <button type="button" data-tab="settings">التقارير والإعدادات</button>
+  </nav>
+  <p id="admin-message" class="status-note" role="status" hidden></p>
+
+  <section class="admin-panel" id="tab-products">
+    <h2>المنتجات والمخزون</h2>
+    <p class="small">أضف منتجاً أو عدّل السعر والمخزون. استخدم روابط الصور المعتمدة في تخزين شتريد. لا يمكن تعديل منتجات متاجر أخرى.</p>
+    <div class="admin-filter-bar">
+      <label>ابحث بالاسم أو الوصف<input type="search" id="admin-product-search" placeholder="بحث عن منتج…"></label>
+      <label>المخزون<select id="admin-inventory-filter">
+        <option value="all">جميع المنتجات</option>
+        <option value="low">مخزون قليل</option>
+        <option value="out">منتهي</option>
+        <option value="hidden">مخفي</option>
+      </select></label>
+    </div>
+    <div class="table-scroll"><table class="admin-table"><thead><tr><th>المنتج</th><th>السعر</th><th>المخزون</th><th>الحالة</th><th>إجراء</th></tr></thead><tbody id="products-table"></tbody></table></div>
+    <h3 id="product-heading" style="margin-top:30px">إضافة منتج جديد</h3>
+    <form class="admin-form" id="product-form">
+      <input type="hidden" id="product-id">
+      <label>اسم المنتج<input id="product-name" minlength="2" maxlength="160" required></label>
+      <label>السعر بالدينار العراقي<input type="number" id="product-price" min="0" max="100000000" step="1" required></label>
+      <label>كمية المخزون<input type="number" id="product-stock" min="0" max="1000000" step="1" required></label>
+      <label>حالة النشر<select id="product-active"><option value="true">منشور</option><option value="false">مخفي</option></select></label>
+      <label class="wide">رابط صورة المنتج من Supabase Storage<input id="product-image" type="url" placeholder="https://...supabase.co/storage/v1/object/public/store-images/..."></label>
+      <label class="wide">الوصف<textarea id="product-description" maxlength="3000" rows="3"></textarea></label>
+      <button type="submit" class="button primary">حفظ المنتج</button><button id="reset-product" type="button" class="button ghost">منتج جديد</button>
+    </form>
+  </section>
+
+  <section class="admin-panel" id="tab-orders" hidden>
+    <h2>طلبات الزبائن</h2><p class="small">انتقالات حالة الطلب تتم على الخادم. لا تُعدّل الأسعار أو المخزون يدوياً عند تغيير الحالة.</p>
+    <div class="admin-filter-bar">
+      <label>بحث برقم الطلب أو العنوان<input type="search" id="admin-order-search" placeholder="بحث عن طلب…"></label>
+      <label>حالة الطلب<select id="admin-order-filter">
+        <option value="all">كل الحالات</option>
+        <option value="placed">جديد</option>
+        <option value="accepted">مقبول</option>
+        <option value="preparing">قيد التجهيز</option>
+        <option value="ready">جاهز</option>
+        <option value="rejected">مرفوض</option>
+      </select></label>
+    </div>
+    <div class="table-scroll"><table class="admin-table"><thead><tr><th>الطلب</th><th>الإجمالي</th><th>الحالة</th><th>العنوان</th><th>إجراء</th></tr></thead><tbody id="orders-table"></tbody></table></div>
+  </section>
+
+  <section class="admin-panel" id="tab-returns" hidden>
+    <h2>استرجاع المنتجات وتعويض الضرر</h2>
+    <p class="small">يمكن مراجعة طلبات الاسترجاع وسببها وحالتها. لا تعني الموافقة تغيير رصيد مالي أو تنفيذ استرداد تلقائي. لا تفرض خصم رسوم الإرجاع الاختياري عند ثبوت خطأ المتجر.</p>
+    <p id="returns-availability" class="status-note"></p>
+    <div class="table-scroll"><table class="admin-table">
+      <thead><tr><th>رقم الطلب</th><th>السبب</th><th>التفاصيل</th><th>الحالة</th><th>الإجراء</th></tr></thead>
+      <tbody id="returns-table"></tbody>
+    </table></div>
+  </section>
+  <section class="admin-panel" id="tab-posts" hidden>
+    <h2>إدارة الفيديوهات والوصفات والمدونة</h2>
+    <p class="small">المحتوى يظهر في الموقع بعد نشره. لا تستخدم ادعاءات علاجية مضللة في الوصفات والمنتجات.</p>
+    <div id="posts-availability" class="status-note"></div>
+    <div class="admin-filter-bar">
+      <label>نوع المحتوى<select id="admin-post-filter">
+        <option value="all">الكل</option>
+        <option value="video">فيديو</option>
+        <option value="recipe">وصفة</option>
+        <option value="article">مقال</option>
+        <option value="post">منشور</option>
+      </select></label>
+    </div>
+    <div class="table-scroll"><table class="admin-table"><thead><tr><th>العنوان</th><th>النوع</th><th>الحالة</th><th>إجراء</th></tr></thead><tbody id="posts-table"></tbody></table></div>
+    <h3 id="post-heading" style="margin-top:30px">إضافة محتوى جديد</h3>
+    <form id="post-form" class="admin-form">
+      <input id="post-id" type="hidden">
+      <label>نوع المنشور<select id="post-kind"><option value="video">فيديو</option><option value="recipe">وصفة</option><option value="article">مقال</option><option value="post">منشور نصي</option></select></label>
+      <label>حالة النشر<select id="post-status"><option value="draft">مسودة</option><option value="published">منشور</option></select></label>
+      <label class="wide">عنوان المنشور<input id="post-title" minlength="3" maxlength="180" required></label>
+      <label class="wide">النص / شرح المنتج / خطوات الوصفة<textarea id="post-body" rows="5" maxlength="30000"></textarea></label>
+      <label class="wide">المكونات (للوصفات)<textarea id="post-ingredients" rows="3" maxlength="8000"></textarea></label>
+      <label class="wide">تحذيرات ومعلومات السلامة<textarea id="post-warning" rows="3" maxlength="4000"></textarea></label>
+      <label>رابط الصورة HTTPS<input id="post-image" type="url"></label>
+      <label>رابط الفيديو HTTPS<input id="post-video" type="url"></label>
+      <button class="button primary" type="submit" id="post-submit">حفظ المحتوى</button><button class="button ghost" id="reset-post" type="button">محتوى جديد</button>
+    </form>
+  </section>
+
+  <section class="admin-panel" id="tab-settings" hidden>
+    <h2>التقارير والإعدادات</h2>
+    <p>نظرة سريعة على المنتجات والطلبات. إعدادات الفواتير والدفع والتوصيل تتطلب إكمال الاختبارات قبل تفعيل البيع الحقيقي.</p>
+    <div id="reports" class="status-note"></div>
+    <p class="small">هذا النظام مخصص لمتجر واحد فقط. لا تمنح الوصول الإداري لمستخدم آخر دون آلية صلاحيات معتمدة.</p>
+    <a class="button ghost" href="/privacy">الخصوصية</a>
+  </section>
+</section>
+</main>
+<footer class="footer"><div class="wrap" style="padding:22px 0;font-size:12px">
+لوحة إدارة متجر السيد إبراهيم العاني • الوصول للمالك فقط • <a href="/">العودة إلى المتجر</a>
+</div></footer>
+</body></html>
