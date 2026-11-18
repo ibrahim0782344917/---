@@ -28,6 +28,8 @@ jobs:
           cache: true
       - name: Prepare Android project
         run: flutter create --org com.ibrahimalani --project-name alani_admin_app --platforms android .
+      - name: Remove generated Flutter starter test
+        run: rm -f test/widget_test.dart
       - name: Require HTTPS networking for admin APIs
         run: |
           python3 - <<'PY'
