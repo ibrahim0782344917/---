@@ -6,6 +6,7 @@ import 'package:shitreed_customer/alani/alani_product.dart';
 import 'package:shitreed_customer/alani/catalog_filters.dart';
 import 'package:shitreed_customer/alani/alani_pages.dart';
 import 'package:shitreed_customer/alani/alani_cart.dart';
+import 'package:shitreed_customer/alani/alani_campaign_banner.dart';
 import 'package:shitreed_customer/auth/customer_auth_page.dart';
 import 'package:shitreed_customer/backend/marketplace_backend.dart';
 import 'package:shitreed_customer/commerce/commerce_service.dart';
@@ -208,6 +209,7 @@ class _AlAniShopHomeState extends State<AlAniShopHome> {
           ),
         ),
         const SizedBox(height: 20),
+        const AlAniCampaignBanner(),
         _heading('تسوق حسب القسم'),
         const SizedBox(height: 10),
         SingleChildScrollView(
