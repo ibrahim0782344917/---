@@ -1,0 +1,146 @@
+name: Play Release Candidate AAB - manual only
+on:
+  workflow_dispatch:
+    inputs:
+      application:
+        description: The app to build
+        required: true
+        type: choice
+        options: [customer, merchant, admin]
+      build_number:
+        description: Must exceed the previous Play Console versionCode
+        required: true
+        type: number
+        default: 7
+permissions:
+  contents: read
+jobs:
+  signed-aab:
+    name: Signed AAB candidate (never publishes)
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: '3.47.9'
+          cache: true
+      - name: Determine project and fixed package name
+        shell: bash
+        run: |
+          case "${{ inputs.application }}" in
+            customer) echo "APP_PATH=." >> "$GITHUB_ENV"
+                      echo "APP_PROJECT=shitreed_customer" >> "$GITHUB_ENV"
+                      echo "ANDROID_APP_ID=com.shitreed.shitreed_customer" >> "$GITHUB_ENV";;
+            merchant) echo "APP_PATH=merchant_app" >> "$GITHUB_ENV"
+                      echo "APP_PROJECT=shitreed_merchant" >> "$GITHUB_ENV"
+                      echo "ANDROID_APP_ID=com.shitreed.shitreed_merchant" >> "$GITHUB_ENV";;
+            admin)    echo "APP_PATH=admin_app" >> "$GITHUB_ENV"
+                      echo "APP_PROJECT=shitreed_admin" >> "$GITHUB_ENV"
+                      echo "ANDROID_APP_ID=com.shitreed.shitreed_admin" >> "$GITHUB_ENV";;
+            *) exit 1;;
+          esac
+          test "${{ inputs.build_number }}" -gt 0
+      - name: Require all four signing secrets
+        shell: bash
+        env:
+          ANDROID_UPLOAD_KEYSTORE_BASE64: ${{ secrets.ANDROID_UPLOAD_KEYSTORE_BASE64 }}
+          ANDROID_UPLOAD_STORE_PASSWORD: ${{ secrets.ANDROID_UPLOAD_STORE_PASSWORD }}
+          ANDROID_UPLOAD_KEY_ALIAS: ${{ secrets.ANDROID_UPLOAD_KEY_ALIAS }}
+          ANDROID_UPLOAD_KEY_PASSWORD: ${{ secrets.ANDROID_UPLOAD_KEY_PASSWORD }}
+        run: |
+          test -n "$ANDROID_UPLOAD_KEYSTORE_BASE64"
+          test -n "$ANDROID_UPLOAD_STORE_PASSWORD"
+          test -n "$ANDROID_UPLOAD_KEY_ALIAS"
+          test -n "$ANDROID_UPLOAD_KEY_PASSWORD"
+      - name: Generate Android and assert package identity
+        shell: bash
+        run: |
+          cd "$APP_PATH"
+          flutter create --org com.shitreed --project-name "$APP_PROJECT" --platforms android .
+          grep -q "$ANDROID_APP_ID" android/app/build.gradle.kts
+      - name: Set approved network, Maps and display configuration
+        shell: bash
+        env:
+          MAPS_KEY: ${{ secrets.SHITREED_GOOGLE_MAPS_ANDROID_KEY }}
+          MAPS_APPROVED: ${{ vars.SHITREED_GOOGLE_MAPS_APPROVED }}
+        run: |
+          if [[ "$APP_PATH" == "." ]]; then
+            if [[ "$MAPS_APPROVED" == "true" && -n "$MAPS_KEY" ]]; then
+              GOOGLE_MAPS_API_KEY="$MAPS_KEY" python3 scripts/configure_android_maps.py
+            else
+              python3 scripts/configure_android_maps.py
+            fi
+          elif [[ "$APP_PATH" == "merchant_app" ]]; then
+            cd merchant_app
+            python3 scripts/configure_android.py
+            python3 scripts/use_runner_ndk.py
+          else
+            cd admin_app
+            python3 - <<'PY'
+          from pathlib import Path
+          p=Path("android/app/src/main/AndroidManifest.xml")
+          text=p.read_text().replace('android:label="shitreed_admin"',
+            'android:label="إدارة شتريد والعاني"')
+          if 'android.permission.INTERNET' not in text:
+              text=text.replace('<application',
+                '<uses-permission android:name="android.permission.INTERNET" />\n    <application',1)
+          p.write_text(text)
+          PY
+          fi
+      - name: Apply upload-key signing for RELEASE (no debug key)
+        shell: bash
+        env:
+          ANDROID_UPLOAD_KEYSTORE_BASE64: ${{ secrets.ANDROID_UPLOAD_KEYSTORE_BASE64 }}
+          ANDROID_UPLOAD_STORE_PASSWORD: ${{ secrets.ANDROID_UPLOAD_STORE_PASSWORD }}
+          ANDROID_UPLOAD_KEY_ALIAS: ${{ secrets.ANDROID_UPLOAD_KEY_ALIAS }}
+          ANDROID_UPLOAD_KEY_PASSWORD: ${{ secrets.ANDROID_UPLOAD_KEY_PASSWORD }}
+        run: |
+          cd "$APP_PATH"
+          python3 "$GITHUB_WORKSPACE/scripts/configure_android_release.py"
+      - name: Flutter static analysis and tests
+        shell: bash
+        run: |
+          cd "$APP_PATH"
+          if [[ "$APP_PROJECT" == "shitreed_admin" ]]; then rm -f test/widget_test.dart; fi
+          flutter pub get
+          if [[ "$APP_PROJECT" == "shitreed_admin" ]]; then
+            flutter analyze --no-fatal-infos lib test
+          else
+            flutter analyze lib test
+          fi
+          flutter test
+      - name: Compile release Android App Bundle
+        shell: bash
+        env:
+          ANDROID_UPLOAD_KEYSTORE_BASE64: ${{ secrets.ANDROID_UPLOAD_KEYSTORE_BASE64 }}
+          ANDROID_UPLOAD_STORE_PASSWORD: ${{ secrets.ANDROID_UPLOAD_STORE_PASSWORD }}
+          ANDROID_UPLOAD_KEY_ALIAS: ${{ secrets.ANDROID_UPLOAD_KEY_ALIAS }}
+          ANDROID_UPLOAD_KEY_PASSWORD: ${{ secrets.ANDROID_UPLOAD_KEY_PASSWORD }}
+          MAPS_KEY: ${{ secrets.SHITREED_GOOGLE_MAPS_ANDROID_KEY }}
+          MAPS_APPROVED: ${{ vars.SHITREED_GOOGLE_MAPS_APPROVED }}
+        run: |
+          cd "$APP_PATH"
+          MAPS=false
+          if [[ "$MAPS_APPROVED" == "true" && -n "$MAPS_KEY" ]]; then MAPS=true; fi
+          flutter build appbundle --release --build-number="${{ inputs.build_number }}" \
+            --dart-define="SUPABASE_URL=https://ltwncrewggdrjevakwpb.supabase.co" \
+            --dart-define="SUPABASE_PUBLISHABLE_KEY=sb_publishable_Tao4VcnXR93Ne9KUBJ76tg_o-Pmd75_" \
+            --dart-define="GOOGLE_MAPS_ENABLED=$MAPS" \
+            --dart-define="SHITREED_CAMPAIGNS_ENABLED=false" \
+            --dart-define="ALANI_RETURNS_ENABLED=false"
+      - name: Verify AAB signature and artifact
+        shell: bash
+        run: |
+          cd "$APP_PATH"
+          AAB=build/app/outputs/bundle/release/app-release.aab
+          test -s "$AAB"
+          jarsigner -verify "$AAB" >/dev/null
+          echo "Candidate AAB is signed; no Play Console upload attempted."
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Play-CANDIDATE-${{ inputs.application }}-v${{ inputs.build_number }}-AAB-NOT-PUBLISHED
+          path: ${{ env.APP_PATH }}/build/app/outputs/bundle/release/app-release.aab
+          if-no-files-found: error
+          retention-days: 14
