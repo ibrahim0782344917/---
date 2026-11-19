@@ -65,11 +65,18 @@ class _AlAniEditorPageState extends State<AlAniEditorPage> {
     appBar: AppBar(title: const Text('إدارة فيديوهات ومقالات المتجر')),
     floatingActionButton: FutureBuilder<bool>(
       future: _owner,
-      builder: (context, snapshot) => snapshot.data == true
-        ? FloatingActionButton.extended(
-            onPressed: () => _edit(),
-            icon: const Icon(Icons.add),
-            label: const Text('منشور جديد'),
+      builder: (context, auth) => auth.data == true
+        ? FutureBuilder<List<Map<String, dynamic>>>(
+            future: _entries,
+            builder: (context, entries) =>
+              entries.connectionState == ConnectionState.done &&
+                  !entries.hasError
+                ? FloatingActionButton.extended(
+                    onPressed: () => _edit(),
+                    icon: const Icon(Icons.add),
+                    label: const Text('منشور جديد'),
+                  )
+                : const SizedBox.shrink(),
           )
         : const SizedBox.shrink(),
     ),
@@ -98,12 +105,37 @@ class _AlAniEditorPageState extends State<AlAniEditorPage> {
                 return const Center(child: CircularProgressIndicator());
               }
               if (snapshot.hasError) {
-                return ListView(children: const [
-                  Padding(padding: EdgeInsets.all(20),
-                    child: Text('جدول المقالات والفيديوهات لم يُفعّل بعد. '
-                      'راجع ملف ALANI_CONTENT_SCHEMA_REVIEW.sql '
-                      'على بيئة الاختبار أولاً.')),
-                ]);
+                return ListView(
+                  padding: const EdgeInsets.all(20),
+                  children: [
+                    const Card(
+                      child: Padding(
+                        padding: EdgeInsets.all(20),
+                        child: Column(children: [
+                          Icon(Icons.cloud_off_outlined,
+                            color: Color(0xFF1C503B), size: 40),
+                          SizedBox(height: 14),
+                          Text('النشر غير متاح لأن جدول المحتوى لم يُفعّل.',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 17, fontWeight: FontWeight.w800)),
+                          SizedBox(height: 10),
+                          Text('هذه ليست مشكلة في الهاتف. '
+                            'يجب اختبار جدول alani_publications '
+                            'وصلاحيات النشر أولاً على قاعدة منفصلة، '
+                            'قبل رفع الفيديوهات أو المقالات إلى الخادم.',
+                            textAlign: TextAlign.center),
+                        ]),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    OutlinedButton.icon(
+                      onPressed: _reload,
+                      icon: const Icon(Icons.refresh),
+                      label: const Text('إعادة فحص الاتصال بالمحتوى'),
+                    ),
+                  ],
+                );
               }
               final rows = snapshot.data ?? [];
               if (rows.isEmpty) {
