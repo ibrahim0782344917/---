@@ -1,0 +1,108 @@
+name: Isolated Al-Ani SQL Contract and Restore
+on:
+  push:
+    branches: [feature/alani-launch-hardening-20261119]
+    paths:
+      - 'tests/sql/**'
+      - 'docs/ALANI_DELIVERY_COD_STAGE_ONLY_SQL.sql'
+      - 'docs/ALANI_CONTENT_RETURNS_STAGE_ONLY_SQL.sql'
+      - 'docs/ALANI_STORE_CREDIT_STAGE_ONLY_SQL.sql'
+      - 'docs/ALANI_ACCOUNT_DELETION_STAGE_GRANTS.sql'
+      - 'docs/ALANI_SUPPORT_CHAT_STAGE_ONLY_SQL.sql'
+      - '.github/workflows/alani-isolated-db-test.yml'
+  pull_request:
+    paths:
+      - 'tests/sql/**'
+      - 'docs/ALANI_DELIVERY_COD_STAGE_ONLY_SQL.sql'
+      - 'docs/ALANI_CONTENT_RETURNS_STAGE_ONLY_SQL.sql'
+      - 'docs/ALANI_STORE_CREDIT_STAGE_ONLY_SQL.sql'
+      - 'docs/ALANI_ACCOUNT_DELETION_STAGE_GRANTS.sql'
+      - 'docs/ALANI_SUPPORT_CHAT_STAGE_ONLY_SQL.sql'
+      - '.github/workflows/alani-isolated-db-test.yml'
+permissions:
+  contents: read
+
+jobs:
+  disposable-postgresql:
+    name: Test delivery, rollback and restore without production data
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_DB: alani_ci_test
+          POSTGRES_USER: alani_ci
+          POSTGRES_PASSWORD: disposable-ci-only
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U alani_ci -d alani_ci_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Locate isolated PostgreSQL 17 container
+        shell: bash
+        run: |
+          PG_CONTAINER="$(docker ps -q --filter ancestor=postgres:17 | head -1)"
+          test -n "$PG_CONTAINER"
+          echo "PG_CONTAINER=$PG_CONTAINER" >> "$GITHUB_ENV"
+      - name: Initialize fake schema and execute exact shipping migration
+        shell: bash
+        run: |
+          docker cp tests/sql/checkout_fixture.sql "$PG_CONTAINER:/tmp/checkout_fixture.sql"
+          docker cp docs/ALANI_DELIVERY_COD_STAGE_ONLY_SQL.sql "$PG_CONTAINER:/tmp/delivery.sql"
+          docker cp tests/sql/checkout_assertions.sql "$PG_CONTAINER:/tmp/assertions.sql"
+          docker exec "$PG_CONTAINER" psql -v ON_ERROR_STOP=1 \
+            -U alani_ci -d alani_ci_test -f /tmp/checkout_fixture.sql
+          docker exec "$PG_CONTAINER" psql -v ON_ERROR_STOP=1 \
+            -U alani_ci -d alani_ci_test -f /tmp/delivery.sql
+          docker exec "$PG_CONTAINER" psql -v ON_ERROR_STOP=1 \
+            -U alani_ci -d alani_ci_test -f /tmp/assertions.sql
+      - name: Apply secured publishing and return schema, test RLS and transitions
+        shell: bash
+        run: |
+          docker cp tests/sql/content_returns_setup.sql "$PG_CONTAINER:/tmp/social_setup.sql"
+          docker cp docs/ALANI_CONTENT_RETURNS_STAGE_ONLY_SQL.sql "$PG_CONTAINER:/tmp/social.sql"
+          docker cp tests/sql/content_returns_assertions.sql "$PG_CONTAINER:/tmp/social_assert.sql"
+          docker exec "$PG_CONTAINER" psql -v ON_ERROR_STOP=1             -U alani_ci -d alani_ci_test -f /tmp/social_setup.sql
+          docker exec "$PG_CONTAINER" psql -v ON_ERROR_STOP=1             -U alani_ci -d alani_ci_test -f /tmp/social.sql
+          docker exec "$PG_CONTAINER" psql -v ON_ERROR_STOP=1             -U alani_ci -d alani_ci_test -f /tmp/social_assert.sql
+      - name: Validate immutable noncash store-credit ledger (offline only)
+        shell: bash
+        run: |
+          docker cp docs/ALANI_STORE_CREDIT_STAGE_ONLY_SQL.sql "$PG_CONTAINER:/tmp/credit.sql"
+          docker cp tests/sql/store_credit_assertions.sql "$PG_CONTAINER:/tmp/credit_assert.sql"
+          docker exec "$PG_CONTAINER" psql -v ON_ERROR_STOP=1             -U alani_ci -d alani_ci_test -c "create role service_role nologin"
+          docker exec "$PG_CONTAINER" psql -v ON_ERROR_STOP=1             -U alani_ci -d alani_ci_test -f /tmp/credit.sql
+          docker exec "$PG_CONTAINER" psql -v ON_ERROR_STOP=1             -U alani_ci -d alani_ci_test -f /tmp/credit_assert.sql
+      - name: Verify private account deletion request grants and own-row access
+        shell: bash
+        run: |
+          docker cp tests/sql/account_deletion_fixture.sql "$PG_CONTAINER:/tmp/delete_fixture.sql"
+          docker cp docs/ALANI_ACCOUNT_DELETION_STAGE_GRANTS.sql "$PG_CONTAINER:/tmp/delete_grants.sql"
+          docker cp tests/sql/account_deletion_assertions.sql "$PG_CONTAINER:/tmp/delete_assert.sql"
+          docker exec "$PG_CONTAINER" psql -v ON_ERROR_STOP=1             -U alani_ci -d alani_ci_test -f /tmp/delete_fixture.sql
+          docker exec "$PG_CONTAINER" psql -v ON_ERROR_STOP=1             -U alani_ci -d alani_ci_test -f /tmp/delete_grants.sql
+          docker exec "$PG_CONTAINER" psql -v ON_ERROR_STOP=1             -U alani_ci -d alani_ci_test -f /tmp/delete_assert.sql
+      - name: Verify private support conversations for buyer and store owner
+        shell: bash
+        run: |
+          docker cp docs/ALANI_SUPPORT_CHAT_STAGE_ONLY_SQL.sql "$PG_CONTAINER:/tmp/support.sql"
+          docker cp tests/sql/support_chat_assertions.sql "$PG_CONTAINER:/tmp/support_assert.sql"
+          docker exec "$PG_CONTAINER" psql -v ON_ERROR_STOP=1             -U alani_ci -d alani_ci_test -f /tmp/support.sql
+          docker exec "$PG_CONTAINER" psql -v ON_ERROR_STOP=1             -U alani_ci -d alani_ci_test -f /tmp/support_assert.sql
+      - name: Test pg_dump and pg_restore on disposable fixtures (not real backup)
+        shell: bash
+        run: |
+          docker exec "$PG_CONTAINER" pg_dump -Fc -U alani_ci \
+            -d alani_ci_test -f /tmp/disposable.backup
+          docker exec "$PG_CONTAINER" createdb -U alani_ci alani_restore_test
+          docker exec "$PG_CONTAINER" pg_restore --exit-on-error \
+            -U alani_ci -d alani_restore_test /tmp/disposable.backup
+          COUNT=$(docker exec "$PG_CONTAINER" psql -At -U alani_ci \
+            -d alani_restore_test -c 'select count(*) from public.orders;')
+          test "$COUNT" = 2
+          echo "Disposable backup+restore PASS. No live Supabase data was accessed."

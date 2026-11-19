@@ -117,3 +117,22 @@ test('cash checkout never opens before shipping-inclusive totals are verified', 
   assert.equal(checkoutAllowed({ALANI_CHECKOUT_ENABLED:'true',
     ALANI_DELIVERY_TOTALS_VERIFIED:'true'}),true);
 });
+
+test('deletion page is public and accurately describes request not immediate removal',async()=>{
+  const page=await fetch(root+'/delete-account');
+  assert.equal(page.status,200);
+  const html=await page.text();
+  assert.match(html,/طلب حذف الحساب والبيانات/);
+  assert.match(html,/قيد المعالجة/);
+  assert.match(html,/id="account-deletion-form"/);
+  assert.match(await (await fetch(root+'/account-deletion.js')).text(),/\/api\/account-deletion-request/);
+});
+test('deletion request endpoint rejects anonymous calls and does not leak accounts',async()=>{
+  const post=await fetch(root+'/api/account-deletion-request',{
+    method:'POST',headers:{'content-type':'application/json'},
+    body:JSON.stringify({reason:'للاختبار'})
+  });
+  assert.equal(post.status,401);
+  const get=await fetch(root+'/api/account-deletion-request');
+  assert.equal(get.status,401);
+});
