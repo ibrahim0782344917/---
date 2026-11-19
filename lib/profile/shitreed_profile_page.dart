@@ -8,6 +8,33 @@ const _dark = Color(0xFF163E32);
 
 /// Profile records are owned through Supabase RLS. The client never writes XP,
 /// levels, administrator ranks or blue verification badges.
+/// This profile is also used as a standalone Navigator route without a
+/// Scaffold. Keep the InkWell inside its own Material, even in a ListView.
+class ShitreedAvatarButton extends StatelessWidget {
+  const ShitreedAvatarButton({
+    super.key, required this.imageUrl, required this.onTap,
+  });
+  final String imageUrl;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) => Material(
+    type: MaterialType.transparency,
+    child: InkWell(
+      key: const ValueKey('profile-avatar-button'),
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(45),
+      child: CircleAvatar(
+        radius: 43, backgroundColor: Colors.white,
+        backgroundImage: imageUrl.startsWith('https://')
+            ? NetworkImage(imageUrl) : null,
+        child: imageUrl.startsWith('https://') ? null
+            : const Icon(Icons.person, size: 46, color: _green),
+      ),
+    ),
+  );
+}
+
 class ShitreedProfilePage extends StatefulWidget {
   const ShitreedProfilePage({super.key, this.onMerchantTap, this.merchantMode = false});
   final VoidCallback? onMerchantTap;
@@ -303,7 +330,12 @@ class _ShitreedProfilePageState extends State<ShitreedProfilePage> {
   );
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context) => Material(
+    color: Theme.of(context).scaffoldBackgroundColor,
+    child: _profileBody(context),
+  );
+
+  Widget _profileBody(BuildContext context) {
     if (loading) return const Center(child: CircularProgressIndicator());
     if (error != null) {
       return Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
@@ -328,12 +360,8 @@ class _ShitreedProfilePageState extends State<ShitreedProfilePage> {
           decoration: BoxDecoration(borderRadius: BorderRadius.circular(24),
             gradient: const LinearGradient(colors: [_dark, _green])),
           child: Column(children: [
-            InkWell(onTap: saving ? null : uploadAvatar,
-              child: CircleAvatar(radius: 43, backgroundColor: Colors.white,
-                backgroundImage: image.startsWith('https://')
-                    ? NetworkImage(image) : null,
-                child: image.startsWith('https://') ? null
-                    : const Icon(Icons.person, size: 46, color: _green))),
+            ShitreedAvatarButton(
+              imageUrl: image, onTap: saving ? null : uploadAvatar),
             const SizedBox(height: 9),
             Text(displayName, textAlign: TextAlign.center,
               style: const TextStyle(fontSize: 24, color: Colors.white,
