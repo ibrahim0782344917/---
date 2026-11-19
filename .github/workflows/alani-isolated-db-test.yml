@@ -7,6 +7,7 @@ on:
       - 'docs/ALANI_DELIVERY_COD_STAGE_ONLY_SQL.sql'
       - 'docs/ALANI_CONTENT_RETURNS_STAGE_ONLY_SQL.sql'
       - 'docs/ALANI_STORE_CREDIT_STAGE_ONLY_SQL.sql'
+      - 'docs/ALANI_ACCOUNT_DELETION_STAGE_GRANTS.sql'
       - '.github/workflows/alani-isolated-db-test.yml'
   pull_request:
     paths:
@@ -14,6 +15,7 @@ on:
       - 'docs/ALANI_DELIVERY_COD_STAGE_ONLY_SQL.sql'
       - 'docs/ALANI_CONTENT_RETURNS_STAGE_ONLY_SQL.sql'
       - 'docs/ALANI_STORE_CREDIT_STAGE_ONLY_SQL.sql'
+      - 'docs/ALANI_ACCOUNT_DELETION_STAGE_GRANTS.sql'
       - '.github/workflows/alani-isolated-db-test.yml'
 permissions:
   contents: read
@@ -74,6 +76,15 @@ jobs:
           docker exec "$PG_CONTAINER" psql -v ON_ERROR_STOP=1             -U alani_ci -d alani_ci_test -c "create role service_role nologin"
           docker exec "$PG_CONTAINER" psql -v ON_ERROR_STOP=1             -U alani_ci -d alani_ci_test -f /tmp/credit.sql
           docker exec "$PG_CONTAINER" psql -v ON_ERROR_STOP=1             -U alani_ci -d alani_ci_test -f /tmp/credit_assert.sql
+      - name: Verify private account deletion request grants and own-row access
+        shell: bash
+        run: |
+          docker cp tests/sql/account_deletion_fixture.sql "$PG_CONTAINER:/tmp/delete_fixture.sql"
+          docker cp docs/ALANI_ACCOUNT_DELETION_STAGE_GRANTS.sql "$PG_CONTAINER:/tmp/delete_grants.sql"
+          docker cp tests/sql/account_deletion_assertions.sql "$PG_CONTAINER:/tmp/delete_assert.sql"
+          docker exec "$PG_CONTAINER" psql -v ON_ERROR_STOP=1             -U alani_ci -d alani_ci_test -f /tmp/delete_fixture.sql
+          docker exec "$PG_CONTAINER" psql -v ON_ERROR_STOP=1             -U alani_ci -d alani_ci_test -f /tmp/delete_grants.sql
+          docker exec "$PG_CONTAINER" psql -v ON_ERROR_STOP=1             -U alani_ci -d alani_ci_test -f /tmp/delete_assert.sql
       - name: Test pg_dump and pg_restore on disposable fixtures (not real backup)
         shell: bash
         run: |
