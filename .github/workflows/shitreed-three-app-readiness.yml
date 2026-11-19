@@ -53,6 +53,8 @@ jobs:
           else
             python3 scripts/configure_android_maps.py
           fi
+      - name: Use preinstalled NDK for customer debug preview only
+        run: python3 merchant_app/scripts/use_runner_ndk.py
       - run: flutter pub get
       - run: flutter analyze lib test
       - run: flutter test
