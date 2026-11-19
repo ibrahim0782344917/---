@@ -6,12 +6,14 @@ on:
       - 'tests/sql/**'
       - 'docs/ALANI_DELIVERY_COD_STAGE_ONLY_SQL.sql'
       - 'docs/ALANI_CONTENT_RETURNS_STAGE_ONLY_SQL.sql'
+      - 'docs/ALANI_STORE_CREDIT_STAGE_ONLY_SQL.sql'
       - '.github/workflows/alani-isolated-db-test.yml'
   pull_request:
     paths:
       - 'tests/sql/**'
       - 'docs/ALANI_DELIVERY_COD_STAGE_ONLY_SQL.sql'
       - 'docs/ALANI_CONTENT_RETURNS_STAGE_ONLY_SQL.sql'
+      - 'docs/ALANI_STORE_CREDIT_STAGE_ONLY_SQL.sql'
       - '.github/workflows/alani-isolated-db-test.yml'
 permissions:
   contents: read
@@ -64,6 +66,14 @@ jobs:
           docker exec "$PG_CONTAINER" psql -v ON_ERROR_STOP=1             -U alani_ci -d alani_ci_test -f /tmp/social_setup.sql
           docker exec "$PG_CONTAINER" psql -v ON_ERROR_STOP=1             -U alani_ci -d alani_ci_test -f /tmp/social.sql
           docker exec "$PG_CONTAINER" psql -v ON_ERROR_STOP=1             -U alani_ci -d alani_ci_test -f /tmp/social_assert.sql
+      - name: Validate immutable noncash store-credit ledger (offline only)
+        shell: bash
+        run: |
+          docker cp docs/ALANI_STORE_CREDIT_STAGE_ONLY_SQL.sql "$PG_CONTAINER:/tmp/credit.sql"
+          docker cp tests/sql/store_credit_assertions.sql "$PG_CONTAINER:/tmp/credit_assert.sql"
+          docker exec "$PG_CONTAINER" psql -v ON_ERROR_STOP=1             -U alani_ci -d alani_ci_test -c "create role service_role nologin"
+          docker exec "$PG_CONTAINER" psql -v ON_ERROR_STOP=1             -U alani_ci -d alani_ci_test -f /tmp/credit.sql
+          docker exec "$PG_CONTAINER" psql -v ON_ERROR_STOP=1             -U alani_ci -d alani_ci_test -f /tmp/credit_assert.sql
       - name: Test pg_dump and pg_restore on disposable fixtures (not real backup)
         shell: bash
         run: |
