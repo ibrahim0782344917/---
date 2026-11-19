@@ -30,16 +30,26 @@ jobs:
             -e POSTGRES_DB=alani_content_test \
             postgres:16-alpine >/dev/null
           trap 'docker rm -f alani-content-rls-pg >/dev/null 2>&1 || true' EXIT
+          # pg_isready may return true during the container's initial
+          # temporary Postgres startup, which is immediately shut down by
+          # initdb. Wait for the FINAL server startup to avoid EOF in psql.
           READY=false
-          for i in $(seq 1 45); do
-            if docker exec alani-content-rls-pg \
-              pg_isready -q -U postgres -d alani_content_test; then
-              READY=true
-              break
+          for i in $(seq 1 60); do
+            if docker logs alani-content-rls-pg 2>&1 | grep -q \
+              'PostgreSQL init process complete; ready for start up'; then
+              if docker exec alani-content-rls-pg \
+                psql -X -qAt -U postgres -d alani_content_test \
+                  -c 'select 1' 2>/dev/null | grep -qx 1; then
+                READY=true
+                break
+              fi
             fi
             sleep 1
           done
-          test "$READY" = true
+          if [[ "$READY" != true ]]; then
+            docker logs --tail 35 alani-content-rls-pg
+            exit 1
+          fi
           cat tests/alani_content_rls_prelude.sql \
             docs/ALANI_CONTENT_SCHEMA_REVIEW.sql \
             tests/alani_content_rls_checks.sql |
