@@ -5,11 +5,13 @@ on:
     paths:
       - 'tests/sql/**'
       - 'docs/ALANI_DELIVERY_COD_STAGE_ONLY_SQL.sql'
+      - 'docs/ALANI_CONTENT_RETURNS_STAGE_ONLY_SQL.sql'
       - '.github/workflows/alani-isolated-db-test.yml'
   pull_request:
     paths:
       - 'tests/sql/**'
       - 'docs/ALANI_DELIVERY_COD_STAGE_ONLY_SQL.sql'
+      - 'docs/ALANI_CONTENT_RETURNS_STAGE_ONLY_SQL.sql'
       - '.github/workflows/alani-isolated-db-test.yml'
 permissions:
   contents: read
@@ -53,6 +55,15 @@ jobs:
             -U alani_ci -d alani_ci_test -f /tmp/delivery.sql
           docker exec "$PG_CONTAINER" psql -v ON_ERROR_STOP=1 \
             -U alani_ci -d alani_ci_test -f /tmp/assertions.sql
+      - name: Apply secured publishing and return schema, test RLS and transitions
+        shell: bash
+        run: |
+          docker cp tests/sql/content_returns_setup.sql "$PG_CONTAINER:/tmp/social_setup.sql"
+          docker cp docs/ALANI_CONTENT_RETURNS_STAGE_ONLY_SQL.sql "$PG_CONTAINER:/tmp/social.sql"
+          docker cp tests/sql/content_returns_assertions.sql "$PG_CONTAINER:/tmp/social_assert.sql"
+          docker exec "$PG_CONTAINER" psql -v ON_ERROR_STOP=1             -U alani_ci -d alani_ci_test -f /tmp/social_setup.sql
+          docker exec "$PG_CONTAINER" psql -v ON_ERROR_STOP=1             -U alani_ci -d alani_ci_test -f /tmp/social.sql
+          docker exec "$PG_CONTAINER" psql -v ON_ERROR_STOP=1             -U alani_ci -d alani_ci_test -f /tmp/social_assert.sql
       - name: Test pg_dump and pg_restore on disposable fixtures (not real backup)
         shell: bash
         run: |
