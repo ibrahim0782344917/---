@@ -66,8 +66,8 @@ begin
   begin
     perform public.place_cash_order(
       '25091ca2-c0da-416c-b634-81b188ee66be',
-      '[{"product_id":"aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa","quantity":1},'||
-      '{"product_id":"aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa","quantity":1}]',
+      ('[{"product_id":"aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa","quantity":1},'||
+      '{"product_id":"aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa","quantity":1}]')::jsonb,
       'عنوان اختبار صالح', '07812345678',''
     );
   exception when others then
