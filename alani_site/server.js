@@ -23,6 +23,8 @@ const staticRoutes = {
   '/admin/':'admin.html', '/privacy':'privacy.html', '/terms':'terms.html',
   '/site.css':'site.css', '/site.js':'site.js', '/admin.js':'admin.js',
   '/info.js':'info.js','/menu.js':'menu.js',
+  '/delete-account':'delete-account.html', '/delete-account/':'delete-account.html',
+  '/account-deletion.js':'account-deletion.js',
   '/welcome':'info.html','/about-us':'info.html',
   '/payment-policy':'info.html','/return-policy':'info.html',
   '/return-request':'info.html','/broken-product':'info.html',
@@ -180,6 +182,44 @@ async function handleApi(req, res, path) {
     });
     return respond(res,200,{access_token:login.access_token,
       expires_in:login.expires_in, user_id:login.user?.id});
+  }
+  if (path === '/api/account-deletion-request') {
+    if (!['POST','GET'].includes(req.method)) {
+      throw new HttpError(405,'هذه العملية غير متاحة.');
+    }
+    const token = tokenFrom(req);
+    if (!token) throw new HttpError(401,'يجب تسجيل الدخول لحذف الحساب.');
+    const user = await supabase('/auth/v1/user',{},token);
+    if (!user?.id || !uuid.test(String(user.id))) {
+      throw new HttpError(403,'لم نتمكن من التحقق من صاحب الحساب.');
+    }
+    if (req.method === 'GET') {
+      const rows = await supabase(selectUrl('customer_deletion_requests',
+        'select=id,status,requested_at,processed_at'
+        +'&user_id=eq.'+encodeURIComponent(user.id)
+        +'&order=requested_at.desc&limit=10'),{},token);
+      return respond(res,200,{requests:rows});
+    }
+    const body=await readBody(req);
+    if (typeof body.reason !== 'string' || body.reason.length>500) {
+      throw new HttpError(400,'اكتب سبباً اختيارياً لا يزيد على ٥٠٠ حرف.');
+    }
+    const previous=await supabase(selectUrl('customer_deletion_requests',
+      'select=id,status&user_id=eq.'+encodeURIComponent(user.id)
+      +'&status=eq.pending&limit=1'),{},token);
+    if (previous.length) return respond(res,200,{
+      id:previous[0].id,status:'pending',alreadySubmitted:true
+    });
+    const rows=await supabase('/rest/v1/customer_deletion_requests',{
+      method:'POST',
+      body:JSON.stringify({reason:body.reason.trim()})
+    },token);
+    if (!rows?.[0]?.id) {
+      throw new HttpError(503,'لم نتمكن من تسجيل طلب الحذف.');
+    }
+    return respond(res,201,{
+      id:rows[0].id,status:'pending',alreadySubmitted:false
+    });
   }
   if (req.method === 'POST' && path === '/api/return-requests') {
     if (!RETURNS_ENABLED) throw new HttpError(503,
