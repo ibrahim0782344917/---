@@ -23,6 +23,16 @@ const _gold = Color(0xFFF6A609);
 
 /// Al-Ani's own storefront. The shared Shitreed customer/merchant/admin
 /// implementation remains intact in the repository.
+class _ProfileAppBar extends StatelessWidget implements PreferredSizeWidget {
+  const _ProfileAppBar();
+  @override
+  Size get preferredSize => const Size.fromHeight(kToolbarHeight);
+  @override
+  Widget build(BuildContext context) => AppBar(
+    title: const Text('حسابي وبروفايلي'),
+  );
+}
+
 class AlAniShopHome extends StatefulWidget {
   const AlAniShopHome({super.key});
 
@@ -78,7 +88,10 @@ class _AlAniShopHomeState extends State<AlAniShopHome> {
     if (!mounted) return;
     if (MarketplaceBackend.currentUser != null) {
       await Navigator.of(context).push<void>(MaterialPageRoute(
-        builder: (_) => const ShitreedProfilePage(),
+        builder: (_) => const Scaffold(
+          appBar: _ProfileAppBar(),
+          body: ShitreedProfilePage(),
+        ),
       ));
     }
     if (mounted) setState(() => _canEdit = AlAniEditorService.isOwner());
