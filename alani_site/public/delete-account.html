@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#01BE5F">
+  <meta name="robots" content="noindex,nofollow">
+  <meta name="description" content="طلب حذف حساب الزبون وبياناته في السيد إبراهيم العاني وشتريد">
+  <title>طلب حذف الحساب | السيد إبراهيم العاني</title>
+  <link rel="stylesheet" href="/site.css">
+  <script defer src="/account-deletion.js"></script>
+</head>
+<body class="alani-info-body">
+  <header class="site-header"><div class="wrap header-row">
+    <a class="brand" href="/"><span class="brand-mark">✳</span><span><strong>السيد إبراهيم العاني</strong><small>حماية بيانات الزبائن</small></span></a>
+    <nav class="primary-nav" aria-label="التنقل">
+      <a href="/">الرئيسية</a><a href="/privacy">الخصوصية</a><a href="/help">المساعدة</a>
+    </nav>
+  </div></header>
+  <main class="wrap info-layout">
+    <div class="info-top"><a class="info-back" href="/">← العودة للمتجر</a></div>
+    <section class="info-card">
+      <span class="overline">الخصوصية وحقوق المستخدم</span>
+      <h1>طلب حذف الحساب والبيانات</h1>
+      <p class="lead">يمكن لصاحب حساب السيد إبراهيم العاني أو شتريد تسجيل طلب لحذف حسابه والبيانات الشخصية المرتبطة به. يجب التحقق من هوية صاحب الحساب قبل قبول الطلب.</p>
+      <p>عند معالجة طلب الحذف تُزال بيانات الحساب والمعلومات المرتبطة به التي لا توجد ضرورة قانونية للاحتفاظ بها. قد تظل السجلات اللازمة للالتزامات القانونية والمحاسبية، مثل فواتير الطلبات، للمدة المطلوبة قانوناً، مع تقييد الوصول إليها.</p>
+      <p>إرسال الطلب لا يحذف الحساب فوراً؛ الحالة الأولى تكون «قيد المعالجة». لن نعتبر الحذف منتهياً إلا بعد تنفيذ المعالجة الفعلية وإعلام صاحب الحساب.</p>
+      <form id="account-deletion-form" class="checkout-panel">
+        <h2>تأكيد الهوية وإرسال الطلب</h2>
+        <label for="delete-email">البريد الإلكتروني لحسابك
+          <input id="delete-email" type="email" autocomplete="username" required maxlength="254">
+        </label>
+        <label for="delete-password">كلمة المرور
+          <input id="delete-password" type="password" autocomplete="current-password" minlength="8" required>
+        </label>
+        <label for="delete-reason">سبب الطلب (اختياري)
+          <textarea id="delete-reason" maxlength="500"></textarea>
+        </label>
+        <label class="check-row" for="delete-confirm">
+          <input id="delete-confirm" type="checkbox" required>
+          أؤكد أنني صاحب الحساب وأطلب حذفه مع البيانات المرتبطة به.
+        </label>
+        <button class="button primary full" id="delete-submit" type="submit">إرسال طلب حذف حسابي</button>
+        <p class="form-message" id="delete-message" role="status" aria-live="polite"></p>
+      </form>
+      <p><a href="/privacy">سياسة الخصوصية</a> توضح أنواع البيانات وحقوق المستخدم. إذا لم تتمكن من تسجيل الدخول، استخدم <a href="/help">مركز المساعدة</a> للحصول على طريقة التحقق البديلة التي تعتمدها الإدارة.</p>
+    </section>
+  </main>
+</body>
+</html>
