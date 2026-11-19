@@ -99,12 +99,19 @@ class _AlAniShopHomeState extends State<AlAniShopHome> {
 
   void _add(MarketplaceProduct product) {
     final added = CommerceCart.instance.add(product);
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+    final messenger = ScaffoldMessenger.of(context);
+    messenger.clearSnackBars();
+    messenger.showSnackBar(SnackBar(
+      duration: const Duration(seconds: 3),
       content: Text(added
           ? 'تمت إضافة المنتج إلى سلة متجر السيد إبراهيم العاني'
           : 'تعذرت الإضافة: تحقق من المخزون أو أفرغ سلة متجر آخر.'),
       action: added ? SnackBarAction(
-        label: 'السلة', onPressed: () => setState(() => _tab = 4),
+        label: 'السلة',
+        onPressed: () {
+          messenger.removeCurrentSnackBar();
+          if (mounted) setState(() => _tab = 4);
+        },
       ) : null,
     ));
   }
@@ -179,7 +186,10 @@ class _AlAniShopHomeState extends State<AlAniShopHome> {
         ),
         bottomNavigationBar: NavigationBar(
           selectedIndex: _tab,
-          onDestinationSelected: (value) => setState(() => _tab = value),
+          onDestinationSelected: (value) {
+            ScaffoldMessenger.of(context).hideCurrentSnackBar();
+            setState(() => _tab = value);
+          },
           indicatorColor: const Color(0xFFD5E9DD),
           destinations: const [
             NavigationDestination(icon: Icon(Icons.home_outlined),
