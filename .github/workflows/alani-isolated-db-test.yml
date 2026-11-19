@@ -8,6 +8,7 @@ on:
       - 'docs/ALANI_CONTENT_RETURNS_STAGE_ONLY_SQL.sql'
       - 'docs/ALANI_STORE_CREDIT_STAGE_ONLY_SQL.sql'
       - 'docs/ALANI_ACCOUNT_DELETION_STAGE_GRANTS.sql'
+      - 'docs/ALANI_SUPPORT_CHAT_STAGE_ONLY_SQL.sql'
       - '.github/workflows/alani-isolated-db-test.yml'
   pull_request:
     paths:
@@ -16,6 +17,7 @@ on:
       - 'docs/ALANI_CONTENT_RETURNS_STAGE_ONLY_SQL.sql'
       - 'docs/ALANI_STORE_CREDIT_STAGE_ONLY_SQL.sql'
       - 'docs/ALANI_ACCOUNT_DELETION_STAGE_GRANTS.sql'
+      - 'docs/ALANI_SUPPORT_CHAT_STAGE_ONLY_SQL.sql'
       - '.github/workflows/alani-isolated-db-test.yml'
 permissions:
   contents: read
@@ -85,6 +87,13 @@ jobs:
           docker exec "$PG_CONTAINER" psql -v ON_ERROR_STOP=1             -U alani_ci -d alani_ci_test -f /tmp/delete_fixture.sql
           docker exec "$PG_CONTAINER" psql -v ON_ERROR_STOP=1             -U alani_ci -d alani_ci_test -f /tmp/delete_grants.sql
           docker exec "$PG_CONTAINER" psql -v ON_ERROR_STOP=1             -U alani_ci -d alani_ci_test -f /tmp/delete_assert.sql
+      - name: Verify private support conversations for buyer and store owner
+        shell: bash
+        run: |
+          docker cp docs/ALANI_SUPPORT_CHAT_STAGE_ONLY_SQL.sql "$PG_CONTAINER:/tmp/support.sql"
+          docker cp tests/sql/support_chat_assertions.sql "$PG_CONTAINER:/tmp/support_assert.sql"
+          docker exec "$PG_CONTAINER" psql -v ON_ERROR_STOP=1             -U alani_ci -d alani_ci_test -f /tmp/support.sql
+          docker exec "$PG_CONTAINER" psql -v ON_ERROR_STOP=1             -U alani_ci -d alani_ci_test -f /tmp/support_assert.sql
       - name: Test pg_dump and pg_restore on disposable fixtures (not real backup)
         shell: bash
         run: |
