@@ -1,0 +1,58 @@
+name: Al-Ani Content RLS - isolated database test
+on:
+  push:
+    branches:
+      - fix/alani-material-content-checkout-20261119
+  pull_request:
+    paths:
+      - "tests/alani_content_rls_*.sql"
+      - "docs/ALANI_CONTENT_SCHEMA_REVIEW.sql"
+      - "lib/alani/**"
+      - ".github/workflows/alani-content-schema-test.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  disposable-postgres:
+    name: Publication schema, owner permissions and visitor privacy
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run RLS integration test in disposable local Postgres
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo 'Starting disposable PostgreSQL container. No Supabase production connection.'
+          docker run -d --name alani-content-rls-pg \
+            -e POSTGRES_PASSWORD=test-only \
+            -e POSTGRES_DB=alani_content_test \
+            postgres:16-alpine >/dev/null
+          trap 'docker rm -f alani-content-rls-pg >/dev/null 2>&1 || true' EXIT
+          # pg_isready may return true during the container's initial
+          # temporary Postgres startup, which is immediately shut down by
+          # initdb. Wait for the FINAL server startup to avoid EOF in psql.
+          READY=false
+          for i in $(seq 1 60); do
+            if docker logs alani-content-rls-pg 2>&1 | grep -q \
+              'PostgreSQL init process complete; ready for start up'; then
+              if docker exec alani-content-rls-pg \
+                psql -X -qAt -U postgres -d alani_content_test \
+                  -c 'select 1' 2>/dev/null | grep -qx 1; then
+                READY=true
+                break
+              fi
+            fi
+            sleep 1
+          done
+          if [[ "$READY" != true ]]; then
+            docker logs --tail 35 alani-content-rls-pg
+            exit 1
+          fi
+          cat tests/alani_content_rls_prelude.sql \
+            docs/ALANI_CONTENT_SCHEMA_REVIEW.sql \
+            tests/alani_content_rls_checks.sql |
+            docker exec -i alani-content-rls-pg \
+              psql -X -v ON_ERROR_STOP=1 -U postgres -d alani_content_test
+          echo 'PASS: no writes or connections made to Supabase.'

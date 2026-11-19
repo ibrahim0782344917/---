@@ -23,6 +23,16 @@ const _gold = Color(0xFFF6A609);
 
 /// Al-Ani's own storefront. The shared Shitreed customer/merchant/admin
 /// implementation remains intact in the repository.
+class _ProfileAppBar extends StatelessWidget implements PreferredSizeWidget {
+  const _ProfileAppBar();
+  @override
+  Size get preferredSize => const Size.fromHeight(kToolbarHeight);
+  @override
+  Widget build(BuildContext context) => AppBar(
+    title: const Text('حسابي وبروفايلي'),
+  );
+}
+
 class AlAniShopHome extends StatefulWidget {
   const AlAniShopHome({super.key});
 
@@ -78,7 +88,10 @@ class _AlAniShopHomeState extends State<AlAniShopHome> {
     if (!mounted) return;
     if (MarketplaceBackend.currentUser != null) {
       await Navigator.of(context).push<void>(MaterialPageRoute(
-        builder: (_) => const ShitreedProfilePage(),
+        builder: (_) => const Scaffold(
+          appBar: _ProfileAppBar(),
+          body: ShitreedProfilePage(),
+        ),
       ));
     }
     if (mounted) setState(() => _canEdit = AlAniEditorService.isOwner());
@@ -86,12 +99,19 @@ class _AlAniShopHomeState extends State<AlAniShopHome> {
 
   void _add(MarketplaceProduct product) {
     final added = CommerceCart.instance.add(product);
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+    final messenger = ScaffoldMessenger.of(context);
+    messenger.clearSnackBars();
+    messenger.showSnackBar(SnackBar(
+      duration: const Duration(seconds: 3),
       content: Text(added
           ? 'تمت إضافة المنتج إلى سلة متجر السيد إبراهيم العاني'
           : 'تعذرت الإضافة: تحقق من المخزون أو أفرغ سلة متجر آخر.'),
       action: added ? SnackBarAction(
-        label: 'السلة', onPressed: () => setState(() => _tab = 4),
+        label: 'السلة',
+        onPressed: () {
+          messenger.removeCurrentSnackBar();
+          if (mounted) setState(() => _tab = 4);
+        },
       ) : null,
     ));
   }
@@ -166,7 +186,10 @@ class _AlAniShopHomeState extends State<AlAniShopHome> {
         ),
         bottomNavigationBar: NavigationBar(
           selectedIndex: _tab,
-          onDestinationSelected: (value) => setState(() => _tab = value),
+          onDestinationSelected: (value) {
+            ScaffoldMessenger.of(context).hideCurrentSnackBar();
+            setState(() => _tab = value);
+          },
           indicatorColor: const Color(0xFFD5E9DD),
           destinations: const [
             NavigationDestination(icon: Icon(Icons.home_outlined),
@@ -535,9 +558,31 @@ class _AlAniShopHomeState extends State<AlAniShopHome> {
               return const Center(child: CircularProgressIndicator());
             }
             if (snapshot.hasError) {
-              return _notice(
-                'لم يتم تفعيل قاعدة الفيديوهات والمدونة بعد. '
-                'هذه الواجهة جاهزة للربط بعد مراجعة صلاحيات النشر.',
+              return Card(
+                color: Colors.white,
+                child: Padding(
+                  padding: const EdgeInsets.all(22),
+                  child: Column(children: [
+                    const Icon(Icons.library_books_outlined,
+                      size: 48, color: _pine),
+                    const SizedBox(height: 12),
+                    const Text('المحتوى غير متاح حالياً',
+                      style: TextStyle(
+                        fontSize: 18, fontWeight: FontWeight.w900)),
+                    const SizedBox(height: 10),
+                    const Text('تحتاج الفيديوهات والوصفات والمدونة إلى '
+                      'تفعيل جدول نشر مؤمّن. لن نعرض مواداً وهمية '
+                      'أو مسودات خاصة بالمتجر.',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(height: 1.6)),
+                    const SizedBox(height: 12),
+                    OutlinedButton.icon(
+                      onPressed: _refresh,
+                      icon: const Icon(Icons.refresh_outlined),
+                      label: const Text('إعادة المحاولة'),
+                    ),
+                  ]),
+                ),
               );
             }
             final items = (snapshot.data ?? [])
