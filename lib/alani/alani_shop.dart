@@ -558,9 +558,31 @@ class _AlAniShopHomeState extends State<AlAniShopHome> {
               return const Center(child: CircularProgressIndicator());
             }
             if (snapshot.hasError) {
-              return _notice(
-                'لم يتم تفعيل قاعدة الفيديوهات والمدونة بعد. '
-                'هذه الواجهة جاهزة للربط بعد مراجعة صلاحيات النشر.',
+              return Card(
+                color: Colors.white,
+                child: Padding(
+                  padding: const EdgeInsets.all(22),
+                  child: Column(children: [
+                    const Icon(Icons.library_books_outlined,
+                      size: 48, color: _pine),
+                    const SizedBox(height: 12),
+                    const Text('المحتوى غير متاح حالياً',
+                      style: TextStyle(
+                        fontSize: 18, fontWeight: FontWeight.w900)),
+                    const SizedBox(height: 10),
+                    const Text('تحتاج الفيديوهات والوصفات والمدونة إلى '
+                      'تفعيل جدول نشر مؤمّن. لن نعرض مواداً وهمية '
+                      'أو مسودات خاصة بالمتجر.',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(height: 1.6)),
+                    const SizedBox(height: 12),
+                    OutlinedButton.icon(
+                      onPressed: _refresh,
+                      icon: const Icon(Icons.refresh_outlined),
+                      label: const Text('إعادة المحاولة'),
+                    ),
+                  ]),
+                ),
               );
             }
             final items = (snapshot.data ?? [])
