@@ -69,7 +69,10 @@ void main() {
       ));
       await tester.pumpAndSettle();
       expect(find.text('طلب حذف حساب الزبون'), findsOneWidget);
-      await tester.ensureVisible(find.text('إرسال طلب حذف حسابي'));
+      await tester.scrollUntilVisible(
+        find.widgetWithText(FilledButton, 'إرسال طلب حذف حسابي'),
+        130,
+      );
       await tester.pumpAndSettle();
       expect(tester.takeException(), isNull);
     });
