@@ -230,18 +230,44 @@ async function handleApi(req, res, path) {
     }
     const requestKey = uuid.test(String(payload.requestKey))
       ? payload.requestKey : randomUUID();
-    const rows = await supabase('/rest/v1/rpc/place_cash_order_web', {
-      method:'POST',
-      body:JSON.stringify({
-        p_store_id:STORE_ID,
-        p_items:items.map(x=>({product_id:x.product_id,quantity:x.quantity})),
-        p_delivery_address:payload.address.trim(),
-        p_phone:payload.phone.trim(),
-        p_notes:str(payload.notes),
-        p_request_key:requestKey,
-      }),
-    },token);
-    return respond(res,200,{orderId:rows, requestKey});
+    const expectedTotal = payload.expectedTotalIqd;
+    if (!Number.isSafeInteger(expectedTotal) ||
+        expectedTotal < 5000 || expectedTotal > 100000000000) {
+      throw new HttpError(400,'الإجمالي غير صحيح. حدّث السلة قبل الإرسال.');
+    }
+    let orderId;
+    try {
+      orderId = await supabase('/rest/v1/rpc/place_alani_cash_order', {
+        method:'POST',
+        body:JSON.stringify({
+          p_items:items.map(x=>({product_id:x.product_id,quantity:x.quantity})),
+          p_delivery_address:payload.address.trim(),
+          p_phone:payload.phone.trim(),
+          p_notes:str(payload.notes),
+          p_request_key:requestKey,
+          p_expected_total_iqd:expectedTotal,
+        }),
+      },token);
+    } catch (err) {
+      if (String(err?.message||'').includes('ORDER_TOTAL_CHANGED')) {
+        throw new HttpError(409,'تغيّر سعر منتج. حدّث الصفحة وأكّد المبلغ الجديد.');
+      }
+      if (String(err?.message||'').includes('OUT_OF_STOCK')) {
+        throw new HttpError(409,'الكمية المطلوبة نفدت. حدّث المنتجات.');
+      }
+      throw err;
+    }
+    if (!uuid.test(String(orderId))) throw new HttpError(502,'لم يؤكد الخادم رقم الطلب.');
+    const confirmed=await supabase(selectUrl('orders',
+      'select=id,total_iqd,delivery_fee_iqd&store_id=eq.'+
+      encodeURIComponent(STORE_ID)+'&id=eq.'+encodeURIComponent(orderId)+
+      '&limit=1'),{},token);
+    if (confirmed.length !== 1 || Number(confirmed[0].total_iqd)!==expectedTotal ||
+        Number(confirmed[0].delivery_fee_iqd)!==5000) {
+      throw new HttpError(502,'تحقق من طلباتك قبل إعادة الإرسال؛ لم نستطع مراجعة المبلغ.');
+    }
+    return respond(res,200,{orderId,requestKey,
+      totalIqd:expectedTotal,deliveryFeeIqd:5000});
   }
 
   if (!path.startsWith('/api/admin/')) throw new HttpError(404,'المسار غير موجود.');
