@@ -1,0 +1,32 @@
+name: Al-Ani Android backup and restore scripts - lint
+on:
+  push:
+    branches:
+      - feature/alani-final-release-content-20261122
+    paths:
+      - 'scripts/alani_backup_termux.sh'
+      - 'scripts/alani_restore_test_termux.sh'
+      - '.github/workflows/alani-backup-restore-script-check.yml'
+  pull_request:
+    paths:
+      - 'scripts/alani_backup_termux.sh'
+      - 'scripts/alani_restore_test_termux.sh'
+permissions:
+  contents: read
+jobs:
+  syntax-and-safety:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify Termux script shell syntax
+        run: |
+          bash -n scripts/alani_backup_termux.sh
+          bash -n scripts/alani_restore_test_termux.sh
+          echo "PASS: both Termux scripts pass bash syntax validation"
+      - name: Ensure restore targets an isolated local socket only
+        run: |
+          grep -Fq 'SOCKET="$PREFIX/tmp"' scripts/alani_restore_test_termux.sh
+          grep -Fq -- '--single-transaction --exit-on-error' scripts/alani_restore_test_termux.sh
+          grep -Fq 'listen_addresses=' scripts/alani_restore_test_termux.sh
+          echo "PASS: local-only restore with transactional rollback on error"
