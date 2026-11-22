@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
 import 'alani_gallery_upload.dart';
 import 'alani_store_api.dart';
+import 'alani_social_moderation_page.dart';
 import 'alani_dashboard_filters.dart';
 import 'alani_campaign_admin_page.dart';
 
@@ -272,7 +273,13 @@ class _AlAniStoreAdminPageState extends State<AlAniStoreAdminPage> {
         onChanged:(value)=>setState(()=>productSearch=value),
       ),
       const SizedBox(height:10),
-      Wrap(spacing:7,children:[
+      OutlinedButton.icon(
+      onPressed:()=>Navigator.of(context).push<void>(
+        MaterialPageRoute(builder:(_)=>const AlAniSocialModerationPage())),
+      icon:const Icon(Icons.admin_panel_settings_outlined),
+      label:const Text('الإشراف على التعليقات والبلاغات والكتّاب'),
+    ),
+    Wrap(spacing:7,children:[
         for(final filter in const {
           'all':'الكل','low':'مخزون قليل',
           'out':'نفد المخزون','hidden':'مخفي',
@@ -289,7 +296,31 @@ class _AlAniStoreAdminPageState extends State<AlAniStoreAdminPage> {
         subtitle:Text(money(p['price_iqd'])+' • المخزون: '+
           (p['stock_quantity']??0).toString()+
           (p['is_active']==true?' • منشور':' • مخفي')),
-        trailing:const Icon(Icons.edit_outlined),
+        trailing:PopupMenuButton<String>(
+        tooltip:'إدارة المنشور',
+        onSelected:(choice)async{
+          if(choice=='edit'){await editPost(p);return;}
+          final yes=await showDialog<bool>(
+            context:context,builder:(ctx)=>AlertDialog(
+              title:const Text('حذف المنشور نهائياً؟'),
+              content:const Text('يُحذف معه كل تعليقاته وتفاعلاته. لا يمكن التراجع.'),
+              actions:[
+                TextButton(onPressed:()=>Navigator.pop(ctx,false),
+                  child:const Text('إلغاء')),
+                FilledButton(onPressed:()=>Navigator.pop(ctx,true),
+                  child:const Text('حذف')),
+              ],
+            ));
+          if(yes!=true)return;
+          try{
+            await api.deletePost(p['id'].toString());
+            await reload();notify('تم حذف المنشور.');
+          }catch(_){notify('تعذر الحذف. تحقق من صلاحياتك.');}
+        },
+        itemBuilder:(_)=>const [
+          PopupMenuItem(value:'edit',child:Text('تعديل')),
+          PopupMenuItem(value:'delete',child:Text('حذف')),
+        ]),
         onTap:()=>editProduct(p),
       )),
     ]);
