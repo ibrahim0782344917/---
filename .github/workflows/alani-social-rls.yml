@@ -1,0 +1,33 @@
+name: AlAni Social Moderation and RLS
+on:
+  push:
+    branches: [feature/alani-brand-social-20261122]
+  pull_request:
+    paths:
+      - 'docs/ALANI_SOCIAL_20261122.sql'
+      - 'tests/alani_social_*.sql'
+      - '.github/workflows/alani-social-rls.yml'
+permissions:
+  contents: read
+jobs:
+  social-rls:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - name: Test social permissions in disposable PostgreSQL
+        shell: bash
+        run: |
+          set -euo pipefail
+          docker run -d --name social-db \
+            -e POSTGRES_PASSWORD=test -e POSTGRES_DB=social_test postgres:17-alpine >/dev/null
+          trap 'docker rm -f social-db >/dev/null 2>&1 || true' EXIT
+          for i in $(seq 1 60); do
+            docker exec social-db psql -qAt -U postgres -d social_test \
+              -c 'select 1' 2>/dev/null | grep -qx 1 && break
+            sleep 1
+          done
+          cat tests/alani_social_fixture.sql docs/ALANI_SOCIAL_20261122.sql \
+            tests/alani_social_checks.sql |
+            docker exec -i social-db psql -X -v ON_ERROR_STOP=1 \
+              -U postgres -d social_test
