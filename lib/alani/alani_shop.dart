@@ -570,9 +570,9 @@ class _AlAniShopHomeState extends State<AlAniShopHome> {
                       style: TextStyle(
                         fontSize: 18, fontWeight: FontWeight.w900)),
                     const SizedBox(height: 10),
-                    const Text('تحتاج الفيديوهات والوصفات والمدونة إلى '
-                      'تفعيل جدول نشر مؤمّن. لن نعرض مواداً وهمية '
-                      'أو مسودات خاصة بالمتجر.',
+                    const Text('تعذّر تحميل المحتوى حالياً. تحقق من اتصال الإنترنت '
+                      'أو حاول تحديث الصفحة. المنشورات غير المنشورة '
+                      'تبقى خاصة بصاحب المتجر.',
                       textAlign: TextAlign.center,
                       style: TextStyle(height: 1.6)),
                     const SizedBox(height: 12),
