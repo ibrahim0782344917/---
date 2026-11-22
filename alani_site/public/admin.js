@@ -189,6 +189,84 @@ function renderReturns(){
     cell.colSpan=5;row.append(cell);table.append(row);
   }
 }
+
+async function refreshSocial(){
+  const info=$('social-availability'),
+    comments=$('social-comments-table'),reports=$('social-reports-table'),
+    staff=$('social-staff-table');
+  comments.replaceChildren();reports.replaceChildren();staff.replaceChildren();
+  try{
+    active();
+    const result=await api('/api/admin/social');
+    if(!result.enabled){
+      info.textContent='تفاعلات المحتوى قيد التفعيل على قاعدة البيانات.';
+      return;
+    }
+    info.textContent='نظام الإشراف فعّال. تظهر التعليقات بعد موافقة صاحب المتجر أو المشرف.';
+    for(const item of result.comments||[]){
+      const row=document.createElement('tr');
+      row.append(text('td',item.body),text('td',item.status));
+      const cell=document.createElement('td');
+      for(const status of ['approved','hidden']){
+        const button=text('button',status==='approved'?'اعتماد':'إخفاء');
+        button.type='button';button.disabled=item.status===status;
+        button.addEventListener('click',async()=>{
+          if(!confirm('تأكيد تغيير حالة التعليق؟'))return;
+          try{
+            await api('/api/admin/social',{method:'POST',
+              body:JSON.stringify({id:item.id,action:'moderate_comment',status})});
+            await refreshSocial();message('تم تحديث التعليق وسجل التدقيق.');
+          }catch(e){message(e.message,true);}
+        });cell.append(button);
+      }
+      row.append(cell);comments.append(row);
+    }
+    for(const item of result.reports||[]){
+      const row=document.createElement('tr');
+      row.append(text('td',item.reason+' — '+(item.details||'')),
+        text('td',item.status));
+      const cell=document.createElement('td');
+      if(item.status==='open')for(const status of ['reviewed','dismissed']){
+        const button=text('button',status==='reviewed'?'تمت المراجعة':'رفض البلاغ');
+        button.type='button';
+        button.addEventListener('click',async()=>{
+          const note=prompt('سبب قرار المشرف (٨ أحرف على الأقل)');
+          if(note===null)return;
+          try{
+            await api('/api/admin/social',{method:'POST',
+              body:JSON.stringify({id:item.id,action:'review_report',
+                status,note:note.trim()})});
+            await refreshSocial();message('تم تسجيل قرار البلاغ.');
+          }catch(e){message(e.message,true);}
+        });cell.append(button);
+      }
+      row.append(cell);reports.append(row);
+    }
+    for(const member of result.staff||[]){
+      const row=document.createElement('tr');
+      row.append(text('td',member.user_id),
+        text('td',member.role==='writer'?'كاتب':'مشرف'),
+        text('td',member.active?'مفعّل':'موقوف'));
+      staff.append(row);
+    }
+  }catch(error){info.textContent='تعذّر تحميل الإشراف: '+error.message;}
+}
+$('social-refresh').addEventListener('click',refreshSocial);
+$('social-staff-form').addEventListener('submit',async(event)=>{
+  event.preventDefault();
+  try{
+    active();
+    const id=$('social-staff-id').value.trim();
+    if(!/^[0-9a-f-]{36}$/i.test(id))throw Error('معرف المستخدم غير صحيح.');
+    await api('/api/admin/social',{method:'POST',body:JSON.stringify({
+      id,action:'manage_staff',role:$('social-staff-role').value,
+      active:$('social-staff-active').value==='true'
+    })});
+    $('social-staff-form').reset();await refreshSocial();
+    message('تم تحديث صلاحية الكاتب أو المشرف مع سجل تدقيق.');
+  }catch(error){message(error.message,true);}
+});
+
 function reports(){
   const total=adminData.orders.reduce((sum,o)=>sum+(Number(o.total_iqd)||0),0);
   const pending=adminData.orders.filter(o=>o.status==='placed').length;
@@ -207,13 +285,14 @@ async function refresh(){
   $('m-returns').textContent=String((response.returns?.items||[]).filter(x=>
     !['resolved','declined'].includes(x.status)).length);
   renderProducts();renderOrders();renderPosts();renderReturns();reports();
+  await refreshSocial();
   message('تم تحديث البيانات. جميع العمليات تقتصر على المتجر الذي تملكه.');
 }
 function showTab(tab){
   for(const element of document.querySelectorAll('[data-tab]')){
     element.classList.toggle('active',element.dataset.tab===tab);
   }
-  for(const name of ['products','orders','returns','posts','settings']){
+  for(const name of ['products','orders','returns','posts','social','settings']){
     $('tab-'+name).hidden=name!==tab;
   }
 }
