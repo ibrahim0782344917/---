@@ -1,0 +1,73 @@
+name: Shitreed Android emulator smoke (offline-safe)
+on:
+  pull_request:
+    paths:
+      - 'lib/**'
+      - 'merchant_app/lib/**'
+      - 'test/**'
+      - 'merchant_app/test/**'
+      - '.github/workflows/privacy-device-smoke.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  android_smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      ANDROID_EMULATOR_WAIT_TIME_BEFORE_KILL: 1000
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: '3.47.9'
+          cache: true
+      - name: Generate customer Android project (no secrets/no production)
+        run: |
+          flutter create --org com.shitreed --project-name shitreed_customer --platforms android .
+          flutter pub get
+          flutter build apk --debug
+      - name: Generate merchant Android project (no secrets/no production)
+        working-directory: merchant_app
+        run: |
+          flutter create --org com.shitreed --project-name shitreed_merchant --platforms android .
+          flutter pub get
+          flutter build apk --debug
+      - name: Enable KVM acceleration when available
+        run: |
+          if [ -e /dev/kvm ]; then sudo chmod 666 /dev/kvm; fi
+      - name: Launch both apps on Android 14 emulator
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 34
+          arch: x86_64
+          target: google_apis
+          profile: pixel_6
+          disable-animations: true
+          script: |
+            mkdir -p screenshots
+            adb install -r build/app/outputs/flutter-apk/app-debug.apk
+            adb shell am start -n com.shitreed.shitreed_customer/.MainActivity
+            sleep 12
+            adb shell pidof com.shitreed.shitreed_customer
+            adb shell screencap -p /sdcard/customer.png
+            adb pull /sdcard/customer.png screenshots/customer.png
+            adb shell am force-stop com.shitreed.shitreed_customer
+            adb install -r merchant_app/build/app/outputs/flutter-apk/app-debug.apk
+            adb shell am start -n com.shitreed.shitreed_merchant/.MainActivity
+            sleep 12
+            adb shell pidof com.shitreed.shitreed_merchant
+            adb shell screencap -p /sdcard/merchant.png
+            adb pull /sdcard/merchant.png screenshots/merchant.png
+      - name: Keep offline device previews for manual inspection
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: Shitreed-Privacy-Device-Smoke
+          path: |
+            screenshots/*.png
+            build/app/outputs/flutter-apk/app-debug.apk
+            merchant_app/build/app/outputs/flutter-apk/app-debug.apk
+          if-no-files-found: warn
+          retention-days: 14
