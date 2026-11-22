@@ -8,6 +8,7 @@ on:
     paths:
       - 'docs/ALANI_DELIVERY_RETURNS_SAFE_STAGE_20261122.sql'
       - 'docs/ALANI_CUSTOMER_DELETION_PREFLIGHT_20261122.sql'
+      - 'docs/ALANI_SALE_SCHEMA_READINESS_20261122.sql'
       - 'tests/alani_deletion_request_*.sql'
       - 'tests/alani_delivery_returns_*.sql'
       - 'lib/alani/**'
@@ -41,6 +42,34 @@ jobs:
             tests/alani_delivery_returns_checks.sql |
             docker exec -i alani-commercial-pg psql -X -v ON_ERROR_STOP=1 \
               -U postgres -d alani_isolated
+
+  checkout-database-readiness:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify checkout schema and grants are required
+        shell: bash
+        run: |
+          set -euo pipefail
+          docker run -d --name alani-schema-ready \
+            -e POSTGRES_PASSWORD=test -e POSTGRES_DB=sales_guard_test \
+            postgres:17-alpine >/dev/null
+          trap 'docker rm -f alani-schema-ready >/dev/null 2>&1 || true' EXIT
+          for i in $(seq 1 60); do
+            if docker exec alani-schema-ready psql -X -qAt -U postgres \
+              -d sales_guard_test -c 'select 1' 2>/dev/null | grep -qx 1; then
+              break
+            fi
+            sleep 1
+          done
+          cat tests/alani_checkout_fixture.sql \
+            docs/ALANI_SALE_SCHEMA_READINESS_20261122.sql \
+            tests/alani_checkout_before_schema_checks.sql \
+            docs/ALANI_COD_VERIFIED_5000IQD_20261122.sql \
+            tests/alani_checkout_after_schema_checks.sql |
+            docker exec -i alani-schema-ready \
+              psql -X -v ON_ERROR_STOP=1 -U postgres -d sales_guard_test
 
   phone-privacy-isolated:
     runs-on: ubuntu-latest

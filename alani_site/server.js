@@ -15,6 +15,19 @@ export function checkoutAllowed(env) {
     && env.ALANI_DELIVERY_TOTALS_VERIFIED === 'true';
 }
 const CHECKOUT_ENABLED = checkoutAllowed(process.env);
+export function checkoutUsable(flagApproved, schemaReady) {
+  return flagApproved === true && schemaReady === true;
+}
+async function liveCheckoutReady() {
+  if (!CHECKOUT_ENABLED) return false;
+  try {
+    const status=await supabase('/rest/v1/rpc/shitreed_alani_checkout_schema_ready');
+    return checkoutUsable(CHECKOUT_ENABLED,status);
+  } catch (_) {
+    // No sale if the RPC is absent, permissions are wrong, or Supabase is down.
+    return false;
+  }
+}
 const RETURNS_ENABLED = process.env.ALANI_RETURNS_ENABLED === 'true';
 const root = join(dirname(fileURLToPath(import.meta.url)), 'public');
 const uuid = /^[a-f0-9]{8}-[a-f0-9]{4}-[1-8][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i;
@@ -109,7 +122,7 @@ async function publicShop() {
     supabase(selectUrl('products', 'select=id,name,description,price_iqd,stock_quantity,image_url&is_active=eq.true&store_id=eq.'+id+'&order=created_at.desc&limit=100')),
   ]);
   const store = stores?.[0] || null;
-  return {store, products: store ? products : [], checkoutEnabled: CHECKOUT_ENABLED};
+  return {store, products: store ? products : [], checkoutEnabled: await liveCheckoutReady()};
 }
 async function publications(token = null, owner = false) {
   const path = selectUrl('alani_publications',
@@ -154,7 +167,7 @@ async function handleApi(req, res, path) {
     return respond(res,200,await publications());
   }
   if (req.method === 'GET' && path === '/api/config') {
-    return respond(res,200,{checkoutEnabled:CHECKOUT_ENABLED,
+    return respond(res,200,{checkoutEnabled:await liveCheckoutReady(),
       returnsEnabled:RETURNS_ENABLED,
       deliveryFeeIqd:5000,optionalReturnFeeIqd:5000,
       paymentMethod:'cash_on_delivery',storeId:STORE_ID});
@@ -237,7 +250,7 @@ async function handleApi(req, res, path) {
     return respond(res,201,{id:inserted,status:'submitted'});
   }
   if (req.method === 'POST' && path === '/api/order') {
-    if (!CHECKOUT_ENABLED) throw new HttpError(503,'الشراء الإلكتروني لم يُفعّل بعد.');
+    if (!(await liveCheckoutReady())) throw new HttpError(503,'الشراء الإلكتروني لم يُفعّل بعد.');
     const token = tokenFrom(req);
     if (!token) throw new HttpError(401,'يجب تسجيل الدخول قبل الطلب.');
     const payload = await readBody(req);

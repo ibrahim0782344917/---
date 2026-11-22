@@ -1,6 +1,6 @@
 import test, { before, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { server, checkoutAllowed } from '../server.js';
+import { server, checkoutAllowed, checkoutUsable } from '../server.js';
 
 let root;
 before(async () => {
@@ -116,6 +116,10 @@ test('cash checkout never opens before shipping-inclusive totals are verified', 
     ALANI_DELIVERY_TOTALS_VERIFIED:'true'}),false);
   assert.equal(checkoutAllowed({ALANI_CHECKOUT_ENABLED:'true',
     ALANI_DELIVERY_TOTALS_VERIFIED:'true'}),true);
+  assert.equal(checkoutUsable(true,false),false);
+  assert.equal(checkoutUsable(true,undefined),false);
+  assert.equal(checkoutUsable(false,true),false);
+  assert.equal(checkoutUsable(true,true),true);
 });
 
 
