@@ -24,6 +24,19 @@ create policy "social staff self and owner read"
    and s.owner_id=(select auth.uid())
  ));
 
+drop policy if exists alani_publications_read on public.alani_publications;
+create policy alani_publications_read on public.alani_publications
+ for select to anon,authenticated using(
+ (status='published' and exists(select 1 from public.stores s
+     where s.id=store_id and s.status='approved'))
+ or exists(select 1 from public.stores s
+     where s.id=store_id and s.owner_id=(select auth.uid()))
+ or (created_by=(select auth.uid()) and exists(
+      select 1 from public.alani_content_staff st
+      where st.user_id=(select auth.uid()) and st.active
+       and st.role in ('writer','moderator')))
+);
+
 drop policy if exists alani_publications_insert on public.alani_publications;
 create policy alani_publications_insert on public.alani_publications
  for insert to authenticated with check(
