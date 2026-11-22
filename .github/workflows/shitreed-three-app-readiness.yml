@@ -32,7 +32,7 @@ env:
 jobs:
   customer:
     name: Customer Android - verify and preview APK
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 40
     steps:
       - uses: actions/checkout@v4
@@ -43,6 +43,8 @@ jobs:
           cache: true
       - name: Generate Android
         run: flutter create --org com.shitreed --project-name shitreed_customer --platforms android .
+      - name: Select installed NDK for debug preview only
+        run: python3 scripts/use_runner_ndk_debug.py
       - name: Prepare Android Maps key only after explicit approval
         env:
           MAPS_ANDROID_KEY: ${{ secrets.SHITREED_GOOGLE_MAPS_ANDROID_KEY }}
