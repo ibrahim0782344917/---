@@ -1,0 +1,65 @@
+name: Al-Ani Published Content - live read-only smoke
+on:
+  push:
+    branches:
+      - feature/alani-final-release-content-20261122
+  pull_request:
+    paths:
+      - '.github/workflows/alani-content-live-readonly.yml'
+      - 'lib/alani/**'
+      - 'alani_site/**'
+permissions:
+  contents: read
+jobs:
+  live-public-api:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Check public published content through Supabase anonymous REST
+        env:
+          # Public publishable key only. Never use a service-role secret.
+          SUPABASE_URL: https://ltwncrewggdrjevakwpb.supabase.co
+          SUPABASE_PUBLISHABLE_KEY: sb_publishable_Tao4VcnXR93Ne9KUBJ76tg_o-Pmd75_
+          ALANI_STORE_ID: 25091ca2-c0da-416c-b634-81b188ee66be
+        run: |
+          python3 - <<'PY'
+          import json, os, re, urllib.parse, urllib.request, uuid
+          url=os.environ['SUPABASE_URL'].rstrip('/')+'/rest/v1/alani_publications'
+          params=urllib.parse.urlencode({
+            'select':'id,kind,status,published_at,video_url',
+            'store_id':'eq.'+os.environ['ALANI_STORE_ID'],
+            'limit':'100'
+          })
+          req=urllib.request.Request(url+'?'+params, headers={
+            'apikey':os.environ['SUPABASE_PUBLISHABLE_KEY'],
+            'accept':'application/json'
+          }, method='GET')
+          # Read-only, never use any administrator token or write requests.
+          with urllib.request.urlopen(req,timeout=25) as result:
+            if result.status!=200:raise SystemExit('PUBLIC_API_NOT_200')
+            rows=json.loads(result.read(256_000))
+          if not isinstance(rows,list):
+            raise SystemExit('PUBLIC_CONTENT_NOT_LIST')
+          counts={'video':0,'article':0,'recipe':0,'post':0}
+          direct=external=0
+          for row in rows:
+            if not isinstance(row,dict):raise SystemExit('PUBLIC_CONTENT_NOT_OBJECT')
+            uuid.UUID(row['id'])
+            kind=row.get('kind')
+            if kind not in counts:raise SystemExit('UNEXPECTED_KIND')
+            if row.get('status')!='published' or not row.get('published_at'):
+              raise SystemExit('UNPUBLISHED_OR_MISSING_DATE_EXPOSED')
+            counts[kind]+=1
+            if kind=='video':
+              video=row.get('video_url') or ''
+              u=urllib.parse.urlparse(video)
+              if u.scheme!='https' or not u.netloc:
+                raise SystemExit('UNSAFE_VIDEO_LINK')
+              if re.search(r'\.(mp4|m3u8|mov|m4v)$',u.path,re.I):
+                direct+=1
+              else:external+=1
+          print('PASS: public API returned only dated, published content.')
+          print('Content counts: '+json.dumps(counts,sort_keys=True))
+          print('Videos: direct=%d external=%d'%(direct,external))
+          print('No customer data or media URLs were printed.')
+          PY
