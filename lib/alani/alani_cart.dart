@@ -96,12 +96,15 @@ class _AlAniCartPageState extends State<AlAniCartPage> {
     final currentItems=cart.items.map((line)=>{
       'product_id':line.product.id,'quantity':line.quantity,
     }).toList();
+    // The buyer explicitly confirms the quoted total INCLUDING delivery.
+    // The atomic Al-Ani RPC rejects changes to live prices or stock.
+    final expectedTotal=cart.totalIqd+deliveryFee;
     final body=<String,dynamic>{
-      'p_store_id':AlAniSettings.storeId,
       'p_items':currentItems,
       'p_delivery_address':address.text.trim(),
       'p_phone':phone.text.trim(),
       'p_notes':notes.text.trim(),
+      'p_expected_total_iqd':expectedTotal,
     };
     final fingerprint=jsonEncode(body);
     if(requestKey==null||lastPayload!=fingerprint){
@@ -126,7 +129,7 @@ class _AlAniCartPageState extends State<AlAniCartPage> {
     try {
       // The idempotency key stays unchanged across network retries of
       // identical cart, address, phone and notes.
-      final id=(await Supabase.instance.client.rpc('place_cash_order_web',
+      final id=(await Supabase.instance.client.rpc('place_alani_cash_order',
         params:{...body,'p_request_key':requestKey})).toString();
       if(id.length<8)throw const FormatException('INVALID_ORDER_ID');
       final result=await Supabase.instance.client.from('orders')
