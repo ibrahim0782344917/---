@@ -289,6 +289,9 @@ class _AlAniStoreAdminPageState extends State<AlAniStoreAdminPage> {
               style:const TextStyle(fontWeight:FontWeight.w800)),
             Text(money(o['total_iqd'])+' • '+
               AlAniAdminApi.statusLabel(o['status'] as String)),
+            if (((o['delivery_fee_iqd'] as num?)?.toInt()??0)>0)
+              Text('يشمل توصيل: '+money(o['delivery_fee_iqd']),
+                style:const TextStyle(color:Colors.black54,fontSize:12)),
             Text(o['delivery_address'] as String? ?? '',
               style:const TextStyle(color:Colors.black54)),
             Wrap(spacing:8,children:[
