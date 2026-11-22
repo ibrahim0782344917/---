@@ -3,6 +3,7 @@ const safe = (value) => String(value ?? '');
 const formatPrice = (number) => new Intl.NumberFormat('ar-IQ').format(Number(number || 0)) + ' د.ع';
 const uuidRegex = /^[a-f0-9]{8}-[a-f0-9]{4}-[1-8][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i;
 let catalog = [], publications = [], checkoutEnabled = false, searchTerm = '', categoryTerm = '';
+let pendingCheckout = null; // Keep request key across network retries in this page only.
 
 function node(tag, text = '', className = '') {
   const el = document.createElement(tag);
@@ -232,23 +233,47 @@ async function init() {
     e.preventDefault();
     const msg=$('checkout-message');msg.textContent='';
     if (!checkoutEnabled) return;
-    const items=catalog.filter(p=>cart[p.id]>0).map(p=>({
-      product_id:p.id,quantity:cart[p.id]
-    }));
+    const selected=catalog.filter(p=>cart[p.id]>0);
+    if (selected.length!==Object.keys(cart).length ||
+        selected.some(p=>!Number.isInteger(p.price_iqd) ||
+          cart[p.id]>p.stock_quantity)) {
+      msg.textContent='أحد المنتجات غير متوفر أو سعره غير واضح؛ حدّث الصفحة.';
+      return;
+    }
+    const items=selected.map(p=>({product_id:p.id,quantity:cart[p.id]}));
     if (!items.length) return;
+    const expectedTotalIqd=selected.reduce((n,p)=>n+
+      p.price_iqd*cart[p.id],5000);
+    const details={
+      items,address:$('checkout-address').value,
+      phone:$('checkout-phone').value,notes:$('checkout-notes').value,
+      expectedTotalIqd
+    };
+    // A retry after a lost network response reuses exactly the same key,
+    // preventing a second COD order and a second stock decrement.
+    const fingerprint=JSON.stringify(details);
+    if (!pendingCheckout || pendingCheckout.fingerprint!==fingerprint) {
+      pendingCheckout={fingerprint,requestKey:crypto.randomUUID()};
+    }
     const btn=$('checkout-button');btn.disabled=true;btn.textContent='جارٍ إرسال الطلب…';
     try {
       const login=await api('/api/login',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({
         email:$('checkout-email').value,password:$('checkout-password').value,
       })});
-      const requestKey=crypto.randomUUID();
       const order=await api('/api/order',{
-        method:'POST',headers:{'content-type':'application/json','authorization':'Bearer '+login.access_token},
-        body:JSON.stringify({items,address:$('checkout-address').value,
-          phone:$('checkout-phone').value,notes:$('checkout-notes').value,requestKey}),
+        method:'POST',headers:{'content-type':'application/json',
+          'authorization':'Bearer '+login.access_token},
+        body:JSON.stringify({...details,requestKey:pendingCheckout.requestKey}),
       });
+      if (Number(order.totalIqd)!==expectedTotalIqd ||
+          Number(order.deliveryFeeIqd)!==5000) {
+        throw Error('المبلغ غير مؤكد؛ راجع طلباتك قبل إعادة الإرسال.');
+      }
+      pendingCheckout=null;
       cart={};saveCart();
-      msg.textContent='تم تسجيل الطلب بنجاح، رقم الطلب: '+safe(order.orderId).slice(0,8);
+      msg.textContent='تم تسجيل الطلب بنجاح، رقم الطلب: '+
+        safe(order.orderId).slice(0,8)+'، الإجمالي مع التوصيل: '+
+        formatPrice(order.totalIqd);
     } catch(err) {
       msg.textContent=err.message||'تعذر إرسال الطلب';
     } finally{renderBasket();}
