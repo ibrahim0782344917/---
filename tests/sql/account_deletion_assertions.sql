@@ -65,7 +65,7 @@ reset role;
 -- A pending request must NOT implicitly erase users or financial records.
 -- These disposable test users are intentionally referenced by merchant and
 -- wallet records. A trusted erasure workflow must resolve dependencies first.
-do $
+do $$
 begin
   begin
     delete from auth.users
@@ -79,9 +79,9 @@ begin
     raise exception 'MERCHANT_USER_WAS_ERASED_WITH_STORE';
   exception when foreign_key_violation then null;
   end;
-end $;
+end $$;
 
-do $
+do $$
 begin
  if (select count(*) from auth.users) <> 4
    then raise exception 'AN_AUTH_USER_WAS_DELETED'; end if;
