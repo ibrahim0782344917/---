@@ -29,7 +29,11 @@ class _ModerationState extends State<AlAniSocialModerationPage> {
       .eq('status','open').order('created_at',ascending:false).limit(100);
     final staff=await db.from('alani_content_staff')
       .select('user_id,role').eq('store_id',storeId);
-    return [comments,reports,staff].map((r)=>r.map((e)=>
+    final drafts=await db.from('alani_publications')
+      .select('id,kind,title,body,created_by,status,created_at')
+      .eq('store_id',storeId).eq('status','draft')
+      .order('created_at',ascending:false).limit(100);
+    return [comments,reports,staff,drafts].map((r)=>r.map((e)=>
       Map<String,dynamic>.from(e)).toList()).toList();
   }
   Future<void> refresh() async {
@@ -119,16 +123,52 @@ class _ModerationState extends State<AlAniSocialModerationPage> {
           icon:const Icon(Icons.person_remove_outlined))),
     ],
   );
+  Widget drafts(List<Map<String,dynamic>> rows)=>ListView(children:[
+    const ListTile(title:Text('مراجعة مسودات الكتّاب'),
+      subtitle:Text('المحرر أو المالك ينشر بعد التحقق من المحتوى. '
+        'هذه الصفحة لا توافق تلقائياً على معلومات صحية غير مثبتة.')),
+    if(rows.isEmpty)const ListTile(title:Text('لا توجد مسودات بانتظار النشر')),
+    for(final row in rows)Card(child:ListTile(
+      title:Text(row['title']?.toString()??''),
+      subtitle:Text(row['body']?.toString()??'',
+        maxLines:3,overflow:TextOverflow.ellipsis),
+      trailing:PopupMenuButton<String>(
+        onSelected:(value)async{
+          if(value=='publish'){
+            final approve=await showDialog<bool>(context:context,
+              builder:(ctx)=>AlertDialog(
+                title:const Text('اعتماد ونشر المسودة؟'),
+                content:const Text('تأكد من صحة المعلومات وحقوق الصور '
+                    'قبل النشر. سيظهر المحتوى فوراً للزبائن.'),
+                actions:[
+                  TextButton(onPressed:()=>Navigator.pop(ctx,false),
+                    child:const Text('رجوع')),
+                  FilledButton(onPressed:()=>Navigator.pop(ctx,true),
+                    child:const Text('نشر')),
+                ],
+              ));
+            if(approve!=true)return;
+            await action('alani_publish_reviewed',{
+              'p_id':row['id'],'p_publish':true});
+          }
+        },
+        itemBuilder:(_)=>const [
+          PopupMenuItem(value:'publish',child:Text('اعتماد ونشر')),
+        ],
+      ),
+    )),
+  ]);
   @override
   void dispose(){userId.dispose();super.dispose();}
   @override
   Widget build(BuildContext context)=>DefaultTabController(
-    length:3,child:Scaffold(
+    length:4,child:Scaffold(
       appBar:AppBar(
         title:const Text('إشراف السيد إبراهيم العاني'),
         actions:[IconButton(onPressed:refresh,icon:const Icon(Icons.refresh))],
         bottom:const TabBar(tabs:[
-          Tab(text:'التعليقات'),Tab(text:'البلاغات'),Tab(text:'الكتّاب')]),
+          Tab(text:'التعليقات'),Tab(text:'البلاغات'),
+          Tab(text:'الكتّاب'),Tab(text:'المسودات')]),
       ),
       body:FutureBuilder<List<List<Map<String,dynamic>>>>(
         future:query,builder:(context,snap){
@@ -141,7 +181,7 @@ class _ModerationState extends State<AlAniSocialModerationPage> {
           }
           final x=snap.data!;
           return TabBarView(children:[
-            comments(x[0]),reports(x[1]),staff(x[2])]);
+            comments(x[0]),reports(x[1]),staff(x[2]),drafts(x[3])]);
         }),
     ),
   );
