@@ -272,6 +272,18 @@ String checkoutFailureText(String serverMessage) {
   if (serverMessage.contains('STORE_NOT_AVAILABLE')) {
     return 'المتجر بعده بانتظار موافقة الإدارة، لذلك الطلبات مو مفعلة إله.';
   }
+  if (serverMessage.contains('ALANI_USE_VERIFIED_CHECKOUT')) {
+    return 'طلبات السيد إبراهيم العاني تحتاج سلة المتجر المخصصة '
+      'لتأكيد أجور التوصيل ٥٬٠٠٠ دينار. افتح متجر العاني وأكمل الطلب هناك.';
+  }
+  if (serverMessage.contains('ORDER_TOTAL_CHANGED')) {
+    return 'تغيّر سعر أحد المنتجات قبل إكمال الطلب. '
+      'حدّث المنتجات والسلة ثم وافق على المبلغ الجديد.';
+  }
+  if (serverMessage.contains('IDEMPOTENCY_PAYLOAD_MISMATCH')) {
+    return 'الطلب تغيّر أثناء إعادة المحاولة. '
+      'راجع طلباتك أولاً، ثم حدّث السلة وأرسل طلباً جديداً.';
+  }
   if (serverMessage.contains('OUT_OF_STOCK')) {
     return 'الكمية المطلوبة نفدت. حدث المنتجات وعدّل السلة.';
   }
