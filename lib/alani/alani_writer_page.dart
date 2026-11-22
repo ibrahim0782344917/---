@@ -6,20 +6,11 @@ import 'package:shitreed_customer/alani/alani_editor.dart';
 /// Writers can create their own drafts only; editors publish via Admin.
 class AlAniWriterPage extends StatefulWidget {
   const AlAniWriterPage({super.key});
-  @override
-  State<AlAniWriterPage> createState() => _AlAniWriterState();
-}
-class _AlAniWriterState extends State<AlAniWriterPage> {
-  late Future<List<Map<String,dynamic>>> drafts;
-  bool saving=false;
-  SupabaseClient get db => Supabase.instance.client;
-  @override
-  void initState(){super.initState();drafts=_load();}
   static Future<bool> authorized() async {
     final db=Supabase.instance.client;
     final me=db.auth.currentUser;
-    if(me==null)return false;
-    if(await AlAniEditorService.isOwner())return true;
+    if(me==null){return false;}
+    if(await AlAniEditorService.isOwner()){return true;}
     try{
       final row=await db.from('alani_content_staff').select('role')
         .eq('store_id',AlAniSettings.storeId).eq('user_id',me.id)
@@ -29,6 +20,15 @@ class _AlAniWriterState extends State<AlAniWriterPage> {
         row['role']!='moderator';
     }catch(_){return false;}
   }
+  @override
+  State<AlAniWriterPage> createState() => _AlAniWriterState();
+}
+class _AlAniWriterState extends State<AlAniWriterPage> {
+  late Future<List<Map<String,dynamic>>> drafts;
+  bool saving=false;
+  SupabaseClient get db => Supabase.instance.client;
+  @override
+  void initState(){super.initState();drafts=_load();}
   Future<List<Map<String,dynamic>>> _load() async {
     if(db.auth.currentUser==null)return [];
     final rows=await db.from('alani_publications')
@@ -44,8 +44,10 @@ class _AlAniWriterState extends State<AlAniWriterPage> {
     try{await next;}catch(_){/* FutureBuilder displays error. */}
   }
   void inform(String message){
-    if(mounted)ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content:Text(message)));
+    if(mounted){
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content:Text(message)));
+    }
   }
   Future<void> edit([Map<String,dynamic>? original])async {
     final title=TextEditingController(text:original?['title']?.toString()??'');
@@ -121,8 +123,10 @@ class _AlAniWriterState extends State<AlAniWriterPage> {
             child:const Text('تعذر عرض المسودات. إعادة المحاولة')));
         }
         final rows=snap.data!;
-        if(rows.isEmpty)return const Center(child:Text(
-          'ما عندك مسودات بعد. اضغط كتابة مسودة.'));
+        if(rows.isEmpty){
+          return const Center(child:Text(
+            'ما عندك مسودات بعد. اضغط كتابة مسودة.'));
+        }
         return ListView.builder(
           padding:const EdgeInsets.all(13),itemCount:rows.length,
           itemBuilder:(context,i){

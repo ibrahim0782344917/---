@@ -99,10 +99,12 @@ class _AlAniShopHomeState extends State<AlAniShopHome> {
         ),
       ));
     }
-    if (mounted) setState(() {
-      _canEdit = AlAniEditorService.isOwner();
-      _canWrite = AlAniWriterPage.authorized();
-    });
+    if (mounted) {
+      setState(() {
+        _canEdit = AlAniEditorService.isOwner();
+        _canWrite = AlAniWriterPage.authorized();
+      });
+    }
   }
 
   void _add(MarketplaceProduct product) {
