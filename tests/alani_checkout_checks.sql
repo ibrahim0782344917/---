@@ -146,5 +146,7 @@ where id=current_setting('test.other_order_id')::uuid
   and total_iqd=7000 and delivery_fee_iqd=0;
 
 reset role;
+select count(*) as debug_order_rows from public.orders;
+select store_id,total_iqd,delivery_fee_iqd from public.orders order by total_iqd;
 select 1 / (case when count(*)=3 then 1 else 0 end) as exactly_three_orders_including_old;
 select 'PASS - AlAni 5000 delivery once; idempotency; rollback; other stores; historic orders' as result;
