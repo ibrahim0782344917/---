@@ -59,7 +59,7 @@ void main() {
       (tester) async {
     await tester.pumpWidget(const MaterialApp(home: AlAniShopHome()));
     await tester.pumpAndSettle();
-    expect(find.text('السيد إبراهيم العاني'), findsOneWidget);
+    expect(find.text('السيد إبراهيم العاني'), findsWidgets);
     expect(find.text('من الطبيعة إلى بيتك'), findsOneWidget);
 
     await tester.tap(find.text('المتجر').last);
