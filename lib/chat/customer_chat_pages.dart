@@ -47,7 +47,7 @@ class _CustomerChatInboxPageState extends State<CustomerChatInboxPage> {
             ? Center(
                 child: FilledButton(
                   onPressed: () async {
-                    await Navigator.push<void>(context,
+                    await Navigator.push<bool>(context,
                         MaterialPageRoute(builder: (_) => const CustomerAuthPage()));
                     if (mounted) await _refresh();
                   },
