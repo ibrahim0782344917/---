@@ -155,11 +155,10 @@ class _AlAniStoreAdminPageState extends State<AlAniStoreAdminPage> {
               OutlinedButton.icon(
                 onPressed:saving?null:()async{
                   try{
-                    final result=await FilePicker.platform.pickFiles(
-                      type:FileType.video,withData:true);
-                    if(result==null||result.files.isEmpty)return;
-                    final file=result.files.first;
-                    final error=AlAniAdminGallery.validate(file.name,file.size);
+                    final file=await FilePicker.pickFile(type:FileType.video);
+                    if(file==null)return;
+                    final length=await file.length();
+                    final error=AlAniAdminGallery.validate(file.name,length??-1);
                     if(error!=null){notify(error);return;}
                     if(ctx.mounted)setDialog(()=>studioVideo=file);
                   }catch(_){

@@ -29,7 +29,8 @@ class AlAniAdminGallery {
     final client = AdminApi.client;
     final user = client.auth.currentUser;
     if (user == null) throw StateError('سجل الدخول بحساب المالك أولاً.');
-    final validation = validate(file.name, file.size);
+    final videoLength = await file.length();
+    final validation = validate(file.name, videoLength ?? -1);
     if (validation != null) throw FormatException(validation);
     final store = await client.from('stores')
       .select('owner_id,status').eq('id', storeId).maybeSingle();
@@ -37,8 +38,8 @@ class AlAniAdminGallery {
         store['status'] != 'approved') {
       throw StateError('فقط حساب مالك المتجر المعتمد يرفع الفيديو.');
     }
-    final bytes = file.bytes;
-    if (bytes == null || validate(file.name, bytes.length) != null) {
+    final bytes = await file.readAsBytes();
+    if (validate(file.name, bytes.length) != null) {
       throw StateError('تعذر قراءة ملف الفيديو من الاستوديو.');
     }
     final random = Random.secure();
@@ -54,3 +55,4 @@ class AlAniAdminGallery {
   static Future<void> remove(String path) async {
     await AdminApi.client.storage.from(bucket).remove([path]);
   }
+}
