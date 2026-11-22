@@ -105,7 +105,7 @@ select 1 / (case when
 then 1 else 0 end) as price_mismatch_atomic_rollback;
 set role authenticated;
 
-do $
+do $$
 begin
  begin
    perform public.place_alani_cash_order(
