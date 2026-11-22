@@ -39,8 +39,10 @@ class _AlAniSocialPanelState extends State<AlAniSocialPanel> {
   });
 
   void _notice(String msg) {
-    if (mounted) ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(msg)));
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(msg)));
+    }
   }
 
   Future<bool> _needsLogin() async {
@@ -205,11 +207,14 @@ class _AlAniSocialPanelState extends State<AlAniSocialPanel> {
                           onSelected: (action) async {
                             if (action == 'report') await _report(item['id'] as String);
                             if (action == 'edit') await _editComment(item);
-                            if (action == 'delete') await _act(() =>
-                                AlAniSocialApi.editComment(
-                                  item['id'] as String, '', delete: true));
-                            if (ctx.mounted) modalState(() =>
-                                posts = AlAniSocialApi.comments(widget.publicationId));
+                            if (action == 'delete') {
+                              await _act(() => AlAniSocialApi.editComment(
+                                item['id'] as String, '', delete: true));
+                            }
+                            if (ctx.mounted) {
+                              modalState(() => posts = AlAniSocialApi.comments(
+                                widget.publicationId));
+                            }
                           },
                           itemBuilder: (_) => [
                             if (mine) const PopupMenuItem(
@@ -250,8 +255,10 @@ class _AlAniSocialPanelState extends State<AlAniSocialPanel> {
                         await AlAniSocialApi.comment(widget.publicationId, body);
                         input.clear();
                         _notice('تم إرسال التعليق، بانتظار موافقة المشرف.');
-                        if (ctx.mounted) modalState(() =>
-                          posts = AlAniSocialApi.comments(widget.publicationId));
+                        if (ctx.mounted) {
+                          modalState(() => posts = AlAniSocialApi.comments(
+                            widget.publicationId));
+                        }
                       } catch (_) {
                         _notice('تعذر إرسال التعليق. حاول مرة ثانية.');
                       } finally {
