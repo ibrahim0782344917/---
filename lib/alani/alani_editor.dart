@@ -115,7 +115,7 @@ class _AlAniEditorPageState extends State<AlAniEditorPage> {
                           Icon(Icons.cloud_off_outlined,
                             color: Color(0xFF1C503B), size: 40),
                           SizedBox(height: 14),
-                          Text('النشر غير متاح لأن جدول المحتوى لم يُفعّل.',
+                          Text('تعذّر تحميل إدارة المحتوى حالياً.',
                             textAlign: TextAlign.center,
                             style: TextStyle(
                               fontSize: 17, fontWeight: FontWeight.w800)),

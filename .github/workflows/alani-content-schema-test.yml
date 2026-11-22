@@ -3,10 +3,11 @@ on:
   push:
     branches:
       - fix/alani-material-content-checkout-20261119
+      - feature/alani-publications-activation-20261122
   pull_request:
     paths:
       - "tests/alani_content_rls_*.sql"
-      - "docs/ALANI_CONTENT_SCHEMA_REVIEW.sql"
+      - "docs/ALANI_CONTENT_SCHEMA_ACTIVATION_20261122.sql"
       - "lib/alani/**"
       - ".github/workflows/alani-content-schema-test.yml"
 
@@ -51,8 +52,8 @@ jobs:
             exit 1
           fi
           cat tests/alani_content_rls_prelude.sql \
-            docs/ALANI_CONTENT_SCHEMA_REVIEW.sql \
-            tests/alani_content_rls_checks.sql |
+            docs/ALANI_CONTENT_SCHEMA_ACTIVATION_20261122.sql \
+            tests/alani_content_activation_rls_checks.sql |
             docker exec -i alani-content-rls-pg \
               psql -X -v ON_ERROR_STOP=1 -U postgres -d alani_content_test
           echo 'PASS: no writes or connections made to Supabase.'
