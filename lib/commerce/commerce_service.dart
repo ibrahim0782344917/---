@@ -265,6 +265,40 @@ class CommerceService {
     });
     return result.toString();
   }
+
+  /// The authenticated BUYER acknowledges receipt of a READY Al-Ani order.
+  /// Server RPC verifies store, buyer ownership, status, and audit history.
+  static Future<void> confirmAlAniReceived(String orderId) async {
+    if (_myUserId.isEmpty) throw StateError('LOGIN_REQUIRED');
+    final value = await _db.rpc('alani_confirm_received',
+      params: {'p_order_id': orderId});
+    if (value != 'delivered') throw StateError('DELIVERY_NOT_CONFIRMED');
+  }
+
+  /// Filing a return only creates a review request: no automatic refund.
+  static Future<String> requestAlAniReturn({
+    required String orderId,
+    required String reason,
+    required String details,
+  }) async {
+    if (_myUserId.isEmpty) throw StateError('LOGIN_REQUIRED');
+    final value = await _db.rpc('alani_request_return', params: {
+      'p_order_id': orderId,
+      'p_reason': reason,
+      'p_details': details.trim(),
+    });
+    return value.toString();
+  }
+
+  static Future<List<Map<String, dynamic>>> myAlAniReturns() async {
+    final uid = _myUserId;
+    if (uid.isEmpty) throw StateError('LOGIN_REQUIRED');
+    return _db.from('alani_return_requests')
+      .select('id,order_id,reason,status,created_at,resolution_note')
+      .eq('customer_id',uid)
+      .order('created_at', ascending:false).limit(30);
+  }
+
 }
 
 /// Never display internal SQL exception details or personal information.

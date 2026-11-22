@@ -15,6 +15,8 @@ String _statusLabel(String status) {
       return 'قيد التجهيز';
     case 'ready':
       return 'جاهز للتسليم';
+    case 'delivered':
+      return 'تم التسليم';
     case 'cancelled':
       return 'ملغي';
     case 'rejected':

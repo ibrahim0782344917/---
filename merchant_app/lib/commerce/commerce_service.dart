@@ -95,9 +95,27 @@ class CommerceService {
 
   static Future<List<Map<String, dynamic>>> myStores() async {
     final userId = _myUserId;
-    return _db.from('stores')
-        .select('id,name,area,category,status,address,phone,latitude,longitude,description,opening_hours,logo_url')
+    final rows = await _db.from('stores')
+        .select('id,name,area,category,status,address,latitude,longitude,description,opening_hours,logo_url')
         .eq('owner_id', userId).order('created_at', ascending: false);
+    // Phone is never exposed through public.stores SELECT after migration.
+    // The owner can request only THEIR stores' contact details.
+    final byId = <String,String>{};
+    try {
+      final contacts = await _db.rpc('shitreed_my_store_contacts');
+      if (contacts is List) {
+        for (final raw in contacts) {
+          if (raw is Map && raw['store_id'] != null) {
+            byId[raw['store_id'].toString()] = raw['phone']?.toString() ?? '';
+          }
+        }
+      }
+    } catch (_) {
+      // Fail closed: show blank contact when secure endpoint isn't deployed.
+    }
+    return rows.map((row) => <String,dynamic>{
+      ...row, 'phone': byId[row['id'].toString()] ?? '',
+    }).toList(growable:false);
   }
 
   static Future<String> registerStore({

@@ -7,6 +7,7 @@ import 'package:shitreed_customer/commerce/customer_commerce_pages.dart';
 import 'package:shitreed_customer/auth/customer_auth_page.dart';
 import 'package:shitreed_customer/backend/marketplace_backend.dart';
 import 'package:shitreed_customer/alani/alani_content.dart';
+import 'package:shitreed_customer/alani/alani_checkout_readiness.dart';
 import 'alani_pages.dart';
 
 const _green = Color(0xFF01BE5F);
@@ -22,11 +23,9 @@ class AlAniCartPage extends StatefulWidget {
 }
 
 class _AlAniCartPageState extends State<AlAniCartPage> {
-  static const checkoutEnabled = bool.fromEnvironment(
-    'ALANI_CHECKOUT_ENABLED',defaultValue:false);
-  static const feesVerified = bool.fromEnvironment(
-    'ALANI_DELIVERY_TOTALS_VERIFIED',defaultValue:false);
   static const deliveryFee = 5000;
+  bool _serverReady = false;
+  bool _checking = false;
 
   final address = TextEditingController();
   final phone = TextEditingController();
@@ -35,12 +34,21 @@ class _AlAniCartPageState extends State<AlAniCartPage> {
   bool submitting = false;
   String? requestKey, lastPayload;
 
-  bool get canSubmit => checkoutEnabled && feesVerified;
+  bool get canSubmit => AlAniCheckoutReadiness.clientApproved &&
+      _serverReady && !_checking;
+
+  Future<void> _refreshReadiness() async {
+    if (!mounted) return;
+    setState(() { _checking = true; _serverReady = false; });
+    final ready = await AlAniCheckoutReadiness.checkServer();
+    if (mounted) setState(() { _serverReady = ready; _checking = false; });
+  }
 
   @override
   void initState(){
     super.initState();
     _loadAddresses();
+    _refreshReadiness();
   }
 
   Future<void> _loadAddresses() async {
@@ -75,6 +83,8 @@ class _AlAniCartPageState extends State<AlAniCartPage> {
 
   Future<void> submit() async {
     if(!canSubmit || submitting)return;
+    await _refreshReadiness();
+    if(!mounted || !canSubmit)return;
     final cart=CommerceCart.instance;
     if(cart.items.isEmpty || cart.storeId!=AlAniSettings.storeId)return;
     if(MarketplaceBackend.currentUser==null){
@@ -206,12 +216,20 @@ class _AlAniCartPageState extends State<AlAniCartPage> {
             trailing:Text(priceText(cart.totalIqd+deliveryFee),
               style:const TextStyle(fontWeight:FontWeight.w900,color:_green)),
           ),
-          if(!canSubmit)const Card(
-            color:Color(0xFFFFF0D9),
-            child:Padding(padding:EdgeInsets.all(16),
-              child:Text('الطلب الحقيقي غير مفعّل حتى نجاح اختبار '
-                'حساب التوصيل على الخادم. لن نحفظ طلباً ناقص الرسوم.',
-                style:TextStyle(height:1.7)))),
+          if(!canSubmit)Card(
+            color:const Color(0xFFFFF0D9),
+            child:Padding(padding:const EdgeInsets.all(16),
+              child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
+                Text(_checking
+                  ? 'جارٍ التحقق من جاهزية الخادم ورسوم التوصيل…'
+                  : 'الشراء الحقيقي مقفل إلى أن يؤكد الخادم احتساب ٥٬٠٠٠ دينار للتوصيل. لن نسجل طلباً ناقص الرسوم.',
+                  style:const TextStyle(height:1.7)),
+                TextButton.icon(
+                  onPressed:_checking?null:_refreshReadiness,
+                  icon:const Icon(Icons.refresh),
+                  label:const Text('إعادة فحص جاهزية الشراء'),
+                ),
+              ]))),
           if(canSubmit)...[
             if(savedAddresses.isNotEmpty)DropdownButtonFormField<String>(
               decoration:const InputDecoration(
