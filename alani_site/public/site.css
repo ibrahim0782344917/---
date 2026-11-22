@@ -287,3 +287,9 @@ body {background:#fff; color:var(--ink)}
   .policy-navigation a strong {flex:1}
   .policy-navigation a small {flex-basis:100%;padding-right:45px}
 }
+
+/* Official Al-Ani identity: original vector mark, no unverified personal photo. */
+.brand-mark{background:linear-gradient(145deg,#173e2a,#28704e);color:#e9bc67;border:1px solid #c9a35933;box-shadow:0 8px 22px #173e2a22}
+.hero h1,.section-head h2{letter-spacing:-.03em}
+.content-card:focus-within,.product-card:focus-within{outline:2px solid #28704e;outline-offset:3px}
+@media(prefers-reduced-motion:reduce){.hero *, .brand-mark{animation:none!important;transition:none!important}}

@@ -21,7 +21,7 @@ class ShitreedAdminApp extends StatelessWidget {
   const ShitreedAdminApp({super.key});
   @override
   Widget build(BuildContext context) => MaterialApp(
-    title: 'شتريد — الإدارة الموحدة',
+    title: 'السيد إبراهيم العاني | إدارة',
     debugShowCheckedModeBanner: false,
     locale: const Locale('ar'),
     builder: (_, child) => Directionality(
@@ -181,7 +181,7 @@ class _AdminLoginState extends State<AdminLogin> {
             child: const Column(children: [
               Icon(Icons.admin_panel_settings_rounded,
                 size: 72, color: orange),
-              Text('شتريد | الإدارة', style: TextStyle(
+              Text('السيد إبراهيم العاني | إدارة', style: TextStyle(
                 fontSize: 27, color: Colors.white,
                 fontWeight: FontWeight.bold)),
               Text('تحكم آمن في متاجر وطلبات شتريد',
@@ -563,7 +563,7 @@ class _AdminHomeState extends State<AdminHome> {
             Color(0xFF141B2E), Color(0xFF595FCB)])),
         child: const Column(crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('مركز عمليات شتريد', style: TextStyle(
+            Text('مركز إدارة السيد إبراهيم العاني', style: TextStyle(
               fontSize: 23, fontWeight: FontWeight.w900, color: Colors.white)),
             SizedBox(height: 6),
             Text('إدارة المتاجر والطلبات والمنتجات والصلاحيات من مكان واحد',
@@ -750,7 +750,7 @@ class _AdminHomeState extends State<AdminHome> {
           const Padding(padding: EdgeInsets.all(24),
             child: Column(crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('شتريد | الإدارة الموحّدة', style: TextStyle(
+                Text('السيد إبراهيم العاني | إدارة', style: TextStyle(
                   color: Colors.white, fontSize: 24,
                   fontWeight: FontWeight.w900)),
                 Text('مركز العمليات', style: TextStyle(
@@ -853,7 +853,7 @@ class _AdminHomeState extends State<AdminHome> {
         ])),
       ) : null,
       appBar: AppBar(
-        title: const Text('شتريد | الإدارة الموحدة'),
+        title: const Text('السيد إبراهيم العاني | إدارة'),
         actions: [
           if (AdminAccess.canOpenAlAni(widget.role))
             IconButton(

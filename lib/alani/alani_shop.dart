@@ -18,9 +18,9 @@ import 'package:shitreed_customer/commerce/customer_commerce_pages.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 const _pine = Color(0xFF01BE5F);
-const _deep = Color(0xFF1F1F39);
-const _cream = Color(0xFFFFFFFF);
-const _gold = Color(0xFFF6A609);
+const _deep = Color(0xFF173E2A);
+const _cream = Color(0xFFF9FAF5);
+const _gold = Color(0xFFE9BC67);
 
 /// Al-Ani's own storefront. The shared Shitreed customer/merchant/admin
 /// implementation remains intact in the repository.
@@ -218,14 +218,25 @@ class _AlAniShopHomeState extends State<AlAniShopHome> {
         Container(
           padding: const EdgeInsets.all(22),
           decoration: BoxDecoration(
-            gradient: const LinearGradient(colors: [_deep, _pine]),
+            gradient: const LinearGradient(
+              begin: AlignmentDirectional.topStart,
+              end: AlignmentDirectional.bottomEnd,
+              colors: [_deep, Color(0xFF246843)]),
             borderRadius: BorderRadius.circular(24),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Icon(Icons.eco_outlined, color: _gold, size: 38),
+              const CircleAvatar(
+                radius: 31,
+                backgroundColor: Color(0x26FFFFFF),
+                child: Icon(Icons.spa_rounded, color: _gold, size: 38),
+              ),
               const SizedBox(height: 12),
+              const Text('السيد إبراهيم العاني',
+                style: TextStyle(fontWeight: FontWeight.w900,
+                    color: _gold, fontSize: 15)),
+              const SizedBox(height: 8),
               const Text('من الطبيعة إلى بيتك',
                 style: TextStyle(fontWeight: FontWeight.w900,
                     color: Colors.white, fontSize: 26)),
