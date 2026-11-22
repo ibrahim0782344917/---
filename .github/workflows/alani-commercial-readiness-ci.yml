@@ -38,6 +38,70 @@ jobs:
             tests/alani_delivery_returns_checks.sql |
             docker exec -i alani-commercial-pg psql -X -v ON_ERROR_STOP=1 \
               -U postgres -d alani_isolated
+
+  phone-privacy-isolated:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify public phone access revoked but owner read retained
+        shell: bash
+        run: |
+          set -euo pipefail
+          docker run -d --name alani-phone-pg -e POSTGRES_PASSWORD=test \
+            -e POSTGRES_DB=alani_phone_test postgres:17-alpine >/dev/null
+          trap 'docker rm -f alani-phone-pg >/dev/null 2>&1 || true' EXIT
+          for i in $(seq 1 60); do
+            docker exec alani-phone-pg psql -X -qAt -U postgres \
+              -d alani_phone_test -c 'select 1' 2>/dev/null | grep -qx 1 && break
+            sleep 1
+          done
+          cat tests/alani_stores_phone_privacy_fixture.sql \
+            docs/SHITREED_STORES_PHONE_PRIVACY_STAGE_20261122.sql \
+            tests/alani_stores_phone_privacy_checks.sql |
+            docker exec -i alani-phone-pg psql -X -v ON_ERROR_STOP=1 \
+              -U postgres -d alani_phone_test
+
+  customer-deletion-isolated:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - name: Test request ownership, idempotency and no direct delete
+        shell: bash
+        run: |
+          set -euo pipefail
+          docker run -d --name alani-delete-pg -e POSTGRES_PASSWORD=test \
+            -e POSTGRES_DB=alani_delete_test postgres:17-alpine >/dev/null
+          trap 'docker rm -f alani-delete-pg >/dev/null 2>&1 || true' EXIT
+          for i in $(seq 1 60); do
+            docker exec alani-delete-pg psql -X -qAt -U postgres \
+              -d alani_delete_test -c 'select 1' 2>/dev/null | grep -qx 1 && break
+            sleep 1
+          done
+          cat tests/alani_deletion_request_fixture.sql \
+            supabase/migrations/20261122150000_customer_account_deletion_request.sql \
+            tests/alani_deletion_request_checks.sql |
+            docker exec -i alani-delete-pg psql -X -v ON_ERROR_STOP=1 \
+              -U postgres -d alani_delete_test
+
+  merchant-security-analysis:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    defaults:
+      run:
+        working-directory: merchant_app
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: '3.47.9'
+          cache: true
+      - run: flutter pub get
+      - run: flutter analyze --no-fatal-infos lib test
+      - run: flutter test
+
   website:
     runs-on: ubuntu-latest
     timeout-minutes: 10

@@ -1,7 +1,7 @@
 -- STAGING ONLY. Must be rehearsed on isolated PG and all consumers updated
 -- before live migration. This closes public REST access to stores.phone.
 begin;
-revoke select on public.stores from anon,authenticated;
+revoke select on public.stores from public,anon,authenticated;
 grant select (
   id,owner_id,name,area,category,address,latitude,longitude,status,
   created_at,description,opening_hours,logo_url
