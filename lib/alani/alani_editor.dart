@@ -237,10 +237,12 @@ class _AlAniEditPublicationPageState
       if (reason != null) throw FormatException(reason);
       if (mounted) setState(() => _selectedVideo = file);
     } catch (error) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(
-          error is FormatException ? error.message :
-          'تعذر اختيار الفيديو من استوديو الهاتف.')));
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(
+            error is FormatException ? error.message :
+            'تعذر اختيار الفيديو من استوديو الهاتف.')));
+      }
     }
   }
 
@@ -366,8 +368,7 @@ class _AlAniEditPublicationPageState
             if (_selectedVideo != null)
               Padding(
                 padding: const EdgeInsets.only(top: 8, bottom: 8),
-                child: Text('الفيديو المحدد: ' + _selectedVideo!.name +
-                  ' — يُرفع عند حفظ أو نشر المحتوى.'),
+                child: Text('الفيديو المحدد: ${_selectedVideo!.name} — يُرفع عند حفظ أو نشر المحتوى.'),
               ),
             _field('أو رابط فيديو HTTPS', _video,
               maxLength: 1000, validator: _httpsOrEmpty),

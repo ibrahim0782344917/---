@@ -45,7 +45,7 @@ class AlAniGalleryVideos {
     final random = Random.secure();
     final nonce = List.generate(4, (_) =>
         random.nextInt(0x100000000).toRadixString(16).padLeft(8, '0')).join();
-    final path = AlAniSettings.storeId + '/' + user.id + '/' + nonce + '.mp4';
+    final path = '${AlAniSettings.storeId}/${user.id}/$nonce.mp4';
     final storage = Supabase.instance.client.storage.from(bucket);
     // Validate size before loading the bytes into mobile memory.
     final bytes = await video.readAsBytes();

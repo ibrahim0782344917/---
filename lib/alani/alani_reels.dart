@@ -8,11 +8,13 @@ import 'package:video_player/video_player.dart';
 class AlAniReelsPanel extends StatefulWidget {
   final Future<List<AlAniPublication>> publications;
   final Future<void> Function() onRefresh;
+  final bool visible;
 
   const AlAniReelsPanel({
     super.key,
     required this.publications,
     required this.onRefresh,
+    this.visible = true,
   });
 
   @override
@@ -80,7 +82,7 @@ class _AlAniReelsPanelState extends State<AlAniReelsPanel> {
           itemBuilder: (context, index) => AlAniReelTile(
             key: ValueKey(videos[index].id),
             publication: videos[index],
-            active: _active == index,
+            active: widget.visible && _active == index,
           ),
         )),
       ]);

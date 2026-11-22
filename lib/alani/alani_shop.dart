@@ -180,7 +180,8 @@ class _AlAniShopHomeState extends State<AlAniShopHome> {
           child: IndexedStack(index: _tab, children: [
             _home(),
             _catalog(),
-            AlAniReelsPanel(publications: _publications, onRefresh: _refresh),
+            AlAniReelsPanel(publications: _publications, onRefresh: _refresh,
+              visible: _tab == 2),
             _contentPanel({'recipe', 'article', 'post'}, 'الوصفات والمدونة'),
             const AlAniCartPage(),
           ]),
