@@ -94,7 +94,7 @@ function renderOrders(){
   const table=$('orders-table');table.replaceChildren();
   for(const o of filteredOrders()){
     const row=document.createElement('tr');
-    [o.id?.slice(0,8),money(o.total_iqd),statuses[o.status]||o.status,o.delivery_address||''].forEach(v=>row.append(text('td',v)));
+    [o.id?.slice(0,8),money(o.total_iqd)+(Number(o.delivery_fee_iqd)>0?' (يشمل توصيل '+money(o.delivery_fee_iqd)+')':''),statuses[o.status]||o.status,o.delivery_address||''].forEach(v=>row.append(text('td',v)));
     const cell=document.createElement('td');
     for(const status of statusOptions(o.status)){
       const b=text('button',statuses[status]);
