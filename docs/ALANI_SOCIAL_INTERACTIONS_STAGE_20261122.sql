@@ -26,15 +26,22 @@ create policy "social staff self and owner read"
  ));
 
 drop policy if exists alani_publications_read on public.alani_publications;
-create policy alani_publications_read on public.alani_publications
- for select to anon,authenticated using(
- (status='published' and exists(select 1 from public.stores s
+drop policy if exists alani_publications_read_public on public.alani_publications;
+drop policy if exists alani_publications_read_authenticated on public.alani_publications;
+create policy alani_publications_read_public on public.alani_publications
+ for select to anon using(
+   status='published' and exists(select 1 from public.stores s
+     where s.id=store_id and s.status='approved')
+ );
+create policy alani_publications_read_authenticated on public.alani_publications
+ for select to authenticated using(
+   (status='published' and exists(select 1 from public.stores s
      where s.id=store_id and s.status='approved'))
- or exists(select 1 from public.stores s
+   or exists(select 1 from public.stores s
      where s.id=store_id and s.owner_id=(select auth.uid()))
- or (created_by=(select auth.uid()) and exists(
-      select 1 from public.alani_content_staff st
-      where st.user_id=(select auth.uid()) and st.active
+   or (created_by=(select auth.uid()) and exists(
+     select 1 from public.alani_content_staff st
+     where st.user_id=(select auth.uid()) and st.active
        and st.role in ('writer','moderator')))
 );
 
@@ -107,8 +114,13 @@ alter table public.alani_publication_comments enable row level security;
 revoke all on public.alani_publication_comments from public,anon,authenticated;
 grant select on public.alani_publication_comments to anon,authenticated;
 grant insert,delete on public.alani_publication_comments to authenticated;
-create policy "social comments visible and moderation" on public.alani_publication_comments
- for select to anon,authenticated using(
+create policy "social anonymous approved comments" on public.alani_publication_comments
+ for select to anon using(
+   status='approved' and exists(select 1 from public.alani_publications p
+     where p.id=publication_id and p.status='published')
+ );
+create policy "social authenticated comments" on public.alani_publication_comments
+ for select to authenticated using(
   (status='approved' and exists(select 1 from public.alani_publications p
       where p.id=publication_id and p.status='published'))
   or user_id=(select auth.uid())
