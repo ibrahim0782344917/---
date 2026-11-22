@@ -1,3 +1,5 @@
+import 'package:image_picker/image_picker.dart';
+import 'package:shitreed_customer/alani/alani_video_upload.dart';
 import 'package:flutter/material.dart';
 import 'package:shitreed_customer/alani/alani_content.dart';
 import 'package:shitreed_customer/backend/marketplace_backend.dart';
@@ -186,6 +188,7 @@ class _AlAniEditPublicationPageState
   late final TextEditingController _image;
   late final TextEditingController _video;
   late String _kind;
+  XFile? _selectedVideo;
   bool _busy = false;
 
   @override
@@ -224,18 +227,41 @@ class _AlAniEditPublicationPageState
     return null;
   }
 
+  Future<void> _pickVideoFromStudio() async {
+    if (_busy) return;
+    try {
+      final file = await AlAniGalleryVideos.pick();
+      if (file == null) return;
+      final reason = AlAniGalleryVideos.validationError(
+        file.name, await file.length());
+      if (reason != null) throw FormatException(reason);
+      if (mounted) setState(() => _selectedVideo = file);
+    } catch (error) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(
+          error is FormatException ? error.message :
+          'تعذر اختيار الفيديو من استوديو الهاتف.')));
+    }
+  }
+
   Future<void> _save(String status) async {
     if (_busy || !_form.currentState!.validate()) return;
-    if (_kind == 'video' && _video.text.trim().isEmpty) {
+    if (_kind == 'video' && _video.text.trim().isEmpty &&
+        _selectedVideo == null) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
         content: Text('أدخل رابط الفيديو قبل حفظه.'),
       ));
       return;
     }
     setState(() => _busy = true);
+    AlAniUploadedVideo? uploaded;
     try {
       final owner = await AlAniEditorService.isOwner();
       if (!owner) throw StateError('المالك غير مخوّل');
+      if (_kind == 'video' && _selectedVideo != null) {
+        uploaded = await AlAniGalleryVideos.upload(_selectedVideo!);
+        _video.text = uploaded.url;
+      }
       final payload = <String, dynamic>{
         'store_id': AlAniSettings.storeId,
         'kind': _kind,
@@ -261,9 +287,14 @@ class _AlAniEditPublicationPageState
       if (!mounted) return;
       Navigator.of(context).pop(true);
     } catch (error) {
+      if (uploaded != null) {
+        try { await AlAniGalleryVideos.remove(uploaded.path); }
+        catch (_) { /* Cleanup is best-effort; report upload failures. */ }
+      }
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-          content: Text('تعذر الحفظ؛ تحقق من الصلاحيات وجدول المحتوى.'),
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(error is FormatException ? error.message :
+            'تعذر رفع الفيديو أو حفظ المحتوى؛ تحقق من الاتصال والصلاحيات.'),
         ));
       }
     } finally {
@@ -326,8 +357,23 @@ class _AlAniEditPublicationPageState
           ],
           _field('رابط صورة HTTPS (اختياري)', _image,
             maxLength: 1000, validator: _httpsOrEmpty),
-          if (_kind == 'video') _field('رابط الفيديو HTTPS', _video,
-            maxLength: 1000, validator: _httpsOrEmpty),
+          if (_kind == 'video') ...[
+            OutlinedButton.icon(
+              onPressed: _busy ? null : _pickVideoFromStudio,
+              icon: const Icon(Icons.video_library_outlined),
+              label: const Text('اختيار فيديو MP4 من استوديو الهاتف'),
+            ),
+            if (_selectedVideo != null)
+              Padding(
+                padding: const EdgeInsets.only(top: 8, bottom: 8),
+                child: Text('الفيديو المحدد: ' + _selectedVideo!.name +
+                  ' — يُرفع عند حفظ أو نشر المحتوى.'),
+              ),
+            _field('أو رابط فيديو HTTPS', _video,
+              maxLength: 1000, validator: _httpsOrEmpty),
+            const Text('الحد الأقصى ٤٠ ميغابايت. يمكن للمالك فقط رفع الفيديو.',
+              style: TextStyle(fontSize: 12)),
+          ],
           const SizedBox(height: 14),
           FilledButton.icon(
             onPressed: _busy ? null : () => _save('draft'),
@@ -344,7 +390,7 @@ class _AlAniEditPublicationPageState
           const SizedBox(height: 12),
           const Text('نشر الوصفات والادعاءات الصحية مسؤولية صاحب المتجر. '
             'يُمنع تقديم وعد علاجي مضلل. '
-            'الفيديو يُشغّل عبر الرابط الخارجي في هذه النسخة.',
+            'يُعرض الفيديو المباشر داخل التطبيق وفي قسم الريلز.',
             style: TextStyle(fontSize: 12, color: Colors.black54)),
         ],
       ),

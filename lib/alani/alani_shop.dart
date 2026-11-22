@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:shitreed_customer/alani/alani_content.dart';
 import 'package:shitreed_customer/alani/alani_editor.dart';
 import 'package:shitreed_customer/alani/alani_video.dart';
+import 'package:shitreed_customer/alani/alani_reels.dart';
 import 'package:shitreed_customer/alani/alani_product.dart';
 import 'package:shitreed_customer/alani/catalog_filters.dart';
 import 'package:shitreed_customer/alani/alani_pages.dart';
@@ -179,7 +180,7 @@ class _AlAniShopHomeState extends State<AlAniShopHome> {
           child: IndexedStack(index: _tab, children: [
             _home(),
             _catalog(),
-            _contentPanel({'video'}, 'فيديوهات السيد إبراهيم العاني'),
+            AlAniReelsPanel(publications: _publications, onRefresh: _refresh),
             _contentPanel({'recipe', 'article', 'post'}, 'الوصفات والمدونة'),
             const AlAniCartPage(),
           ]),
