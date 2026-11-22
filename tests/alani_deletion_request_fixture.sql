@@ -24,3 +24,20 @@ create policy customer_only_read on public.customer_deletion_requests
 create policy customer_only_insert on public.customer_deletion_requests
  for insert to authenticated with check
  (user_id=(select auth.uid()) and status='pending');
+
+-- Synthetic identity relations used by the read-only preflight.
+create table public.orders(id uuid primary key,buyer_id uuid not null,status text not null);
+create table public.stores(id uuid primary key,owner_id uuid not null);
+insert into public.orders(id,buyer_id,status) values
+  ('f0000000-0000-4000-8000-000000000001','cccccccc-cccc-4ccc-8ccc-cccccccccccc','placed'),
+  ('f0000000-0000-4000-8000-000000000002','cccccccc-cccc-4ccc-8ccc-cccccccccccc','cancelled'),
+  ('f0000000-0000-4000-8000-000000000003','dddddddd-dddd-4ddd-8ddd-dddddddddddd','ready');
+insert into public.stores(id,owner_id) values
+  ('f1000000-0000-4000-8000-000000000001','dddddddd-dddd-4ddd-8ddd-dddddddddddd');
+alter table public.orders enable row level security;
+alter table public.stores enable row level security;
+grant select on public.orders,public.stores to authenticated;
+create policy synthetic_buyer_orders on public.orders for select to authenticated
+  using (buyer_id=(select auth.uid()));
+create policy synthetic_owned_stores on public.stores for select to authenticated
+  using (owner_id=(select auth.uid()));

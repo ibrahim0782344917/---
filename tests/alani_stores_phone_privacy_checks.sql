@@ -1,4 +1,7 @@
 -- All executed on disposable test-only PostgreSQL.
+select 1/(case when not has_column_privilege('anon','public.stores','phone','SELECT')
+  and not has_column_privilege('authenticated','public.stores','phone','SELECT')
+  then 1 else 0 end) as no_private_phone_column_grants;
 set role anon;
 select 1/(case when count(*)=2 then 1 else 0 end) as public_store_metadata_read
  from public.stores;

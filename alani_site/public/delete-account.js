@@ -23,10 +23,11 @@ form?.addEventListener('submit',async(event)=>{
     const response=await request.json();
     result.textContent='تم تسجيل الطلب: '+String(response.requestId||'').slice(0,8)+
       ' — لم يُحذف الحساب بعد، وستُراجع المعلومات والالتزامات القانونية.';
-    form.password.value='';
+    document.getElementById('password').value='';
   }catch(error){
     result.textContent=error.message||'حدث خطأ أثناء إرسال الطلب.';
   }finally{
+    document.getElementById('password').value='';
     token=undefined;
     button.disabled=false;
   }
