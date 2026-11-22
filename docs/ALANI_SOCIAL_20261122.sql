@@ -83,7 +83,7 @@ using (user_id=(select auth.uid()) or
 grant select on public.alani_content_staff to authenticated;
 create policy alani_writer_draft_read on public.alani_publications for select to authenticated
 using(status='draft' and (created_by=(select auth.uid()) or
- exists(select 1 from public.alani_content_staff sf where sf.store_id=store_id
+ exists(select 1 from public.alani_content_staff sf where sf.store_id=alani_publications.store_id
  and sf.user_id=(select auth.uid()) and sf.role='editor')));
 create policy alani_reactions_own_read on public.alani_post_reactions
  for select to authenticated using(user_id=(select auth.uid()));
@@ -102,7 +102,10 @@ create policy alani_reports_moderator on public.alani_post_reports
  or public.alani_can_moderate(publication_id));
 grant select on public.alani_post_reports to authenticated;
 create policy alani_audit_moderator on public.alani_moderation_audit
- for select to authenticated using(public.alani_can_moderate(publication_id));
+ for select to authenticated using(public.alani_can_moderate(publication_id)
+ or (publication_id is null and (public.shitreed_is_admin() or
+ exists(select 1 from public.stores s where s.id='25091ca2-c0da-416c-b634-81b188ee66be'::uuid
+ and s.owner_id=(select auth.uid())))));
 grant select on public.alani_moderation_audit to authenticated;
 
 create or replace function public.alani_social_assert_published(p_id uuid)
@@ -288,6 +291,8 @@ begin
  else
  delete from public.alani_content_staff where store_id=v_store and user_id=p_user_id;
  end if;
+ insert into public.alani_moderation_audit(publication_id,actor_id,target_id,action)
+ values(null,v_user,p_user_id,case when p_enabled then 'role:'||p_role else 'role:revoked' end);
 end $s$;
 
 create or replace function public.alani_save_writer_draft(
