@@ -1,11 +1,14 @@
 -- This is run only on an ephemeral local PostgreSQL container.
 
-insert into public.alani_publications(store_id,kind,title,body,status,published_at)
+insert into public.alani_publications(
+  store_id,kind,title,body,video_url,status,published_at
+)
 values
 ('25091ca2-c0da-416c-b634-81b188ee66be','video',
- 'اختبار فيديو منشور','فيديو موثوق','published',now()),
+ 'اختبار فيديو منشور','فيديو موثوق','https://example.org/clip.mp4',
+ 'published',now()),
 ('25091ca2-c0da-416c-b634-81b188ee66be','recipe',
- 'وصفة قيد التحضير','معلومات أولية','draft',null);
+ 'وصفة قيد التحضير','معلومات أولية',null,'draft',null);
 
 set role anon;
 select 1 / (case when count(*)=1 then 1 else 0 end) as visitor_can_see_only_published
