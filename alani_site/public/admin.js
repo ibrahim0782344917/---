@@ -137,7 +137,17 @@ function renderPosts() {
     const row=document.createElement('tr');
     [p.title,p.kind,p.status==='published'?'منشور':'مسودة'].forEach(value=>row.append(text('td',value)));
     const cell=document.createElement('td');const edit=text('button','تعديل');
-    edit.addEventListener('click',()=>editPost(p));cell.append(edit);row.append(cell);t.append(row);
+    edit.addEventListener('click',()=>editPost(p));cell.append(edit);
+    const del=text('button','حذف');del.type='button';
+    del.addEventListener('click',async()=>{
+      if(!confirm('سيُحذف هذا المنشور نهائياً مع تعليقاته. هل تؤكد؟'))return;
+      try{active();
+        await api('/api/admin/post/delete',{
+          method:'POST',body:JSON.stringify({id:p.id})});
+        await refresh();message('تم حذف المنشور.');
+      }catch(e){message(e.message,true);}
+    });
+    cell.append(del);row.append(cell);t.append(row);
   }
   $('post-submit').disabled=!enabled;
 }

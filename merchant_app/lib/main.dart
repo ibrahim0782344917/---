@@ -18,7 +18,7 @@ class ShitreedMerchantApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => MaterialApp(
-    title: 'شتريد تاجر',
+    title: 'السيد إبراهيم العاني | تاجر',
     debugShowCheckedModeBanner: false,
     locale: const Locale('ar'),
     builder: (context, child) => Directionality(
@@ -183,7 +183,7 @@ class _MerchantLoginPageState extends State<MerchantLoginPage> {
           child: const Column(children: [
             Icon(Icons.storefront_rounded, size: 79, color: merchantOrange),
             SizedBox(height: 8),
-            Text('شتريد تاجر', style: TextStyle(
+            Text('السيد إبراهيم العاني | تاجر', style: TextStyle(
               color: Colors.white, fontSize: 29,
               fontWeight: FontWeight.w900,
             )),

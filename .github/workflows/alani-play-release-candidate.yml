@@ -60,6 +60,7 @@ jobs:
           cd "$APP_PATH"
           flutter create --org com.shitreed --project-name "$APP_PROJECT" --platforms android .
           grep -q "$ANDROID_APP_ID" android/app/build.gradle.kts
+          python3 "$GITHUB_WORKSPACE/scripts/configure_alani_brand_icon.py" --app-dir "."
       - name: Set approved network, Maps and display configuration
         shell: bash
         env:
@@ -82,7 +83,7 @@ jobs:
           from pathlib import Path
           p=Path("android/app/src/main/AndroidManifest.xml")
           text=p.read_text().replace('android:label="shitreed_admin"',
-            'android:label="إدارة شتريد والعاني"')
+            'android:label="السيد إبراهيم العاني | إدارة"')
           if 'android.permission.INTERNET' not in text:
               text=text.replace('<application',
                 '<uses-permission android:name="android.permission.INTERNET" />\n    <application',1)

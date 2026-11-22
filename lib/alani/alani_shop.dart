@@ -3,6 +3,8 @@ import 'package:shitreed_customer/alani/alani_content.dart';
 import 'package:shitreed_customer/alani/alani_editor.dart';
 import 'package:shitreed_customer/alani/alani_video.dart';
 import 'package:shitreed_customer/alani/alani_reels.dart';
+import 'package:shitreed_customer/alani/alani_social_panel.dart';
+import 'package:shitreed_customer/alani/alani_writer_page.dart';
 import 'package:shitreed_customer/alani/alani_product.dart';
 import 'package:shitreed_customer/alani/catalog_filters.dart';
 import 'package:shitreed_customer/alani/alani_pages.dart';
@@ -18,9 +20,9 @@ import 'package:shitreed_customer/commerce/customer_commerce_pages.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 const _pine = Color(0xFF01BE5F);
-const _deep = Color(0xFF1F1F39);
-const _cream = Color(0xFFFFFFFF);
-const _gold = Color(0xFFF6A609);
+const _deep = Color(0xFF173E2A);
+const _cream = Color(0xFFF9FAF5);
+const _gold = Color(0xFFE9BC67);
 
 /// Al-Ani's own storefront. The shared Shitreed customer/merchant/admin
 /// implementation remains intact in the repository.
@@ -50,6 +52,7 @@ class _AlAniShopHomeState extends State<AlAniShopHome> {
   late Future<List<MarketplaceProduct>> _products;
   late Future<List<AlAniPublication>> _publications;
   late Future<bool> _canEdit;
+  late Future<bool> _canWrite;
 
   @override
   void initState() {
@@ -57,6 +60,7 @@ class _AlAniShopHomeState extends State<AlAniShopHome> {
     _products = AlAniStoreData.products();
     _publications = AlAniStoreData.publications();
     _canEdit = AlAniEditorService.isOwner();
+    _canWrite = AlAniWriterPage.authorized();
   }
 
   Future<void> _refresh() async {
@@ -95,7 +99,12 @@ class _AlAniShopHomeState extends State<AlAniShopHome> {
         ),
       ));
     }
-    if (mounted) setState(() => _canEdit = AlAniEditorService.isOwner());
+    if (mounted) {
+      setState(() {
+        _canEdit = AlAniEditorService.isOwner();
+        _canWrite = AlAniWriterPage.authorized();
+      });
+    }
   }
 
   void _add(MarketplaceProduct product) {
@@ -142,6 +151,20 @@ class _AlAniShopHomeState extends State<AlAniShopHome> {
             ],
           ),
           actions: [
+            FutureBuilder<bool>(
+              future:_canWrite,
+              builder:(ctx,snapshot)=>snapshot.data==true
+                ? IconButton(
+                    tooltip:'كتابة مسودة للمدونة',
+                    icon:const Icon(Icons.article_outlined),
+                    onPressed:() async{
+                      await Navigator.of(context).push<void>(
+                        MaterialPageRoute(builder:(_)=>const AlAniWriterPage()));
+                      if(mounted)await _refresh();
+                    },
+                  )
+                : const SizedBox.shrink(),
+            ),
             FutureBuilder<bool>(
               future: _canEdit,
               builder: (context, snapshot) => snapshot.data == true
@@ -218,14 +241,25 @@ class _AlAniShopHomeState extends State<AlAniShopHome> {
         Container(
           padding: const EdgeInsets.all(22),
           decoration: BoxDecoration(
-            gradient: const LinearGradient(colors: [_deep, _pine]),
+            gradient: const LinearGradient(
+              begin: AlignmentDirectional.topStart,
+              end: AlignmentDirectional.bottomEnd,
+              colors: [_deep, Color(0xFF246843)]),
             borderRadius: BorderRadius.circular(24),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Icon(Icons.eco_outlined, color: _gold, size: 38),
+              const CircleAvatar(
+                radius: 31,
+                backgroundColor: Color(0x26FFFFFF),
+                child: Icon(Icons.spa_rounded, color: _gold, size: 38),
+              ),
               const SizedBox(height: 12),
+              const Text('السيد إبراهيم العاني',
+                style: TextStyle(fontWeight: FontWeight.w900,
+                    color: _gold, fontSize: 15)),
+              const SizedBox(height: 8),
               const Text('من الطبيعة إلى بيتك',
                 style: TextStyle(fontWeight: FontWeight.w900,
                     color: Colors.white, fontSize: 26)),
@@ -731,6 +765,8 @@ class AlAniPublicationPage extends StatelessWidget {
           padding: EdgeInsets.only(top: 16),
           child: Text('المحتوى للتثقيف فقط وليس تشخيصاً أو علاجاً طبياً.'),
         ),
+        const SizedBox(height: 14),
+        AlAniSocialPanel(publicationId: item.id),
         if (item.kind == 'video') Padding(
           padding: const EdgeInsets.only(top: 16),
           child: FilledButton.icon(

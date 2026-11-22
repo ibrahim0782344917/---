@@ -29,8 +29,8 @@ class AlAniWelcomePage extends StatelessWidget {
           const SizedBox(height: 20),
           const Center(child: CircleAvatar(
             radius: 63,
-            backgroundColor: Color(0xFFD6F7E2),
-            child: Icon(Icons.spa_outlined,color:_green,size:77),
+            backgroundColor: Color(0xFF173E2A),
+            child: Icon(Icons.spa_rounded,color:Color(0xFFE9BC67),size:70),
           )),
           const SizedBox(height: 25),
           const Text('أهلاً وسهلاً بكم',

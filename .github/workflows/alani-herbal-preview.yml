@@ -33,6 +33,7 @@ jobs:
           cache: true
       - name: Generate Android preview project
         run: flutter create --org com.ibrahimalani --project-name shitreed_customer --platforms android .
+      - run: python3 scripts/configure_alani_brand_icon.py
       - name: Configure Google Maps only if existing use was approved
         env:
           MAPS_ANDROID_KEY: ${{ secrets.SHITREED_GOOGLE_MAPS_ANDROID_KEY }}

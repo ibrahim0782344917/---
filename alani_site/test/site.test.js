@@ -146,3 +146,11 @@ test('outside-app account deletion page is available', async () => {
   assert.match(html,/طلب حذف الحساب/);
   assert.match(html,/delete-account.js/);
 });
+
+test('post deletion endpoint requires authenticated owner',async()=>{
+  const response=await fetch(root+'/api/admin/post/delete',{
+    method:'POST',headers:{'content-type':'application/json'},
+    body:JSON.stringify({id:'11111111-1111-4111-8111-111111111111'})
+  });
+  assert.equal(response.status,401);
+});

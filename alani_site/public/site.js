@@ -229,6 +229,13 @@ async function init() {
     $('store-status').textContent='تعذّر تحميل بيانات المتجر حالياً. حاول تحديث الصفحة.';
   }
   renderProducts();renderPosts();renderBasket();
+  // A copied share URL opens only the real published post.
+  const shared = /^#post=([a-f0-9-]{36})$/i.exec(window.location.hash);
+  if (shared) {
+    const post = publications.find(item => item.id === shared[1]);
+    if (post) showDetails(post);
+  }
+
   $('checkout-form').addEventListener('submit',async e=>{
     e.preventDefault();
     const msg=$('checkout-message');msg.textContent='';

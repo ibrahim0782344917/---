@@ -20,7 +20,7 @@ if internet not in permissions:
 app = root.find("application")
 if app is None:
     raise SystemExit("Generated manifest does not contain application.")
-app.set(f"{{{ANDROID_NS}}}label", "شتريد تاجر")
+app.set(f"{{{ANDROID_NS}}}label", "السيد إبراهيم العاني | تاجر")
 app.set(f"{{{ANDROID_NS}}}icon", "@mipmap/ic_launcher")
 tree.write(path, encoding="utf-8", xml_declaration=True)
 
