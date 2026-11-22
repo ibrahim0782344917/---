@@ -6,6 +6,7 @@ on:
       - release/shitreed-production-readiness-20261114
       - feature/alani-unified-admin-20261118
       - feature/shitreed-alani-three-app-suite-20261118
+      - feature/alani-final-release-content-20261122
   pull_request:
     paths:
       - '.github/workflows/shitreed-three-app-readiness.yml'
@@ -154,7 +155,7 @@ jobs:
           p=Path("android/app/src/main/AndroidManifest.xml")
           s=p.read_text()
           s=s.replace('android:label="shitreed_admin"',
-            'android:label="إدارة شتريد والعاني"')
+            'android:label="السيد إبراهيم العاني - الإدارة"')
           if 'android.permission.INTERNET' not in s:
               s=s.replace('<application',
                   '<uses-permission android:name="android.permission.INTERNET" />\n    <application',1)

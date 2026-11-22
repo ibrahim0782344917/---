@@ -3,6 +3,7 @@ on:
   push:
     branches:
       - feature/alani-herbal-store-app-20261118
+      - feature/alani-final-release-content-20261122
     paths:
       - 'alani_site/**'
       - '.github/workflows/alani-web-ci.yml'

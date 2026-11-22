@@ -21,7 +21,7 @@ class ShitreedAdminApp extends StatelessWidget {
   const ShitreedAdminApp({super.key});
   @override
   Widget build(BuildContext context) => MaterialApp(
-    title: 'شتريد — الإدارة الموحدة',
+    title: 'السيد إبراهيم العاني - الإدارة',
     debugShowCheckedModeBanner: false,
     locale: const Locale('ar'),
     builder: (_, child) => Directionality(
@@ -181,7 +181,7 @@ class _AdminLoginState extends State<AdminLogin> {
             child: const Column(children: [
               Icon(Icons.admin_panel_settings_rounded,
                 size: 72, color: orange),
-              Text('شتريد | الإدارة', style: TextStyle(
+              Text('السيد إبراهيم العاني | الإدارة', style: TextStyle(
                 fontSize: 27, color: Colors.white,
                 fontWeight: FontWeight.bold)),
               Text('تحكم آمن في متاجر وطلبات شتريد',
