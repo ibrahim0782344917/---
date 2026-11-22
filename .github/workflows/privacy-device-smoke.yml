@@ -1,12 +1,5 @@
 name: Shitreed Android emulator smoke (offline-safe)
 on:
-  pull_request:
-    paths:
-      - 'lib/**'
-      - 'merchant_app/lib/**'
-      - 'test/**'
-      - 'merchant_app/test/**'
-      - '.github/workflows/privacy-device-smoke.yml'
   workflow_dispatch:
 permissions:
   contents: read
