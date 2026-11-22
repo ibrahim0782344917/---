@@ -20,6 +20,8 @@ select public.alani_rate_publication('11111111-1111-4111-8111-111111111111',5);
 select set_config('test.comment_id',public.alani_submit_comment(
 '11111111-1111-4111-8111-111111111111','تعليق للمراجعة')::text,false);
 reset role;
+-- An anonymous HTTP request has no signed-in JWT; clear the synthetic claim.
+select set_config('request.jwt.claim.sub','',false);
 set role anon;
 select 1/(case when count(*)=0 then 1 else 0 end) as unapproved_hidden
 from public.alani_post_comments;
