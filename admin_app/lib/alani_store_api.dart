@@ -87,6 +87,11 @@ class AlAniAdminApi {
     await _request('/api/admin/post',method:'POST',body:values);
   }
 
+  Future<void> deletePost(String id) async {
+    await _request('/api/admin/post/delete',method:'POST',body:{'id':id});
+  }
+
+
   Future<void> reviewReturn({
     required String id,
     required String status,
