@@ -135,8 +135,112 @@ function showDetails(item) {
         a.href=u.toString();a.rel='noopener noreferrer';a.target='_blank';content.append(a);}
     } catch {}
   }
+  if(item.id && item.kind!=='product')socialPanel(item.id,content);
   d.showModal();
 }
+
+let socialAccessToken=null; // held only in memory; never localStorage.
+async function socialAction(id,action,extra={}) {
+  if(!socialAccessToken)throw Error('سجّل دخولك إلى التفاعلات أولاً.');
+  return api('/api/social/action',{method:'POST',
+    headers:{'content-type':'application/json','authorization':'Bearer '+socialAccessToken},
+    body:JSON.stringify({publicationId:id,action,...extra})});
+}
+function socialPanel(id,content){
+  const panel=node('section',null,'social-panel');
+  panel.setAttribute('aria-label','التفاعل مع المنشور');
+  const status=node('p','جارٍ تحميل التفاعلات…','small');
+  const actions=node('div',null,'social-actions');
+  const comments=node('div',null,'social-comments');
+  const auth=node('div',null,'social-auth');
+  const share=node('button','مشاركة الرابط','button ghost');
+  share.type='button';
+  share.addEventListener('click',async()=>{
+    const url=location.origin+'/?post='+encodeURIComponent(id);
+    try{
+      if(navigator.share)await navigator.share({title:'السيد إبراهيم العاني',url});
+      else if(navigator.clipboard) {
+        await navigator.clipboard.writeText(url);
+        status.textContent='تم نسخ رابط المنشور.';
+      } else status.textContent='رابط المشاركة: '+url;
+    }catch(_){status.textContent='تعذّرت مشاركة الرابط.';}
+  });
+  actions.append(share);
+  panel.append(node('h3','التفاعلات والتعليقات'),status,actions,auth,comments);
+  content.append(panel);
+  function login(){
+    auth.replaceChildren();
+    if(socialAccessToken)return;
+    const form=node('form',null,'social-login');
+    const email=node('input',null),pass=node('input',null),send=node('button','دخول للتفاعل','button primary');
+    email.type='email';email.required=true;email.placeholder='البريد الإلكتروني';email.autocomplete='email';
+    pass.type='password';pass.required=true;pass.minLength=8;pass.placeholder='كلمة المرور';pass.autocomplete='current-password';
+    send.type='submit';
+    form.append(email,pass,send);auth.append(form);
+    form.addEventListener('submit',async e=>{
+      e.preventDefault();send.disabled=true;
+      try{
+        const response=await api('/api/login',{method:'POST',
+          headers:{'content-type':'application/json'},
+          body:JSON.stringify({email:email.value.trim(),password:pass.value})});
+        socialAccessToken=response.access_token;
+        if(!socialAccessToken)throw Error('تعذر إنشاء جلسة للتفاعل.');
+        form.remove();status.textContent='تم تسجيل الدخول للتفاعل.';
+      }catch(error){status.textContent=error.message;}
+      finally{pass.value='';send.disabled=false;}
+    });
+  }
+  login();
+  async function refresh(){
+    try{
+      const result=await api('/api/social/activity?id='+encodeURIComponent(id));
+      if(!result.enabled){
+        status.textContent='التفاعلات والتعليقات تنتظر تفعيل قاعدة البيانات.';
+        return;
+      }
+      status.textContent='الإعجابات: '+result.likes+
+        ' • التعليقات المنشورة: '+(result.comments||[]).length;
+      actions.replaceChildren(share);
+      for(const [action,label] of [['like','♡ إعجاب'],['save','🔖 حفظ'],['report','⚑ إبلاغ']]){
+        const button=node('button',label,'button ghost');
+        button.type='button';
+        button.addEventListener('click',async()=>{
+          try{
+            if(action==='report'){
+              const note=prompt('وصف البلاغ (اختياري)')||'';
+              await socialAction(id,'report',{reason:'other',details:note.slice(0,1000)});
+              status.textContent='تم تسجيل البلاغ للمراجعة.';
+            }else{
+              const response=await socialAction(id,action);
+              status.textContent=response.active?'تم حفظ التفاعل.':'تم إلغاء التفاعل.';
+              await refresh();
+            }
+          }catch(error){status.textContent=error.message;}
+        });
+        actions.append(button);
+      }
+      comments.replaceChildren(node('h4','التعليقات المعتمدة'));
+      for(const c of result.comments||[]){
+        comments.append(node('p',c.body,'social-comment'));
+      }
+      const form=node('form',null,'social-comment-form'),
+        field=node('textarea',null),submit=node('button','أرسل تعليقاً للمراجعة','button primary');
+      field.required=true;field.minLength=2;field.maxLength=1200;field.rows=3;
+      field.placeholder='اكتب تعليقاً لائقاً، يظهر بعد اعتماد المشرف';
+      submit.type='submit';form.append(field,submit);comments.append(form);
+      form.addEventListener('submit',async e=>{
+        e.preventDefault();submit.disabled=true;
+        try{
+          await socialAction(id,'comment',{body:field.value.trim()});
+          field.value='';status.textContent='تم إرسال التعليق للمراجعة، لن يظهر قبل الموافقة.';
+        }catch(error){status.textContent=error.message;}
+        finally{submit.disabled=false;}
+      });
+    }catch(error){status.textContent=error.message;}
+  }
+  refresh();
+}
+
 function makePostCard(p) {
   const article=node('article',null,'content-card');
   const names={video:'فيديو',recipe:'وصفة',article:'مقال',post:'منشور'};

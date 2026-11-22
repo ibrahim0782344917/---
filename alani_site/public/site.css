@@ -287,3 +287,20 @@ body {background:#fff; color:var(--ink)}
   .policy-navigation a strong {flex:1}
   .policy-navigation a small {flex-basis:100%;padding-right:45px}
 }
+
+/* Moderated social publishing: Arabic mobile-first, no raw HTML insertion. */
+.social-panel{margin-top:22px;padding:17px;background:#f1faf4;
+  border:1px solid #c8e2cf;border-radius:16px}
+.social-panel h3{font-size:18px;color:#174b34;margin:0 0 7px}
+.social-actions{display:flex;gap:9px;flex-wrap:wrap;margin:12px 0}
+.social-actions button{font-size:12px;min-height:42px}
+.social-login{display:flex;gap:8px;flex-wrap:wrap;align-items:end;margin:12px 0}
+.social-login input{padding:12px;border:1px solid #b2d4bd;border-radius:9px;
+  min-width:0;flex:1 1 160px}
+.social-comment{border-bottom:1px solid #e2eee5;margin:0;padding:9px 4px;
+  white-space:pre-wrap;overflow-wrap:anywhere}
+.social-comment-form{display:grid;gap:10px;margin-top:12px}
+.social-comment-form textarea{width:100%;padding:12px;border:1px solid #b9d9c3;
+  border-radius:11px;resize:vertical}
+.social-comment-form button{justify-self:start}
+@media(max-width:620px){.social-login{display:grid}.social-actions button{flex:1}}

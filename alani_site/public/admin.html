@@ -120,6 +120,42 @@
     </form>
   </section>
 
+
+  <section class="admin-panel" id="tab-social" hidden>
+    <h2>الإعجابات والتعليقات والبلاغات والإشراف</h2>
+    <p class="small">التعليقات لا تظهر للزوار إلا بعد الاعتماد. يمكن لمالك المتجر الموافقة والإخفاء ومراجعة البلاغات ومنح صلاحية كاتب أو مشرف.</p>
+    <p id="social-availability" class="status-note">جارٍ التحقق من تفعيل نظام التفاعلات…</p>
+    <button type="button" id="social-refresh" class="button ghost">تحديث التفاعلات</button>
+    <h3>التعليقات بانتظار المراجعة</h3>
+    <div class="table-scroll"><table class="admin-table">
+      <thead><tr><th>التعليق</th><th>الحالة</th><th>الإجراء</th></tr></thead>
+      <tbody id="social-comments-table"></tbody>
+    </table></div>
+    <h3>بلاغات المستخدمين</h3>
+    <div class="table-scroll"><table class="admin-table">
+      <thead><tr><th>البلاغ</th><th>الحالة</th><th>الإجراء</th></tr></thead>
+      <tbody id="social-reports-table"></tbody>
+    </table></div>
+    <h3>الكتاب والمشرفون</h3>
+    <div class="table-scroll"><table class="admin-table">
+      <thead><tr><th>المستخدم</th><th>الدور</th><th>الحالة</th></tr></thead>
+      <tbody id="social-staff-table"></tbody>
+    </table></div>
+    <form id="social-staff-form" class="admin-form">
+      <label>معرّف حساب المستخدم UUID<input id="social-staff-id" required
+        placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"></label>
+      <label>الصلاحية<select id="social-staff-role">
+        <option value="writer">كاتب</option>
+        <option value="moderator">مشرف</option>
+      </select></label>
+      <label>الحالة<select id="social-staff-active">
+        <option value="true">مفعّل</option>
+        <option value="false">موقوف</option>
+      </select></label>
+      <button class="button primary" type="submit">حفظ الصلاحية</button>
+    </form>
+  </section>
+
   <section class="admin-panel" id="tab-settings" hidden>
     <h2>التقارير والإعدادات</h2>
     <p>نظرة سريعة على المنتجات والطلبات. إعدادات الفواتير والدفع والتوصيل تتطلب إكمال الاختبارات قبل تفعيل البيع الحقيقي.</p>
