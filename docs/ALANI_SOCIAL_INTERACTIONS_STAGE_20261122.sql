@@ -15,7 +15,8 @@ create table if not exists public.alani_content_staff (
 );
 alter table public.alani_content_staff enable row level security;
 revoke all on public.alani_content_staff from public,anon,authenticated;
-grant select on public.alani_content_staff to authenticated;
+-- Anonymous roles need SELECT privilege to evaluate read policies; RLS returns zero staff rows.
+grant select on public.alani_content_staff to anon,authenticated;
 create policy "social staff self and owner read"
  on public.alani_content_staff for select to authenticated
  using(user_id=(select auth.uid()) or exists(
