@@ -4,6 +4,7 @@ import 'package:shitreed_customer/alani/alani_editor.dart';
 import 'package:shitreed_customer/alani/alani_video.dart';
 import 'package:shitreed_customer/alani/alani_reels.dart';
 import 'package:shitreed_customer/alani/alani_social_panel.dart';
+import 'package:shitreed_customer/alani/alani_writer_page.dart';
 import 'package:shitreed_customer/alani/alani_product.dart';
 import 'package:shitreed_customer/alani/catalog_filters.dart';
 import 'package:shitreed_customer/alani/alani_pages.dart';
@@ -51,6 +52,7 @@ class _AlAniShopHomeState extends State<AlAniShopHome> {
   late Future<List<MarketplaceProduct>> _products;
   late Future<List<AlAniPublication>> _publications;
   late Future<bool> _canEdit;
+  late Future<bool> _canWrite;
 
   @override
   void initState() {
@@ -58,6 +60,7 @@ class _AlAniShopHomeState extends State<AlAniShopHome> {
     _products = AlAniStoreData.products();
     _publications = AlAniStoreData.publications();
     _canEdit = AlAniEditorService.isOwner();
+    _canWrite = AlAniWriterPage.authorized();
   }
 
   Future<void> _refresh() async {
@@ -96,7 +99,10 @@ class _AlAniShopHomeState extends State<AlAniShopHome> {
         ),
       ));
     }
-    if (mounted) setState(() => _canEdit = AlAniEditorService.isOwner());
+    if (mounted) setState(() {
+      _canEdit = AlAniEditorService.isOwner();
+      _canWrite = AlAniWriterPage.authorized();
+    });
   }
 
   void _add(MarketplaceProduct product) {
@@ -143,6 +149,20 @@ class _AlAniShopHomeState extends State<AlAniShopHome> {
             ],
           ),
           actions: [
+            FutureBuilder<bool>(
+              future:_canWrite,
+              builder:(ctx,snapshot)=>snapshot.data==true
+                ? IconButton(
+                    tooltip:'كتابة مسودة للمدونة',
+                    icon:const Icon(Icons.article_outlined),
+                    onPressed:() async{
+                      await Navigator.of(context).push<void>(
+                        MaterialPageRoute(builder:(_)=>const AlAniWriterPage()));
+                      if(mounted)await _refresh();
+                    },
+                  )
+                : const SizedBox.shrink(),
+            ),
             FutureBuilder<bool>(
               future: _canEdit,
               builder: (context, snapshot) => snapshot.data == true
