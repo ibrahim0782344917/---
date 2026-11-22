@@ -131,3 +131,12 @@ jobs:
             exit 1
           fi
           echo "Correctly rejected an unbalanced journal"
+
+      - name: Apply merchant deletion workflow on fake database
+        run: psql -h 127.0.0.1 -U postgres -d postgres -v ON_ERROR_STOP=1 -f supabase/migrations/20261114140000_merchant_support_and_deletion_requests.sql
+      - name: Build privacy fixture matching customer deletion table
+        run: psql -h 127.0.0.1 -U postgres -d postgres -v ON_ERROR_STOP=1 -f tests/sql/customer_deletion_fixture.sql
+      - name: Install customer deletion request authorization
+        run: psql -h 127.0.0.1 -U postgres -d postgres -v ON_ERROR_STOP=1 -f supabase/migrations/20261122150000_customer_account_deletion_request.sql
+      - name: Verify deletion request isolation and non-destructive behavior
+        run: psql -h 127.0.0.1 -U postgres -d postgres -v ON_ERROR_STOP=1 -f tests/sql/account_deletion_assertions.sql
