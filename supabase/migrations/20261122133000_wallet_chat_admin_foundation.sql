@@ -242,7 +242,7 @@ grant execute on function public.shitreed_chat_send(uuid,text) to authenticated;
 
 -- Supabase Postgres Changes sends only RLS-authorized rows to subscribers.
 -- Skip when testing against plain PostgreSQL without the realtime publication.
-do $
+do $$
 begin
   if exists(select 1 from pg_catalog.pg_publication
             where pubname='supabase_realtime')
@@ -255,7 +255,7 @@ begin
   then
     execute 'alter publication supabase_realtime add table public.shitreed_chat_messages';
   end if;
-end; $;
+end; $$;
 
 -- Only trusted app_metadata admin receives aggregate oversight; NO chat bodies.
 create or replace function public.shitreed_admin_finance_chat_summary()
