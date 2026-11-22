@@ -132,8 +132,8 @@ jobs:
           channel: stable
           flutter-version: '3.47.9'
           cache: true
-      - name: Apply branded launcher icon
-        run: python3 scripts/configure_alani_icon.py . customer
+      # This job only analyzes the merchant Dart project; it has no generated
+      # Android manifest. Launcher branding is tested in the APK build jobs.
       - run: flutter pub get
       - run: flutter analyze --no-fatal-infos lib test
       - run: flutter test
