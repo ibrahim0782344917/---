@@ -1,0 +1,85 @@
+name: Al-Ani commercial readiness - isolated delivery and guarded checkout
+on:
+  push:
+    branches:
+      - feature/alani-commercial-orders-privacy-gates-20261122
+  pull_request:
+    paths:
+      - 'docs/ALANI_DELIVERY_RETURNS_SAFE_STAGE_20261122.sql'
+      - 'tests/alani_delivery_returns_*.sql'
+      - 'lib/alani/**'
+      - 'lib/commerce/**'
+      - 'merchant_app/lib/commerce/**'
+      - 'alani_site/**'
+      - '.github/workflows/alani-commercial-readiness-ci.yml'
+permissions:
+  contents: read
+jobs:
+  isolated-delivery-returns:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run role and lifecycle tests on synthetic disposable PostgreSQL
+        shell: bash
+        run: |
+          set -euo pipefail
+          docker run -d --name alani-commercial-pg -e POSTGRES_PASSWORD=test \
+            -e POSTGRES_DB=alani_isolated postgres:17-alpine >/dev/null
+          trap 'docker rm -f alani-commercial-pg >/dev/null 2>&1 || true' EXIT
+          for i in $(seq 1 60); do
+            docker exec alani-commercial-pg psql -X -qAt -U postgres \
+              -d alani_isolated -c 'select 1' 2>/dev/null | grep -qx 1 && break
+            sleep 1
+          done
+          cat tests/alani_checkout_fixture.sql \
+            tests/alani_delivery_returns_prelude.sql \
+            docs/ALANI_DELIVERY_RETURNS_SAFE_STAGE_20261122.sql \
+            tests/alani_delivery_returns_checks.sql |
+            docker exec -i alani-commercial-pg psql -X -v ON_ERROR_STOP=1 \
+              -U postgres -d alani_isolated
+  website:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm run check
+        working-directory: alani_site
+      - run: npm test
+        working-directory: alani_site
+        env:
+          ALANI_CHECKOUT_ENABLED: 'false'
+          ALANI_RETURNS_ENABLED: 'false'
+  android-guarded-preview:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: '3.47.9'
+          cache: true
+      - run: flutter create --org com.shitreed --project-name shitreed_customer --platforms android .
+      - run: python3 scripts/configure_android_maps.py
+      - run: flutter pub get
+      - run: flutter analyze --no-fatal-infos lib test
+      - run: flutter test
+      - name: Build app with server-verified (fail-closed) checkout
+        run: |
+          flutter build apk --debug \
+            --dart-define=SUPABASE_URL=https://ltwncrewggdrjevakwpb.supabase.co \
+            --dart-define=SUPABASE_PUBLISHABLE_KEY=sb_publishable_Tao4VcnXR93Ne9KUBJ76tg_o-Pmd75_ \
+            --dart-define=ALANI_STORE_ID=25091ca2-c0da-416c-b634-81b188ee66be \
+            --dart-define=ALANI_CHECKOUT_ENABLED=true \
+            --dart-define=ALANI_DELIVERY_TOTALS_VERIFIED=true \
+            --dart-define=ALANI_API_BASE=https://alani-site-admin-staging.up.railway.app
+      - uses: actions/upload-artifact@v4
+        with:
+          name: AlAni-Commercial-Safety-ANDROID-TEST-APK-SALES-SERVER-LOCKED
+          path: build/app/outputs/flutter-apk/app-debug.apk
+          if-no-files-found: error
+          retention-days: 14
