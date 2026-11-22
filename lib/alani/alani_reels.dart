@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:shitreed_customer/alani/alani_social.dart';
 import 'package:shitreed_customer/alani/alani_content.dart';
 import 'package:shitreed_customer/alani/alani_video.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -219,6 +220,18 @@ class _AlAniReelTileState extends State<AlAniReelTile>
             color: Colors.white.withValues(alpha: 0.75),
             size: 72,
           ))),
+        PositionedDirectional(end: 8, bottom: 120,
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 300),
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                color: Colors.black54,
+                borderRadius: BorderRadius.circular(12)),
+              child: AlAniSocialActions(
+                publicationId: widget.publication.id, dark: true),
+            ),
+          ),
+        ),
         PositionedDirectional(
           start: 14, end: 14, bottom: 32,
           child: IgnorePointer(child: Column(

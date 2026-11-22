@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:shitreed_customer/alani/alani_social.dart';
 import 'package:shitreed_customer/alani/alani_content.dart';
 import 'package:shitreed_customer/alani/alani_editor.dart';
 import 'package:shitreed_customer/alani/alani_video.dart';
@@ -731,6 +732,8 @@ class AlAniPublicationPage extends StatelessWidget {
           padding: EdgeInsets.only(top: 16),
           child: Text('المحتوى للتثقيف فقط وليس تشخيصاً أو علاجاً طبياً.'),
         ),
+        const SizedBox(height:12),
+        AlAniSocialActions(publicationId:item.id),
         if (item.kind == 'video') Padding(
           padding: const EdgeInsets.only(top: 16),
           child: FilledButton.icon(
