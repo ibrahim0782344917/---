@@ -320,8 +320,8 @@ class _AlAniStoreAdminPageState extends State<AlAniStoreAdminPage> {
     ]),
     if(!contentEnabled)const Card(child:Padding(
       padding:EdgeInsets.all(20),child:Text(
-        'جدول نشر المحتوى لم يُفعّل بعد. '
-        'لن تتاح الكتابة قبل اكتمال اختبارات الصلاحيات.'))),
+        'تعذّر الوصول إلى محتوى المتجر حالياً. '
+        'تحقق من الاتصال والصلاحيات وحاول تحديث الصفحة.'))),
     for(final p in AlAniAdminFilters.posts(posts,kind:contentFilter))
       Card(color:Colors.white,child:ListTile(
       title:Text(p['title'] as String? ?? ''),
