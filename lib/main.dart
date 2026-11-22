@@ -5,6 +5,9 @@ import 'package:shitreed_customer/maps/baghdad_map_page.dart';
 import 'package:shitreed_customer/commerce/commerce_service.dart';
 import 'package:shitreed_customer/commerce/customer_commerce_pages.dart';
 import 'package:shitreed_customer/merchant/merchant_dashboard.dart';
+import 'package:shitreed_customer/chat/customer_chat_pages.dart';
+import 'package:shitreed_customer/finance/customer_wallet_page.dart';
+import 'package:shitreed_customer/account/customer_delete_account_page.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -629,6 +632,20 @@ class _CustomerHomeState extends State<CustomerHome> {
       const SizedBox(height: 9),
       Text(user.email ?? 'بريد غير متوفر', textAlign: TextAlign.center),
       const SizedBox(height: 20),
+      OutlinedButton.icon(
+        onPressed: () => Navigator.of(context).push<void>(
+          MaterialPageRoute(builder: (_) => const CustomerWalletPage())),
+        icon: const Icon(Icons.account_balance_wallet_outlined),
+        label: const Text('محفظتي ونقاط المكافآت'),
+      ),
+      const SizedBox(height: 10),
+      OutlinedButton.icon(
+        onPressed: () => Navigator.of(context).push<void>(
+          MaterialPageRoute(builder: (_) => const CustomerChatInboxPage())),
+        icon: const Icon(Icons.chat_bubble_outline),
+        label: const Text('محادثاتي مع المتاجر'),
+      ),
+      const SizedBox(height: 10),
       FilledButton.icon(
         onPressed: () => Navigator.of(context).push(
           MaterialPageRoute<void>(builder: (_) =>
@@ -648,6 +665,13 @@ class _CustomerHomeState extends State<CustomerHome> {
         },
         icon: const Icon(Icons.logout),
         label: const Text('تسجيل الخروج'),
+      ),
+      const SizedBox(height: 12),
+      OutlinedButton.icon(
+        onPressed: () => Navigator.of(context).push<void>(
+          MaterialPageRoute(builder: (_) => const CustomerDeleteAccountPage())),
+        icon: const Icon(Icons.person_remove_outlined),
+        label: const Text('طلب حذف حسابي وبياناتي'),
       ),
     ]);
   }
