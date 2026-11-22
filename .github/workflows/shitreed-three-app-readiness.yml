@@ -43,6 +43,8 @@ jobs:
           cache: true
       - name: Generate Android
         run: flutter create --org com.shitreed --project-name shitreed_customer --platforms android .
+      - name: Create original Al-Ani customer launcher icon
+        run: python3 scripts/configure_alani_brand_icon.py
       - name: Prepare Android Maps key only after explicit approval
         env:
           MAPS_ANDROID_KEY: ${{ secrets.SHITREED_GOOGLE_MAPS_ANDROID_KEY }}
@@ -102,6 +104,8 @@ jobs:
           cache: true
       - name: Generate Android
         run: flutter create --org com.shitreed --project-name shitreed_merchant --platforms android .
+      - name: Create original Al-Ani merchant launcher icon
+        run: python3 ../scripts/configure_alani_brand_icon.py
       - name: Set network permission
         run: python3 scripts/configure_android.py
       - name: Use runner NDK for debug preview (avoid network download)
@@ -147,6 +151,8 @@ jobs:
           cache: true
       - name: Generate Android
         run: flutter create --org com.shitreed --project-name shitreed_admin --platforms android .
+      - name: Create original Al-Ani admin launcher icon
+        run: python3 ../scripts/configure_alani_brand_icon.py
       - name: Set only canonical Admin label and internet permission
         run: |
           python3 - <<'PY'

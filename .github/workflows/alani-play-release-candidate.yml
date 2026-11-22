@@ -60,6 +60,7 @@ jobs:
           cd "$APP_PATH"
           flutter create --org com.shitreed --project-name "$APP_PROJECT" --platforms android .
           grep -q "$ANDROID_APP_ID" android/app/build.gradle.kts
+          python3 "$GITHUB_WORKSPACE/scripts/configure_alani_brand_icon.py" --app-dir "."
       - name: Set approved network, Maps and display configuration
         shell: bash
         env:
