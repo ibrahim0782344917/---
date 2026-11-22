@@ -1,0 +1,50 @@
+name: Al-Ani COD delivery 5000 - isolated PostgreSQL checks
+on:
+  push:
+    branches:
+      - feature/alani-cod-delivery-20261122
+  pull_request:
+    paths:
+      - 'tests/alani_checkout_*.sql'
+      - 'docs/ALANI_COD_VERIFIED_5000IQD_20261122.sql'
+      - '.github/workflows/alani-cod-checkout-test.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  isolated-cod:
+    name: COD fee, expected total, RLS authorization and legacy safety
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify Al-Ani COD with synthetic data in disposable PostgreSQL
+        shell: bash
+        run: |
+          set -euo pipefail
+          docker run -d --name alani-cod-test-pg \
+            -e POSTGRES_PASSWORD=test-only \
+            -e POSTGRES_DB=alani_cod_test \
+            postgres:16-alpine >/dev/null
+          trap 'docker rm -f alani-cod-test-pg >/dev/null 2>&1 || true' EXIT
+          READY=false
+          for i in $(seq 1 60); do
+            if docker logs alani-cod-test-pg 2>&1 | grep -q \
+              'PostgreSQL init process complete; ready for start up'; then
+              if docker exec alani-cod-test-pg \
+                psql -X -qAt -U postgres -d alani_cod_test \
+                  -c 'select 1' 2>/dev/null | grep -qx 1; then
+                READY=true
+                break
+              fi
+            fi
+            sleep 1
+          done
+          test "$READY" = true
+          cat tests/alani_checkout_fixture.sql \
+            docs/ALANI_COD_VERIFIED_5000IQD_20261122.sql \
+            tests/alani_checkout_checks.sql |
+            docker exec -i alani-cod-test-pg \
+              psql -X -v ON_ERROR_STOP=1 -U postgres -d alani_cod_test
+          echo 'PASS: checked only disposable Postgres - production untouched'
