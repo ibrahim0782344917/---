@@ -93,6 +93,9 @@ begin
  end;
 end $$;
 
+-- Check internal idempotency storage only as the test database superuser;
+-- real app roles have NO access to private_checkout.
+reset role;
 -- No additional order, no new idempotency record on price mismatch.
 select 1 / (case when
  (select count(*) from public.orders)=2 and
@@ -100,8 +103,9 @@ select 1 / (case when
  (select stock_quantity from public.products
   where id='11111111-1111-4111-8111-111111111111')=4
 then 1 else 0 end) as price_mismatch_atomic_rollback;
+set role authenticated;
 
-do $$
+do $
 begin
  begin
    perform public.place_alani_cash_order(
