@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:file_picker/file_picker.dart';
+import 'alani_gallery_upload.dart';
 import 'alani_store_api.dart';
 import 'alani_dashboard_filters.dart';
 import 'alani_campaign_admin_page.dart';
@@ -124,6 +126,8 @@ class _AlAniStoreAdminPageState extends State<AlAniStoreAdminPage> {
     final video=TextEditingController(text:p?['video_url'] as String? ?? '');
     String kind=p?['kind'] as String? ?? 'post';
     String status=p?['status'] as String? ?? 'draft';
+    PlatformFile? studioVideo;
+    bool saving=false;
     final changed=await showDialog<bool>(context:context,builder:(dialogContext)=>
       StatefulBuilder(builder:(ctx,setDialog)=>AlertDialog(
         title:const Text('إدارة الفيديوهات والوصفات'),
@@ -147,7 +151,30 @@ class _AlAniStoreAdminPageState extends State<AlAniStoreAdminPage> {
               field(safety,'التحذيرات',lines:3),
             ],
             field(photo,'رابط الصورة HTTPS'),
-            if(kind=='video')field(video,'رابط الفيديو HTTPS'),
+            if(kind=='video')...[
+              OutlinedButton.icon(
+                onPressed:saving?null:()async{
+                  try{
+                    final result=await FilePicker.platform.pickFiles(
+                      type:FileType.video,withData:true);
+                    if(result==null||result.files.isEmpty)return;
+                    final file=result.files.first;
+                    final error=AlAniAdminGallery.validate(file.name,file.size);
+                    if(error!=null){notify(error);return;}
+                    if(ctx.mounted)setDialog(()=>studioVideo=file);
+                  }catch(_){
+                    notify('تعذر اختيار الفيديو من استوديو الهاتف.');
+                  }
+                },
+                icon:const Icon(Icons.video_library_outlined),
+                label:const Text('إضافة فيديو من الاستوديو'),
+              ),
+              if(studioVideo!=null)
+                Text('الفيديو المختار: ${studioVideo!.name}'),
+              field(video,'أو رابط فيديو HTTPS'),
+              const Text('MP4 حتى ٤٠ ميغابايت؛ يظهر في الريلز بعد النشر.',
+                style:TextStyle(fontSize:12)),
+            ],
             DropdownButtonFormField<String>(
               initialValue:status,
               items:const [
@@ -162,12 +189,20 @@ class _AlAniStoreAdminPageState extends State<AlAniStoreAdminPage> {
         actions:[
           TextButton(onPressed:()=>Navigator.pop(ctx,false),
             child:const Text('إلغاء')),
-          FilledButton(onPressed:()async{
+          FilledButton(onPressed:saving?null:()async{
             if(title.text.trim().length<3 ||
-               (kind=='video'&&!video.text.trim().startsWith('https://'))){
-              notify('أدخل عنواناً صالحاً ورابط فيديو HTTPS.');return;
+               (kind=='video'&&studioVideo==null&&
+                !video.text.trim().startsWith('https://'))){
+              notify('أدخل عنواناً صالحاً أو اختر فيديو MP4 من الاستوديو.');
+              return;
             }
+            setDialog(()=>saving=true);
+            AlAniAdminUploadedVideo? uploaded;
             try{
+              if(kind=='video'&&studioVideo!=null){
+                uploaded=await AlAniAdminGallery.upload(studioVideo!);
+                video.text=uploaded.url;
+              }
               await api.savePost({
                 if(p!=null)'id':p['id'],
                 'kind':kind,'status':status,
@@ -178,8 +213,16 @@ class _AlAniStoreAdminPageState extends State<AlAniStoreAdminPage> {
                 'video_url':video.text.trim(),
               });
               if(ctx.mounted)Navigator.pop(ctx,true);
-            }catch(_){notify('تعذّر حفظ المحتوى؛ تأكد من تفعيل قاعدة المحتوى.');}
-          },child:const Text('حفظ')),
+            }catch(_){
+              if(uploaded!=null){
+                try{await AlAniAdminGallery.remove(uploaded.path);}
+                catch(_){ /* Best-effort cleanup. */ }
+              }
+              notify('تعذر رفع الفيديو أو حفظ المنشور؛ تحقق من اتصال Supabase وصلاحية المتجر.');
+            }finally{
+              if(ctx.mounted)setDialog(()=>saving=false);
+            }
+          },child:Text(saving?'جارٍ رفع الفيديو والحفظ…':'حفظ')),
         ],
       )));
     for(final c in [title,body,ingredients,safety,photo,video]){c.dispose();}
