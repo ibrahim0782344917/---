@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:shitreed_merchant/account/merchant_account_service.dart';
 import 'package:shitreed_merchant/account/merchant_legal_pages.dart';
 import 'package:shitreed_merchant/account/merchant_support_pages.dart';
+import 'package:shitreed_merchant/chat/merchant_chat_pages.dart';
+import 'package:shitreed_merchant/finance/merchant_finance_pages.dart';
 import 'package:shitreed_merchant/shared/merchant_widgets.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -41,6 +43,23 @@ class MerchantAccountPage extends StatelessWidget {
             ]),
         ),
         const SizedBox(height:22),
+        const _Heading('الرصيد والمراسلات'),
+        _SettingTile(Icons.account_balance_wallet_outlined,
+          'رصيدي','تسويات الدينار العراقي دون سحب مباشر',
+          ()=>_go(context,const MerchantWalletPage())),
+        _SettingTile(Icons.chat_bubble_outline,
+          'رسائل الزبائن','عرض الرسائل والرد بشكل خاص',
+          ()=>_go(context,const MerchantChatInboxPage())),
+        FutureBuilder<dynamic>(
+          future:Supabase.instance.client.rpc('shitreed_is_admin'),
+          builder:(context,snapshot) => snapshot.data==true
+            ? _SettingTile(Icons.admin_panel_settings_outlined,
+                'مركز الرقابة المالية والإدارية',
+                'أرقام إجمالية فقط دون كشف رسائل الزبائن',
+                ()=>_go(context,const ShitreedAdminOversightPage()))
+            : const SizedBox.shrink(),
+        ),
+        const SizedBox(height:14),
         const _Heading('المساعدة'),
         _SettingTile(Icons.support_agent_outlined,
           'مركز الدعم','افتح طلباً وتابعه',
