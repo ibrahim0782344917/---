@@ -281,7 +281,7 @@ async function handleApi(req, res, path) {
       supabase(selectUrl('products',
         'select=id,name,description,price_iqd,stock_quantity,image_url,is_active,created_at&store_id=eq.'+id+'&order=created_at.desc&limit=200'),{},token),
       supabase(selectUrl('orders',
-        'select=id,status,total_iqd,payment_method,delivery_address,phone,created_at&store_id=eq.'+id+'&order=created_at.desc&limit=100'),{},token),
+        'select=id,status,total_iqd,delivery_fee_iqd,payment_method,delivery_address,phone,created_at&store_id=eq.'+id+'&order=created_at.desc&limit=100'),{},token),
       publications(token,true),
       RETURNS_ENABLED
         ? supabase(selectUrl('alani_return_requests',
