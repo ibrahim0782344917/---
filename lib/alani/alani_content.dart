@@ -69,9 +69,10 @@ class AlAniStoreData {
     return CommerceService.storeProducts(AlAniSettings.storeId);
   }
 
-  /// Content is optional until docs/ALANI_CONTENT_SCHEMA_REVIEW.sql has been
-  /// reviewed and deployed to a separate test database. Failure is surfaced
-  /// in the UI, not disguised as empty published content.
+  /// Reads the activated, RLS-protected Al-Ani publication table.
+  /// Visitors can see only published posts; draft access is owner-only.
+  /// Direct media URLs play inside the app, while web video URLs open
+  /// externally. We do not upload or copy external videos automatically.
   static Future<List<AlAniPublication>> publications() async {
     if (!MarketplaceBackend.configured || AlAniSettings.storeId.isEmpty) {
       return const [];
