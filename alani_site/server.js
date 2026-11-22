@@ -29,6 +29,7 @@ async function liveCheckoutReady() {
   }
 }
 const RETURNS_ENABLED = process.env.ALANI_RETURNS_ENABLED === 'true';
+const SOCIAL_ENABLED = process.env.ALANI_SOCIAL_ENABLED === 'true';
 const root = join(dirname(fileURLToPath(import.meta.url)), 'public');
 const uuid = /^[a-f0-9]{8}-[a-f0-9]{4}-[1-8][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i;
 const staticRoutes = {
@@ -249,6 +250,69 @@ async function handleApi(req, res, path) {
     }
     return respond(res,201,{id:inserted,status:'submitted'});
   }
+
+  // Public feed counters never disclose who liked or saved content.
+  if (req.method === 'GET' && path === '/api/social/activity') {
+    const publicationId=new URL(req.url,'http://localhost').searchParams.get('id');
+    if (!SOCIAL_ENABLED) return respond(res,200,{enabled:false,likes:0,comments:[]});
+    if (!uuid.test(String(publicationId||''))) throw new HttpError(400,'معرّف منشور غير صحيح.');
+    const [stats,comments]=await Promise.all([
+      supabase('/rest/v1/rpc/alani_social_stats',{
+        method:'POST',body:JSON.stringify({p_publication_id:publicationId})}),
+      supabase(selectUrl('alani_publication_comments',
+        'select=id,body,status,created_at&publication_id=eq.'+
+        encodeURIComponent(publicationId)+'&order=created_at.desc&limit=60')),
+    ]);
+    return respond(res,200,{enabled:true,likes:Number(stats?.likes||0),
+      comments:(comments||[]).map(c=>({id:c.id,body:c.body,status:c.status,
+        created_at:c.created_at}))});
+  }
+  if (req.method === 'POST' && path === '/api/social/action') {
+    if (!SOCIAL_ENABLED) throw new HttpError(503,'التفاعلات لم تُفعّل بعد.');
+    const token=tokenFrom(req);
+    if (!token) throw new HttpError(401,'سجّل دخولك أولاً.');
+    const user=await supabase('/auth/v1/user',{},token);
+    if (!user?.id) throw new HttpError(401,'جلسة المستخدم غير صالحة.');
+    const data=await readBody(req);
+    if (!uuid.test(String(data.publicationId||'')))
+      throw new HttpError(400,'منشور غير صالح.');
+    const pid=encodeURIComponent(data.publicationId);
+    const action=data.action;
+    if (['like','save'].includes(action)) {
+      const existing=await supabase(selectUrl('alani_publication_reactions',
+        'select=action&publication_id=eq.'+pid+
+        '&action=eq.'+encodeURIComponent(action)+'&user_id=eq.'+
+        encodeURIComponent(user.id)+'&limit=1'),{},token);
+      if (existing?.length) {
+        await supabase(selectUrl('alani_publication_reactions',
+          'publication_id=eq.'+pid+'&action=eq.'+encodeURIComponent(action)+
+          '&user_id=eq.'+encodeURIComponent(user.id)),{method:'DELETE'},token);
+        return respond(res,200,{ok:true,active:false});
+      }
+      await supabase('/rest/v1/alani_publication_reactions',{
+        method:'POST',body:JSON.stringify({publication_id:data.publicationId,
+          action})},token);
+      return respond(res,200,{ok:true,active:true});
+    }
+    if (action==='comment') {
+      if (!validText(data.body,2,1200)) throw new HttpError(400,'نص تعليق غير صالح.');
+      const rows=await supabase('/rest/v1/alani_publication_comments',{
+        method:'POST',body:JSON.stringify({
+          publication_id:data.publicationId,body:data.body.trim()})},token);
+      return respond(res,201,{ok:true,status:'pending',id:rows?.[0]?.id});
+    }
+    if (action==='report') {
+      if (!['spam','harmful','misleading','abuse','other'].includes(data.reason)
+        || str(data.details).length>1000) throw new HttpError(400,'سبب البلاغ غير صالح.');
+      const rows=await supabase('/rest/v1/alani_publication_reports',{
+        method:'POST',body:JSON.stringify({
+          publication_id:data.publicationId,reason:data.reason,
+          details:str(data.details)})},token);
+      return respond(res,201,{ok:true,status:'open',id:rows?.[0]?.id});
+    }
+    throw new HttpError(400,'إجراء غير مدعوم.');
+  }
+
   if (req.method === 'POST' && path === '/api/order') {
     if (!(await liveCheckoutReady())) throw new HttpError(503,'الشراء الإلكتروني لم يُفعّل بعد.');
     const token = tokenFrom(req);
@@ -327,6 +391,48 @@ async function handleApi(req, res, path) {
     ]);
     return respond(res,200,{products,orders,posts,returns:returnsResult});
   }
+
+  if (req.method === 'GET' && path === '/api/admin/social') {
+    if (!SOCIAL_ENABLED) return respond(res,200,{enabled:false,comments:[],reports:[],staff:[]});
+    const [comments,reports,staff]=await Promise.all([
+      supabase(selectUrl('alani_publication_comments',
+        'select=id,publication_id,body,status,created_at&order=created_at.desc&limit=100'),{},token),
+      supabase(selectUrl('alani_publication_reports',
+        'select=id,publication_id,comment_id,reason,details,status,created_at&order=created_at.desc&limit=100'),{},token),
+      supabase(selectUrl('alani_content_staff',
+        'select=user_id,role,active,created_at&order=created_at.desc&limit=100'),{},token),
+    ]);
+    return respond(res,200,{enabled:true,comments,reports,staff});
+  }
+  if (req.method === 'POST' && path === '/api/admin/social') {
+    if (!SOCIAL_ENABLED) throw new HttpError(503,'الإشراف على المحتوى قيد التفعيل.');
+    const data=await readBody(req);
+    if (!uuid.test(String(data.id||''))) throw new HttpError(400,'معرّف غير صحيح.');
+    let path,params;
+    if (data.action==='moderate_comment' &&
+        ['approved','hidden'].includes(data.status)) {
+      path='alani_moderate_comment';
+      params={p_comment_id:data.id,p_status:data.status};
+    } else if (data.action==='review_report' &&
+        ['reviewed','dismissed'].includes(data.status) &&
+        validText(data.note,8,1000)) {
+      path='alani_review_social_report';
+      params={p_report_id:data.id,p_status:data.status,p_note:data.note.trim()};
+    } else if (data.action==='moderate_post' &&
+        ['publish','hide'].includes(data.status)) {
+      path='alani_moderate_publication';
+      params={p_publication_id:data.id,p_action:data.status};
+    } else if (data.action==='manage_staff' &&
+        ['writer','moderator'].includes(data.role) &&
+        typeof data.active==='boolean') {
+      path='alani_content_manage_staff';
+      params={p_user_id:data.id,p_role:data.role,p_active:data.active};
+    } else throw new HttpError(400,'عملية إشراف غير صالحة.');
+    const out=await supabase('/rest/v1/rpc/'+path,{
+      method:'POST',body:JSON.stringify(params)},token);
+    return respond(res,200,{ok:true,result:out});
+  }
+
   if (req.method === 'POST' && path === '/api/admin/return') {
     if (!RETURNS_ENABLED) throw new HttpError(503,
       'إدارة الاسترجاع لم تُفعّل بعد.');
