@@ -6,11 +6,13 @@ on:
     paths:
       - 'scripts/alani_backup_termux.sh'
       - 'scripts/alani_restore_test_termux.sh'
+      - 'scripts/alani_restore_business_tables_termux.sh'
       - '.github/workflows/alani-backup-restore-script-check.yml'
   pull_request:
     paths:
       - 'scripts/alani_backup_termux.sh'
       - 'scripts/alani_restore_test_termux.sh'
+      - 'scripts/alani_restore_business_tables_termux.sh'
 permissions:
   contents: read
 jobs:
@@ -23,10 +25,13 @@ jobs:
         run: |
           bash -n scripts/alani_backup_termux.sh
           bash -n scripts/alani_restore_test_termux.sh
+          bash -n scripts/alani_restore_business_tables_termux.sh
           echo "PASS: both Termux scripts pass bash syntax validation"
       - name: Ensure restore targets an isolated local socket only
         run: |
           grep -Fq 'SOCKET="$PREFIX/tmp"' scripts/alani_restore_test_termux.sh
           grep -Fq -- '--single-transaction --exit-on-error' scripts/alani_restore_test_termux.sh
           grep -Fq 'listen_addresses=' scripts/alani_restore_test_termux.sh
-          echo "PASS: local-only restore with transactional rollback on error"
+          grep -Fq -- '--table=orders --table=order_items' scripts/alani_restore_business_tables_termux.sh
+          grep -Fq -- '--single-transaction --exit-on-error' scripts/alani_restore_business_tables_termux.sh
+          echo "PASS: local-only restore scripts use transactional rollback on error"
