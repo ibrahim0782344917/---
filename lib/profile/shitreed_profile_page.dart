@@ -1,5 +1,6 @@
 // ignore_for_file: curly_braces_in_flow_control_structures, prefer_interpolation_to_compose_strings
 import 'package:flutter/material.dart';
+import 'package:shitreed_customer/account/customer_delete_account_page.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -287,40 +288,9 @@ class _ShitreedProfilePageState extends State<ShitreedProfilePage> {
   }
 
   Future<void> requestAccountDeletion() async {
-    if (uid == null) return;
-    final reason = TextEditingController();
-    try {
-      final okay = await showDialog<bool>(
-        context: context, builder: (ctx) => AlertDialog(
-          title: const Text('طلب حذف الحساب'),
-          content: SingleChildScrollView(child: Column(
-            mainAxisSize: MainAxisSize.min, children: [
-              const Text('سيتم تسجيل طلب رسمي ومراجعته، '
-                'وقد تُحتفظ سجلات الطلبات والمعاملات للمدة القانونية. '
-                'لن يتم حذف البيانات فوراً.'),
-              const SizedBox(height: 12),
-              TextField(controller: reason, maxLength: 500, maxLines: 2,
-                decoration: const InputDecoration(
-                  labelText: 'سبب الطلب (اختياري)')),
-            ],
-          )),
-          actions: [
-            TextButton(onPressed: () => Navigator.pop(ctx, false),
-              child: const Text('رجوع')),
-            FilledButton(onPressed: () => Navigator.pop(ctx, true),
-              child: const Text('إرسال الطلب')),
-          ],
-        ),
-      );
-      if (okay != true) return;
-      await db.from('customer_deletion_requests')
-          .insert({'reason': reason.text.trim()});
-      notice('تم تسجيل طلب حذف حسابك للمراجعة.');
-    } catch (_) {
-      notice('يوجد طلب سابق قيد المعالجة أو تعذر الإرسال.');
-    } finally {
-      reason.dispose();
-    }
+    if (uid == null || !mounted) return;
+    await Navigator.of(context).push<void>(
+      MaterialPageRoute(builder: (_) => const CustomerDeleteAccountPage()));
   }
 
   Widget box(Widget child) => Card(

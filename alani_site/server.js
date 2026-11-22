@@ -21,6 +21,8 @@ const uuid = /^[a-f0-9]{8}-[a-f0-9]{4}-[1-8][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-
 const staticRoutes = {
   '/':'index.html', '/index.html':'index.html', '/admin':'admin.html',
   '/admin/':'admin.html', '/privacy':'privacy.html', '/terms':'terms.html',
+  '/delete-account':'delete-account.html','/delete-account.html':'delete-account.html',
+  '/delete-account.js':'delete-account.js',
   '/site.css':'site.css', '/site.js':'site.js', '/admin.js':'admin.js',
   '/info.js':'info.js','/menu.js':'menu.js',
   '/welcome':'info.html','/about-us':'info.html',
@@ -162,6 +164,24 @@ async function handleApi(req, res, path) {
       feeForVoluntaryReturnIqd:5000,
       initialDeliveryFeeIqd:5000,
       merchantFaultCasesNoDeduction:true});
+  }
+  if (req.method === 'POST' && path === '/api/account/deletion-request') {
+    const token = tokenFrom(req);
+    if (!token) throw new HttpError(401,'سجّل الدخول لتأكيد ملكية الحساب.');
+    const data = await readBody(req);
+    if (typeof data.reason !== 'string' || data.reason.length > 500) {
+      throw new HttpError(400,'أدخل ملاحظة صحيحة لا تتجاوز ٥٠٠ حرف.');
+    }
+    const account = await supabase('/auth/v1/user',{},token);
+    if (!account?.id) throw new HttpError(401,'تعذر تأكيد الحساب.');
+    const id = await supabase('/rest/v1/rpc/shitreed_customer_request_deletion',{
+      method:'POST',
+      body:JSON.stringify({p_reason:data.reason.trim()}),
+    },token);
+    if (!uuid.test(String(id))) throw new HttpError(503,
+      'تعذر تسجيل طلب حذف الحساب الآن.');
+    return respond(res,202,{requestId:id,status:'pending',
+      notice:'تم تسجيل طلب الحذف للمراجعة، ولم يُحذف الحساب بعد.'});
   }
   if (req.method === 'POST' && path === '/api/login') {
     const ip = req.socket.remoteAddress || 'unknown';

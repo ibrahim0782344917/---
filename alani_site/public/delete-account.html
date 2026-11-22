@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>طلب حذف الحساب — السيد إبراهيم العاني</title>
+<link rel="stylesheet" href="/site.css"></head>
+<body>
+<header class="site-header"><div class="wrap header-row"><a href="/" class="brand"><strong>السيد إبراهيم العاني</strong></a><a href="/" class="button ghost">الرئيسية</a></div></header>
+<main class="wrap section"><section class="admin-panel" style="max-width:650px;margin:auto">
+<h1>طلب حذف الحساب</h1>
+<p>يمكنك إرسال طلب حذف الحساب حتى لو لم يكن تطبيقك مثبتاً. نتحقق من ملكيتك، والطلبات المفتوحة، والبيانات المطلوبة قانونياً قبل استكمال الحذف. إرسال الطلب لا يعني حذف الحساب فوراً.</p>
+<p>أدخل بريد وكلمة مرور حساب شتريد. لا نحتفظ بكلمة المرور في هذه الصفحة أو تخزين المتصفح؛ تُستخدم لمصادقة Supabase فقط.</p>
+<form id="deletion-form">
+<label for="email">البريد الإلكتروني</label><input id="email" name="email" type="email" autocomplete="email" maxlength="254" required>
+<label for="password">كلمة المرور</label><input id="password" name="password" type="password" autocomplete="current-password" minlength="8" required>
+<label for="reason">ملاحظات (اختيارية)</label><textarea id="reason" name="reason" maxlength="500" rows="3"></textarea>
+<p><label><input id="confirmed" type="checkbox" required> أؤكد رغبتي في إرسال طلب حذف حسابي وبياناته المرتبطة به.</label></p>
+<button type="submit" id="send">إرسال طلب حذف حسابي</button>
+</form>
+<p id="result" role="status" aria-live="polite"></p>
+<p>إذا كانت لديك طلبات لم تُسلَّم أو شكاوى غير منتهية، فقد تتطلب معالجة طلب الحذف مراجعة إضافية.</p>
+</section></main>
+<script src="/delete-account.js" defer></script></body></html>
