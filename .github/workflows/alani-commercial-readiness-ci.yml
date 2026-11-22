@@ -3,9 +3,12 @@ on:
   push:
     branches:
       - feature/alani-commercial-orders-privacy-gates-20261122
+      - feature/alani-three-task-completion-20261122
   pull_request:
     paths:
       - 'docs/ALANI_DELIVERY_RETURNS_SAFE_STAGE_20261122.sql'
+      - 'docs/ALANI_CUSTOMER_DELETION_PREFLIGHT_20261122.sql'
+      - 'tests/alani_deletion_request_*.sql'
       - 'tests/alani_delivery_returns_*.sql'
       - 'lib/alani/**'
       - 'lib/commerce/**'
@@ -81,6 +84,7 @@ jobs:
           done
           cat tests/alani_deletion_request_fixture.sql \
             supabase/migrations/20261122150000_customer_account_deletion_request.sql \
+            docs/ALANI_CUSTOMER_DELETION_PREFLIGHT_20261122.sql \
             tests/alani_deletion_request_checks.sql |
             docker exec -i alani-delete-pg psql -X -v ON_ERROR_STOP=1 \
               -U postgres -d alani_delete_test

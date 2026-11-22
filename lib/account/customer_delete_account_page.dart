@@ -5,6 +5,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 /// The customer only requests account deletion. A trusted backend handles
 /// actual identity verification, session revocation and legally required retention.
 abstract class CustomerDeletionRepository {
+  Future<Map<String, dynamic>> preflight();
   Future<String> requestDeletion(String reason);
   Future<List<Map<String, dynamic>>> myRequests();
 }
@@ -13,6 +14,13 @@ class SupabaseCustomerDeletionRepository implements CustomerDeletionRepository {
   const SupabaseCustomerDeletionRepository();
 
   SupabaseClient get _db => Supabase.instance.client;
+
+  @override
+  Future<Map<String, dynamic>> preflight() async {
+    if (_db.auth.currentUser == null) throw StateError('LOGIN_REQUIRED');
+    final result = await _db.rpc('shitreed_customer_deletion_preflight');
+    return Map<String, dynamic>.from(result as Map);
+  }
 
   @override
   Future<String> requestDeletion(String reason) async {
@@ -47,6 +55,7 @@ class _CustomerDeleteAccountPageState extends State<CustomerDeleteAccountPage> {
   final _reason = TextEditingController();
   late CustomerDeletionRepository _repository;
   late Future<List<Map<String, dynamic>>> _requests;
+  late Future<Map<String, dynamic>> _eligibility;
   bool _confirmed = false;
   bool _busy = false;
 
@@ -55,6 +64,7 @@ class _CustomerDeleteAccountPageState extends State<CustomerDeleteAccountPage> {
     super.initState();
     _repository = widget.repository ?? const SupabaseCustomerDeletionRepository();
     _requests = _repository.myRequests();
+    _eligibility = _repository.preflight();
   }
 
   @override
@@ -65,7 +75,10 @@ class _CustomerDeleteAccountPageState extends State<CustomerDeleteAccountPage> {
 
   Future<void> _reload() async {
     final request = _repository.myRequests();
-    setState(() => _requests = request);
+    setState(() {
+      _requests = request;
+      _eligibility = _repository.preflight();
+    });
     await request;
   }
 
@@ -117,6 +130,32 @@ class _CustomerDeleteAccountPageState extends State<CustomerDeleteAccountPage> {
                   'والرصيد والنزاعات غير المنتهية. '
                   'هذا ليس حذفاً فورياً، وسنوضح ما يُحتفظ به '
                   'للالتزامات القانونية قبل إتمام العملية.',
+                ),
+                const SizedBox(height: 14),
+                FutureBuilder<Map<String, dynamic>>(
+                  future: _eligibility,
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState != ConnectionState.done) {
+                      return const LinearProgressIndicator();
+                    }
+                    if (snapshot.hasError) {
+                      return const Text(
+                        'فحص ارتباطات الحساب غير متاح الآن؛ يمكنك إرسال '
+                        'طلب الحذف للمراجعة، لكن لا يُنفذ تلقائياً.');
+                    }
+                    final data = snapshot.data ?? const <String, dynamic>{};
+                    final open = (data['open_orders'] as num?)?.toInt() ?? 0;
+                    final owned = (data['owned_stores'] as num?)?.toInt() ?? 0;
+                    return Card(child: Padding(
+                      padding: const EdgeInsets.all(12),
+                      child: Text(
+                        'فحص الحساب: الطلبات غير المكتملة: $open، '
+                        'المتاجر المرتبطة: $owned. '
+                        'الحذف النهائي يحتاج مراجعة إدارية وحفظ السجلات '
+                        'الواجبة قانونياً؛ لا توجد عملية حذف فورية.',
+                      ),
+                    ));
+                  },
                 ),
                 const SizedBox(height: 14),
                 TextField(
