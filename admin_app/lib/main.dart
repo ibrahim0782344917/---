@@ -5,6 +5,7 @@ import 'admin_api.dart';
 import 'admin_pro_features.dart';
 import 'admin_ranks_levels_page.dart';
 import 'alani_store_admin_page.dart';
+import 'alani_social_moderation_page.dart';
 import 'alani_campaign_admin_page.dart';
 import 'alani_legacy_customers_import_page.dart';
 
@@ -782,6 +783,16 @@ class _AdminHomeState extends State<AdminHome> {
                   Navigator.pop(context);
                   Navigator.push(context,MaterialPageRoute<void>(
                     builder:(_)=>const AlAniStoreAdminPage()));
+                },
+              ),
+              ListTile(
+                leading:const Icon(Icons.forum_outlined,color:Colors.white70),
+                title:const Text('إشراف التعليقات والبلاغات',
+                  style:TextStyle(color:Colors.white)),
+                onTap:(){
+                  Navigator.pop(context);
+                  Navigator.push(context,MaterialPageRoute<void>(
+                    builder:(_)=>const AlAniSocialModerationPage()));
                 },
               ),
               ListTile(
