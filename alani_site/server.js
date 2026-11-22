@@ -87,7 +87,7 @@ async function supabase(path, options = {}, token = null) {
   needConfig();
   const requestHeaders = {
     'apikey': SB_KEY, 'accept':'application/json',
-    ...options.body ? { 'content-type':'application/json', 'prefer':'return=representation' } : {},
+    ...(options.body || options.method === 'DELETE') ? { 'content-type':'application/json', 'prefer':'return=representation' } : {},
   };
   if (token) requestHeaders.authorization = 'Bearer ' + token;
   const response = await fetch(SB_URL + path, {
@@ -388,6 +388,19 @@ async function handleApi(req, res, path) {
       body:JSON.stringify({p_order_id:input.id,p_new_status:input.status}),
     },token);
     return respond(res,200,{ok:true,status});
+  }
+  if (req.method === 'POST' && path === '/api/admin/post/delete') {
+    const input=await readBody(req);
+    if(!uuid.test(String(input.id||''))){
+      throw new HttpError(400,'معرّف المنشور غير صالح.');
+    }
+    const out=await supabase(selectUrl('alani_publications',
+      'id=eq.'+encodeURIComponent(input.id)+
+      '&store_id=eq.'+encodeURIComponent(STORE_ID)),
+      {method:'DELETE'},token);
+    if(!out?.length) throw new HttpError(404,
+      'المنشور غير موجود أو لا تملك صلاحية حذفه.');
+    return respond(res,200,{ok:true});
   }
   if (req.method === 'POST' && path === '/api/admin/post') {
     const input=await readBody(req);
