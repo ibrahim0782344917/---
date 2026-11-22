@@ -4,6 +4,7 @@ import 'package:shitreed_customer/auth/customer_auth_page.dart';
 import 'package:shitreed_customer/backend/marketplace_backend.dart';
 import 'package:shitreed_customer/commerce/commerce_service.dart';
 import 'package:shitreed_customer/commerce/order_timeline_page.dart';
+import 'package:shitreed_customer/chat/customer_chat_pages.dart';
 
 const _purple = Color(0xFF51159B);
 const _dark = Color(0xFF280B53);
@@ -72,6 +73,13 @@ class _LiveStorePageState extends State<LiveStorePage> {
           const Text('متجر معتمد • الأسعار يقدمها صاحب المحل',
             style: TextStyle(color: Colors.white)),
         ]),
+      ),
+      const SizedBox(height: 12),
+      OutlinedButton.icon(
+        onPressed: () => openCustomerStoreChat(
+          context, widget.storeId, widget.name),
+        icon: const Icon(Icons.chat_bubble_outline),
+        label: const Text('راسل المتجر'),
       ),
       const SizedBox(height: 20),
       const Text('المنتجات المتاحة', style: TextStyle(
