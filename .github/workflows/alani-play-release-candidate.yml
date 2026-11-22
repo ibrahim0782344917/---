@@ -89,6 +89,9 @@ jobs:
           p.write_text(text)
           PY
           fi
+      - name: Apply branded launcher icon to selected app
+        shell: bash
+        run: python3 "$GITHUB_WORKSPACE/scripts/configure_alani_icon.py" "$APP_PATH" "${{ inputs.application }}"
       - name: Apply upload-key signing for RELEASE (no debug key)
         shell: bash
         env:

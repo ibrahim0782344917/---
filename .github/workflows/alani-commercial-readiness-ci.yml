@@ -132,6 +132,8 @@ jobs:
           channel: stable
           flutter-version: '3.47.9'
           cache: true
+      - name: Apply branded launcher icon
+        run: python3 scripts/configure_alani_icon.py . customer
       - run: flutter pub get
       - run: flutter analyze --no-fatal-infos lib test
       - run: flutter test
