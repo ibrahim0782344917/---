@@ -1,3 +1,9 @@
+-- OBSOLETE DRAFT — DO NOT APPLY. Superseded by
+-- docs/ALANI_COD_VERIFIED_5000IQD_20261122.sql.
+-- The replacement protects legacy clients against unconfirmed delivery
+-- fees, compares the buyer-approved total atomically, and reuses an
+-- idempotency key. This earlier script lacks those protections.
+--
 -- STAGING REVIEW ONLY. NEVER APPLY TO PRODUCTION WITHOUT DB BACKUP,
 -- restore rehearsal, isolated test data, role testing, and owner approval.
 -- This keeps all other Shitreed stores at their existing delivery rules.
