@@ -3,6 +3,7 @@ import 'package:shitreed_customer/alani/alani_content.dart';
 import 'package:shitreed_customer/alani/alani_video.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:video_player/video_player.dart';
+import 'package:shitreed_customer/alani/alani_social_panel.dart';
 
 /// Vertical, one-at-a-time media feed for published store videos.
 class AlAniReelsPanel extends StatefulWidget {
@@ -219,6 +220,22 @@ class _AlAniReelTileState extends State<AlAniReelTile>
             color: Colors.white.withValues(alpha: 0.75),
             size: 72,
           ))),
+        PositionedDirectional(
+          start: 8, top: 105, end: 8,
+          child: Align(
+            alignment: AlignmentDirectional.centerEnd,
+            child: Container(
+              padding: const EdgeInsets.symmetric(vertical: 5),
+              decoration: BoxDecoration(
+                color: Colors.black.withValues(alpha: 0.45),
+                borderRadius: BorderRadius.circular(30),
+              ),
+              child: AlAniSocialPanel(
+                publicationId: widget.publication.id, compact: true, dark: true,
+              ),
+            ),
+          ),
+        ),
         PositionedDirectional(
           start: 14, end: 14, bottom: 32,
           child: IgnorePointer(child: Column(
