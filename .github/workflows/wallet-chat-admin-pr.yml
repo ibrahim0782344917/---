@@ -1,0 +1,78 @@
+name: Shitreed Wallet Chat Admin PR Checks
+
+on:
+  pull_request:
+    paths:
+      - 'lib/**'
+      - 'merchant_app/lib/**'
+      - 'test/**'
+      - 'merchant_app/test/**'
+      - 'supabase/migrations/**'
+      - '.github/workflows/wallet-chat-admin-pr.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  customer:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: '3.47.9'
+          cache: true
+      - run: flutter pub get
+      - run: flutter analyze lib test
+      - run: flutter test
+
+  merchant:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    defaults:
+      run:
+        working-directory: merchant_app
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: '3.47.9'
+          cache: true
+      - run: flutter pub get
+      - run: flutter analyze
+      - run: flutter test
+
+  migration_static_gates:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check critical security design stays intact
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          sql = Path('supabase/migrations/20261122133000_wallet_chat_admin_foundation.sql').read_text()
+          required = [
+              'schema if not exists shitreed_finance',
+              'UNBALANCED_FINANCIAL_JOURNAL',
+              'FINANCIAL_LEDGER_IMMUTABLE',
+              'revoke all on all tables in schema shitreed_finance',
+              'shitreed_wallet_overview',
+              'shitreed_wallet_activity',
+              'shitreed_chat_send',
+              'CHAT_NOT_AUTHORIZED',
+              'shitreed_is_admin()',
+              'enable row level security',
+              'merchant_id uuid not null',
+          ]
+          for value in required:
+              assert value in sql, f'Missing safety boundary: {value}'
+          for f in ['lib/finance/customer_wallet_page.dart',
+                    'merchant_app/lib/finance/merchant_finance_pages.dart']:
+              source = Path(f).read_text()
+              assert 'service_role' not in source, f'Forbidden secret reference: {f}'
+          print('Static security guards present. Live SQL/RLS tests still required.')
+          PY
