@@ -134,6 +134,7 @@ create table if not exists public.shitreed_chat_threads (
   id uuid primary key default gen_random_uuid(),
   store_id uuid not null references public.stores(id) on delete restrict,
   customer_id uuid not null references auth.users(id) on delete restrict,
+  merchant_id uuid not null references auth.users(id) on delete restrict,
   created_at timestamptz not null default now(),
   last_message_at timestamptz not null default now(),
   closed_at timestamptz,
@@ -161,9 +162,11 @@ grant select on public.shitreed_chat_threads, public.shitreed_chat_messages to a
 create policy "chat threads visible to participants"
 on public.shitreed_chat_threads for select to authenticated
 using (
-  customer_id=(select auth.uid()) or exists(
-    select 1 from public.stores s
-    where s.id=store_id and s.owner_id=(select auth.uid())
+  customer_id=(select auth.uid()) or (
+    merchant_id=(select auth.uid()) and exists(
+      select 1 from public.stores s
+      where s.id=store_id and s.owner_id=(select auth.uid())
+    )
   )
 );
 create policy "chat messages visible to participants"
@@ -172,7 +175,8 @@ using (exists(
   select 1 from public.shitreed_chat_threads t
   join public.stores s on s.id=t.store_id
   where t.id=thread_id
-  and (t.customer_id=(select auth.uid()) or s.owner_id=(select auth.uid()))
+  and (t.customer_id=(select auth.uid()) or
+       (t.merchant_id=(select auth.uid()) and s.owner_id=(select auth.uid())))
 ));
 -- New threads must be initiated by customer; merchants reply in existing threads.
 create or replace function public.shitreed_chat_open(p_store_id uuid)
@@ -190,8 +194,8 @@ begin
   if (select count(*) from public.shitreed_chat_threads
     where customer_id=v_user and created_at > now()-interval '1 day') >= 10
   then raise exception 'CHAT_THREAD_DAILY_LIMIT'; end if;
-  insert into public.shitreed_chat_threads(store_id,customer_id)
-  values (p_store_id,v_user)
+  insert into public.shitreed_chat_threads(store_id,customer_id,merchant_id)
+  values (p_store_id,v_user,v_store_owner)
   on conflict (store_id,customer_id) do nothing
   returning id into v_thread;
   if v_thread is null then
@@ -206,7 +210,7 @@ grant execute on function public.shitreed_chat_open(uuid) to authenticated;
 create or replace function public.shitreed_chat_send(p_thread_id uuid, p_body text)
 returns uuid language plpgsql security definer set search_path = '' as $$
 declare v_user uuid := auth.uid(); v_message uuid; v_customer uuid;
-        v_owner uuid; v_closed timestamptz;
+        v_owner uuid; v_merchant uuid; v_closed timestamptz;
 begin
   if v_user is null then raise exception 'LOGIN_REQUIRED'; end if;
   if p_body is null or char_length(btrim(p_body)) not between 1 and 2000
@@ -214,13 +218,14 @@ begin
   -- Serialize all sends from the user to enforce the per-minute limit.
   perform pg_catalog.pg_advisory_xact_lock(
     pg_catalog.hashtextextended(v_user::text, 93271));
-  select t.customer_id,s.owner_id,t.closed_at
-    into v_customer,v_owner,v_closed
+  select t.customer_id,s.owner_id,t.merchant_id,t.closed_at
+    into v_customer,v_owner,v_merchant,v_closed
     from public.shitreed_chat_threads t
     join public.stores s on s.id=t.store_id
     where t.id=p_thread_id;
-  if not found or (v_user is distinct from v_customer and
-                   v_user is distinct from v_owner)
+  if not found or v_owner is distinct from v_merchant or
+     (v_user is distinct from v_customer and
+      v_user is distinct from v_merchant)
   then raise exception 'CHAT_NOT_AUTHORIZED'; end if;
   if v_closed is not null then raise exception 'CHAT_CLOSED'; end if;
   if (select count(*) from public.shitreed_chat_messages
@@ -234,6 +239,23 @@ begin
 end; $$;
 revoke all on function public.shitreed_chat_send(uuid,text) from public,anon,authenticated;
 grant execute on function public.shitreed_chat_send(uuid,text) to authenticated;
+
+-- Supabase Postgres Changes sends only RLS-authorized rows to subscribers.
+-- Skip when testing against plain PostgreSQL without the realtime publication.
+do $
+begin
+  if exists(select 1 from pg_catalog.pg_publication
+            where pubname='supabase_realtime')
+     and not exists(
+       select 1 from pg_catalog.pg_publication_tables
+       where pubname='supabase_realtime'
+         and schemaname='public'
+         and tablename='shitreed_chat_messages'
+     )
+  then
+    alter publication supabase_realtime add table public.shitreed_chat_messages;
+  end if;
+end; $;
 
 -- Only trusted app_metadata admin receives aggregate oversight; NO chat bodies.
 create or replace function public.shitreed_admin_finance_chat_summary()
