@@ -2,6 +2,9 @@
 -- before live migration. This closes public REST access to stores.phone.
 begin;
 revoke select on public.stores from public,anon,authenticated;
+-- Production has a separate authenticated column-level SELECT grant on phone;
+-- table-level REVOKE does NOT revoke that grant. Remove it explicitly.
+revoke select (phone) on public.stores from public,anon,authenticated;
 grant select (
   id,owner_id,name,area,category,address,latitude,longitude,status,
   created_at,description,opening_hours,logo_url
@@ -19,4 +22,17 @@ revoke all on function public.shitreed_my_store_contacts()
   from public,anon,authenticated;
 grant execute on function public.shitreed_my_store_contacts()
   to authenticated;
+-- Fail the entire transaction if a public role can still read the phone field.
+do $assert_no_phone$
+begin
+  if has_column_privilege('anon','public.stores','phone','SELECT') or
+     has_column_privilege('authenticated','public.stores','phone','SELECT') then
+    raise exception 'STORE_PHONE_SELECT_STILL_EXPOSED';
+  end if;
+  if not has_column_privilege('anon','public.stores','name','SELECT') or
+     not has_column_privilege('authenticated','public.stores','id','SELECT') then
+    raise exception 'PUBLIC_STORE_METADATA_BROKEN';
+  end if;
+end
+$assert_no_phone$;
 commit;

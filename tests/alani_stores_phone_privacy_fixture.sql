@@ -35,3 +35,5 @@ create policy public_approved_stores on public.stores for select
 create policy owner_shops on public.stores for select
   to authenticated using (owner_id=(select auth.uid()));
 grant select on public.stores to anon,authenticated;
+-- Exact shape of current production: an independent authenticated SELECT on phone.
+grant select(phone) on public.stores to authenticated;
