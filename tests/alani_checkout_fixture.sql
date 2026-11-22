@@ -58,6 +58,11 @@ insert into public.products(id,store_id,name,price_iqd,stock_quantity) values
  ('11111111-1111-4111-8111-111111111111','25091ca2-c0da-416c-b634-81b188ee66be','زيت',20000,5),
  ('22222222-2222-4222-8222-222222222221','25091ca2-c0da-416c-b634-81b188ee66be','عسل',5000,8),
  ('33333333-3333-4333-8333-333333333331','22222222-2222-4222-8222-222222222222','منتج آخر',7000,5);
+-- Synthetic read permissions match buyer-visible order reads in the live
+-- application. Live Supabase uses RLS to further enforce ownership.
+grant select on public.orders,public.order_items,public.products
+  to authenticated;
+
 -- Historical order must NOT be retroactively increased by delivery fee.
 insert into public.orders (id,buyer_id,store_id,delivery_address,phone,total_iqd)
 values ('f0000000-0000-4000-8000-000000000001',
