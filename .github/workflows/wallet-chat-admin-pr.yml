@@ -76,3 +76,58 @@ jobs:
               assert 'service_role' not in source, f'Forbidden secret reference: {f}'
           print('Static security guards present. Live SQL/RLS tests still required.')
           PY
+
+
+  isolated_postgres:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
+    env:
+      PGPASSWORD: postgres
+    steps:
+      - uses: actions/checkout@v4
+      - name: Create local fixture schema
+        run: psql -h 127.0.0.1 -U postgres -d postgres -v ON_ERROR_STOP=1 -f tests/sql/wallet_chat_bootstrap.sql
+      - name: Apply safe additive migration against isolated database
+        run: psql -h 127.0.0.1 -U postgres -d postgres -v ON_ERROR_STOP=1 -f supabase/migrations/20261122133000_wallet_chat_admin_foundation.sql
+      - name: Verify accounting and customer-merchant privacy
+        run: psql -h 127.0.0.1 -U postgres -d postgres -v ON_ERROR_STOP=1 -f tests/sql/wallet_chat_assertions.sql
+      - name: Reject unbalanced journal at COMMIT
+        shell: bash
+        run: |
+          set +e
+          OUTPUT=$(psql -h 127.0.0.1 -U postgres -d postgres -v ON_ERROR_STOP=1 2>&1 <<'SQL'
+          begin;
+          insert into shitreed_finance.journals(currency,reference_key,description)
+          values('IQD','fixture_unbalanced_2','Unbalanced test entry')
+          returning id;
+          insert into shitreed_finance.entries(journal_id,account_id,currency,delta)
+          select j.id,'30000000-0000-4000-8000-000000000001','IQD',500
+          from shitreed_finance.journals j
+          where j.reference_key='fixture_unbalanced_2';
+          commit;
+          SQL
+          )
+          RESULT=$?
+          set -e
+          if [ "$RESULT" -eq 0 ]; then
+            echo "ERROR: unbalanced journal accepted"
+            exit 1
+          fi
+          if ! printf '%s' "$OUTPUT" | grep -q 'UNBALANCED_FINANCIAL_JOURNAL'; then
+            echo "ERROR: rejected for an unexpected reason"
+            printf '%s\n' "$OUTPUT"
+            exit 1
+          fi
+          echo "Correctly rejected an unbalanced journal"
