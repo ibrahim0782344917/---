@@ -422,6 +422,7 @@ class _AlAniStoreAdminPageState extends State<AlAniStoreAdminPage> {
       'damaged'=>'منتج مكسور/تالف',
       'wrong_item'=>'منتج مختلف',
       'defective'=>'منتج معيب',
+      'delivery_issue'=>'مشكلة توصيل',
       _=>value
     };
     String status(String value)=>switch(value){
@@ -430,7 +431,7 @@ class _AlAniStoreAdminPageState extends State<AlAniStoreAdminPage> {
       _=>value
     };
     List<String> next(String current)=>switch(current){
-      'submitted'=>const ['reviewing'],
+      'submitted'=>const ['reviewing','declined'],
       'reviewing'=>const ['approved','declined'],
       'approved'=>const ['resolved'],
       _=>const []

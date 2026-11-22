@@ -103,7 +103,7 @@ async function publicShop() {
   needConfig();
   const id = encodeURIComponent(STORE_ID);
   const [stores, products] = await Promise.all([
-    supabase(selectUrl('stores', 'select=id,name,area,description,opening_hours,phone,address,logo_url&status=eq.approved&id=eq.'+id+'&limit=1')),
+    supabase(selectUrl('stores', 'select=id,name,area,description,opening_hours,address,logo_url&status=eq.approved&id=eq.'+id+'&limit=1')),
     supabase(selectUrl('products', 'select=id,name,description,price_iqd,stock_quantity,image_url&is_active=eq.true&store_id=eq.'+id+'&order=created_at.desc&limit=100')),
   ]);
   const store = stores?.[0] || null;
@@ -187,7 +187,7 @@ async function handleApi(req, res, path) {
     const token = tokenFrom(req);
     if (!token) throw new HttpError(401,'يجب تسجيل الدخول بحساب صاحب الطلب.');
     const body = await readBody(req);
-    const reasons = ['change_mind','damaged','wrong_item','defective'];
+    const reasons = ['change_mind','damaged','wrong_item','defective','delivery_issue'];
     if (!uuid.test(String(body.orderId || '')) ||
         !reasons.includes(body.reason) ||
         !validText(body.details,15,2000) ||
@@ -203,17 +203,18 @@ async function handleApi(req, res, path) {
         order[0].store_id!==STORE_ID) {
       throw new HttpError(403,'لا يمكن تقديم طلب استرجاع إلا لطلب اشتريته من هذا المتجر.');
     }
-    const inserted=await supabase('/rest/v1/alani_return_requests',{
+    const inserted=await supabase('/rest/v1/rpc/alani_request_return',{
       method:'POST',
       body:JSON.stringify({
-        store_id:STORE_ID,order_id:body.orderId,
-        customer_id:user.id,reason:body.reason,
-        details:body.details.trim(),
-        photo_url:str(body.photoUrl)||null,
+        p_order_id:body.orderId,
+        p_reason:body.reason,
+        p_details:body.details.trim(),
       }),
     },token);
-    if (!inserted?.[0]?.id) throw new HttpError(503,'تعذر تسجيل الطلب حالياً.');
-    return respond(res,201,{id:inserted[0].id,status:'submitted'});
+    if (!uuid.test(String(inserted))) {
+      throw new HttpError(503,'تعذر تسجيل الطلب حالياً.');
+    }
+    return respond(res,201,{id:inserted,status:'submitted'});
   }
   if (req.method === 'POST' && path === '/api/order') {
     if (!CHECKOUT_ENABLED) throw new HttpError(503,'الشراء الإلكتروني لم يُفعّل بعد.');
@@ -285,7 +286,7 @@ async function handleApi(req, res, path) {
       publications(token,true),
       RETURNS_ENABLED
         ? supabase(selectUrl('alani_return_requests',
-          'select=id,order_id,reason,details,photo_url,status,created_at'
+          'select=id,order_id,reason,details,status,created_at'
           +'&store_id=eq.'+id+'&order=created_at.desc&limit=100'),{},token)
           .then(items=>({available:true,items}))
           .catch(()=>({available:false,items:[]}))
@@ -302,16 +303,16 @@ async function handleApi(req, res, path) {
       !validText(input.note,10,1000)) {
       throw new HttpError(400,'أدخل حالة صحيحة وملاحظة مراجعة واضحة.');
     }
-    const updated=await supabase(selectUrl('alani_return_requests',
-      'id=eq.'+encodeURIComponent(input.id)+
-      '&store_id=eq.'+encodeURIComponent(STORE_ID)),
-      {method:'PATCH',body:JSON.stringify({
-        status:input.status,resolution_note:input.note.trim(),
-        updated_at:new Date().toISOString(),
-      })},token);
-    if (!updated?.length) throw new HttpError(404,
-      'طلب الاسترجاع غير موجود أو غير تابع لهذا المتجر.');
-    return respond(res,200,{ok:true,id:updated[0].id,status:updated[0].status});
+    const updated=await supabase('/rest/v1/rpc/alani_review_return',{
+      method:'POST',body:JSON.stringify({
+        p_request_id:input.id,
+        p_new_status:input.status,
+        p_note:input.note.trim(),
+      }),
+    },token);
+    if (updated !== input.status) throw new HttpError(502,
+      'لم يؤكد الخادم تحديث حالة الاسترجاع.');
+    return respond(res,200,{ok:true,id:input.id,status:updated});
   }
   if (req.method === 'POST' && path === '/api/admin/product') {
     const input = await readBody(req);

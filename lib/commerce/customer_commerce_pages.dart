@@ -4,6 +4,7 @@ import 'package:shitreed_customer/auth/customer_auth_page.dart';
 import 'package:shitreed_customer/backend/marketplace_backend.dart';
 import 'package:shitreed_customer/commerce/commerce_service.dart';
 import 'package:shitreed_customer/commerce/order_timeline_page.dart';
+import 'package:shitreed_customer/alani/alani_content.dart';
 
 const _purple = Color(0xFF0C946B);
 const _dark = Color(0xFF163E32);
@@ -363,6 +364,7 @@ class _OrderHistoryPageState extends State<OrderHistoryPage> {
   });
 
   bool _cancelling = false;
+  bool _processingAlAni = false;
   String _statusFilter = 'all';
 
   Future<void> _cancel(String id) async {
@@ -401,12 +403,107 @@ class _OrderHistoryPageState extends State<OrderHistoryPage> {
     }
   }
 
+  Future<void> _confirmReceived(String id) async {
+    if (_processingAlAni) return;
+    final accept = await showDialog<bool>(
+      context:context,builder:(ctx)=>AlertDialog(
+        title:const Text('تأكيد استلام الطلب'),
+        content:const Text('اضغط تأكيد فقط بعد استلام المنتجات فعلياً. '
+          'بعدها يمكن تقديم طلب استرجاع أو شكوى.'),
+        actions:[
+          TextButton(onPressed:()=>Navigator.pop(ctx,false),
+            child:const Text('رجوع')),
+          FilledButton(onPressed:()=>Navigator.pop(ctx,true),
+            child:const Text('استلمت الطلب')),
+        ],
+      ),
+    );
+    if(accept!=true||!mounted)return;
+    setState(()=>_processingAlAni=true);
+    try{
+      await CommerceService.confirmAlAniReceived(id);
+      if(!mounted)return;
+      _refresh();
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+        content:Text('تم توثيق تأكيد الاستلام في سجل الطلب.')));
+    }catch(_){
+      if(mounted)ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+        content:Text('لم يتأكد الاستلام من الخادم. تحقق من الحالة أو الاتصال.')));
+    }finally{
+      if(mounted)setState(()=>_processingAlAni=false);
+    }
+  }
+
+  Future<void> _requestAlAniReturn(String id) async {
+    if(_processingAlAni)return;
+    String reason='damaged';
+    final details=TextEditingController();
+    final accept=await showDialog<bool>(
+      context:context,
+      builder:(dialogContext)=>StatefulBuilder(
+        builder:(ctx,update)=>AlertDialog(
+          title:const Text('طلب استرجاع أو شكوى توصيل'),
+          content:SingleChildScrollView(child:Column(
+            mainAxisSize:MainAxisSize.min,children:[
+              DropdownButtonFormField<String>(
+                initialValue:reason,
+                items:const [
+                  DropdownMenuItem(value:'damaged',child:Text('منتج تالف')),
+                  DropdownMenuItem(value:'wrong_item',child:Text('منتج مختلف')),
+                  DropdownMenuItem(value:'defective',child:Text('عيب في المنتج')),
+                  DropdownMenuItem(value:'change_mind',child:Text('تغيير الرأي')),
+                  DropdownMenuItem(value:'delivery_issue',child:Text('مشكلة توصيل')),
+                ],
+                onChanged:(value)=>update(()=>reason=value??reason),
+              ),
+              const SizedBox(height:12),
+              TextField(controller:details,maxLines:4,maxLength:2000,
+                decoration:const InputDecoration(
+                  labelText:'اشرح المشكلة (١٥ حرفاً على الأقل)',
+                  border:OutlineInputBorder())),
+              const Text('الطلب يذهب للمراجعة ولا يعني استرداد المال تلقائياً.',
+                style:TextStyle(fontSize:12)),
+            ],
+          )),
+          actions:[
+            TextButton(onPressed:()=>Navigator.pop(ctx,false),
+              child:const Text('رجوع')),
+            FilledButton(onPressed:()=>Navigator.pop(ctx,true),
+              child:const Text('إرسال الطلب')),
+          ],
+        ),
+      ),
+    );
+    final description=details.text.trim();
+    details.dispose();
+    if(accept!=true||!mounted)return;
+    if(description.length<15){
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+        content:Text('اشرح سبب الاسترجاع أو الشكوى بالتفصيل.')));
+      return;
+    }
+    setState(()=>_processingAlAni=true);
+    try{
+      await CommerceService.requestAlAniReturn(
+        orderId:id,reason:reason,details:description);
+      if(!mounted)return;
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+        content:Text('تم تسجيل طلب المراجعة. لا يوجد استرداد تلقائي.')));
+    }catch(_){
+      if(mounted)ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+        content:Text('تعذر إرسال الطلب. تحقق من تفعيل خدمة الاسترجاع.')));
+    }finally{
+      if(mounted)setState(()=>_processingAlAni=false);
+    }
+  }
+
   String _status(String value) {
     switch (value) {
       case 'placed': return 'بانتظار موافقة المتجر';
       case 'accepted': return 'قبله المتجر';
       case 'preparing': return 'جاري التحضير';
       case 'ready': return 'جاهز للتسليم';
+      case 'delivered': return 'تم التسليم';
       case 'rejected': return 'رفضه المتجر';
       case 'cancelled': return 'ملغي';
       default: return value;
@@ -442,7 +539,7 @@ class _OrderHistoryPageState extends State<OrderHistoryPage> {
           for (final choice in const <String, String>{
             'all':'الكل', 'placed':'جديدة',
             'accepted':'مقبولة', 'preparing':'قيد التجهيز',
-            'ready':'جاهزة', 'cancelled':'ملغاة',
+            'ready':'جاهزة', 'delivered':'تم التسليم', 'cancelled':'ملغاة',
             'rejected':'مرفوضة',
           }.entries)
             ChoiceChip(
@@ -491,9 +588,22 @@ class _OrderHistoryPageState extends State<OrderHistoryPage> {
                   isThreeLine: true,
                   trailing: order['status'] == 'placed'
                       ? TextButton(
-                          onPressed: () => _cancel(order['id'] as String),
+                          onPressed: _processingAlAni ? null :
+                            () => _cancel(order['id'] as String),
                           child: const Text('إلغاء'))
-                      : const Icon(Icons.receipt_long_outlined),
+                      : (order['store_id']==AlAniSettings.storeId &&
+                         order['status']=='ready')
+                        ? TextButton(
+                            onPressed:_processingAlAni?null:
+                              () => _confirmReceived(order['id'] as String),
+                            child:const Text('تأكيد الاستلام'))
+                        : (order['store_id']==AlAniSettings.storeId &&
+                           order['status']=='delivered')
+                          ? TextButton(
+                              onPressed:_processingAlAni?null:
+                                () => _requestAlAniReturn(order['id'] as String),
+                              child:const Text('استرجاع / شكوى'))
+                          : const Icon(Icons.receipt_long_outlined),
                 ),
               ),
             ]);

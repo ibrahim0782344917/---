@@ -117,3 +117,13 @@ test('cash checkout never opens before shipping-inclusive totals are verified', 
   assert.equal(checkoutAllowed({ALANI_CHECKOUT_ENABLED:'true',
     ALANI_DELIVERY_TOTALS_VERIFIED:'true'}),true);
 });
+
+
+test('public catalog endpoint must never request merchant private phone', async () => {
+  const fs = await import('node:fs/promises');
+  const source = await fs.readFile(new URL('../server.js', import.meta.url), 'utf8');
+  const catalogSource = source.slice(source.indexOf('async function publicShop()'),
+    source.indexOf('async function publications('));
+  assert.ok(catalogSource.includes('select=id,name,area'));
+  assert.ok(!catalogSource.includes(',phone,'));
+});
