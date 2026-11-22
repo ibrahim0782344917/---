@@ -3,7 +3,7 @@ set role authenticated;
 select set_config('request.jwt.claim.sub',
  '00000000-0000-4000-8000-000000000001', false);
 select set_config('fixture.customer_deletion_id',
- public.shitreed_customer_request_deletion('حذف حساب تجريبي'), false);
+ public.shitreed_customer_request_deletion('حذف حساب تجريبي')::text, false);
 do $$
 declare v_id uuid;
 begin
@@ -44,7 +44,7 @@ end $$;
 select set_config('request.jwt.claim.sub',
  '00000000-0000-4000-8000-000000000002', false);
 select set_config('fixture.merchant_deletion_id',
- public.shitreed_merchant_request_deletion('أريد إغلاق حساب المتجر'), false);
+ public.shitreed_merchant_request_deletion('أريد إغلاق حساب المتجر')::text, false);
 do $$
 begin
  if public.shitreed_merchant_request_deletion('طلب متكرر')
