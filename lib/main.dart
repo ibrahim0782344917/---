@@ -7,6 +7,7 @@ import 'package:shitreed_customer/commerce/customer_commerce_pages.dart';
 import 'package:shitreed_customer/merchant/merchant_dashboard.dart';
 import 'package:shitreed_customer/chat/customer_chat_pages.dart';
 import 'package:shitreed_customer/finance/customer_wallet_page.dart';
+import 'package:shitreed_customer/account/customer_delete_account_page.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -664,6 +665,13 @@ class _CustomerHomeState extends State<CustomerHome> {
         },
         icon: const Icon(Icons.logout),
         label: const Text('تسجيل الخروج'),
+      ),
+      const SizedBox(height: 12),
+      OutlinedButton.icon(
+        onPressed: () => Navigator.of(context).push<void>(
+          MaterialPageRoute(builder: (_) => const CustomerDeleteAccountPage())),
+        icon: const Icon(Icons.person_remove_outlined),
+        label: const Text('طلب حذف حسابي وبياناتي'),
       ),
     ]);
   }
