@@ -253,7 +253,7 @@ begin
          and tablename='shitreed_chat_messages'
      )
   then
-    alter publication supabase_realtime add table public.shitreed_chat_messages;
+    execute 'alter publication supabase_realtime add table public.shitreed_chat_messages';
   end if;
 end; $;
 
