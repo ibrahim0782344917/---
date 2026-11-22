@@ -72,6 +72,7 @@ void main() {
       await tester.scrollUntilVisible(
         find.widgetWithText(FilledButton, 'إرسال طلب حذف حسابي'),
         130,
+        scrollable: find.byType(Scrollable).first,
       );
       await tester.pumpAndSettle();
       expect(tester.takeException(), isNull);
