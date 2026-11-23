@@ -19,6 +19,10 @@ class CommerceCart extends ChangeNotifier {
   int get count => _items.values.fold(0, (v, line) => v + line.quantity);
   int get totalIqd => _items.values.fold(
       0, (v, line) => v + line.product.priceIqd * line.quantity);
+  /// Client quote only; the PostgreSQL checkout RPC calculates the final fee.
+  static const int deliveryFeeIqd = 5000;
+  int get totalWithDeliveryIqd =>
+      _items.isEmpty ? 0 : totalIqd + deliveryFeeIqd;
   String? get storeId =>
       _items.isEmpty ? null : _items.values.first.product.storeId;
 
@@ -214,7 +218,7 @@ class CommerceService {
   static Future<List<Map<String, dynamic>>> myOrders() async {
     final uid = _myUserId;
     return _db.from('orders')
-        .select('id,store_id,status,total_iqd,created_at,payment_method')
+        .select('id,store_id,status,total_iqd,delivery_fee_iqd,created_at,payment_method')
         .eq('buyer_id', uid).order('created_at', ascending: false).limit(60);
   }
 
@@ -222,7 +226,7 @@ class CommerceService {
       String storeId) async {
     if (_myUserId.isEmpty) throw StateError('LOGIN_REQUIRED');
     return _db.from('orders')
-        .select('id,store_id,status,total_iqd,created_at,delivery_address,phone,notes')
+        .select('id,store_id,status,total_iqd,delivery_fee_iqd,created_at,delivery_address,phone,notes')
         .eq('store_id', storeId).order('created_at', ascending: false).limit(60);
   }
 
