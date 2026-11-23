@@ -30,10 +30,13 @@ async function liveCheckoutReady() {
 }
 const RETURNS_ENABLED = process.env.ALANI_RETURNS_ENABLED === 'true';
 const SOCIAL_ENABLED = process.env.ALANI_SOCIAL_ENABLED === 'true';
-const OFFERS_ENABLED =
-  process.env.SHITREED_CAMPAIGNS_ENABLED === 'true' &&
-  (SB_URL === 'https://tgvdwotbrnhcoykuxdpr.supabase.co' ||
-    process.env.ALANI_CAMPAIGNS_PRODUCTION_APPROVED === 'true');
+export function offersAllowed(env) {
+  const url = (env.SUPABASE_URL || '').replace(/\\/+$/, '');
+  return env.SHITREED_CAMPAIGNS_ENABLED === 'true' &&
+    (url === 'https://tgvdwotbrnhcoykuxdpr.supabase.co' ||
+     env.ALANI_CAMPAIGNS_PRODUCTION_APPROVED === 'true');
+}
+const OFFERS_ENABLED = offersAllowed(process.env);
 const root = join(dirname(fileURLToPath(import.meta.url)), 'public');
 const uuid = /^[a-f0-9]{8}-[a-f0-9]{4}-[1-8][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i;
 const staticRoutes = {
