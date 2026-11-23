@@ -1,0 +1,44 @@
+name: Al-Ani moderated social feed - isolated PostgreSQL
+on:
+  push:
+    branches:
+      - feature/alani-final-release-content-20261122
+  pull_request:
+    paths:
+      - 'docs/ALANI_SOCIAL_INTERACTIONS_STAGE_20261122.sql'
+      - 'tests/alani_social_*.sql'
+      - '.github/workflows/alani-social-content-test.yml'
+permissions:
+  contents: read
+jobs:
+  social-rls:
+    runs-on: ubuntu-latest
+    timeout-minutes: 13
+    steps:
+      - uses: actions/checkout@v4
+      - name: Test social permissions using disposable PostgreSQL 17
+        shell: bash
+        run: |
+          set -euo pipefail
+          docker run -d --name alani-social-pg -e POSTGRES_PASSWORD=test-only \
+            -e POSTGRES_DB=alani_social_test postgres:17-alpine >/dev/null
+          trap 'docker rm -f alani-social-pg >/dev/null 2>&1 || true' EXIT
+          READY=false
+          for i in $(seq 1 60); do
+            if docker logs alani-social-pg 2>&1 | grep -q \
+               'PostgreSQL init process complete; ready for start up' &&
+               docker exec alani-social-pg psql -X -qAt -U postgres \
+                -d alani_social_test -c 'select 1' 2>/dev/null | grep -qx 1; then
+              READY=true; break
+            fi
+            sleep 1
+          done
+          test "$READY" = true
+          cat tests/alani_content_rls_prelude.sql \
+            tests/alani_social_auth_fixture.sql \
+            docs/ALANI_CONTENT_SCHEMA_ACTIVATION_20261122.sql \
+            docs/ALANI_SOCIAL_INTERACTIONS_STAGE_20261122.sql \
+            tests/alani_social_rls_checks.sql | \
+            docker exec -i alani-social-pg psql -X -v ON_ERROR_STOP=1 \
+              -U postgres -d alani_social_test
+          echo 'PASS: all writes isolated, production never touched'

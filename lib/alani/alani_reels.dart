@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:shitreed_customer/alani/alani_social.dart';
 import 'package:shitreed_customer/alani/alani_content.dart';
 import 'package:shitreed_customer/alani/alani_video.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -109,6 +110,7 @@ class _AlAniReelTileState extends State<AlAniReelTile>
   VideoPlayerController? _controller;
   bool _loading = false;
   bool _failed = false;
+  bool _external = false;
 
   @override
   void initState() {
@@ -118,17 +120,26 @@ class _AlAniReelTileState extends State<AlAniReelTile>
   }
 
   Future<void> _start() async {
+    if (_loading || !mounted) return;
     final url = Uri.tryParse(widget.publication.videoUrl ?? '');
     if (!isDirectMediaUrl(url)) {
-      if (mounted) setState(() => _failed = true);
+      // TikTok/YouTube page URLs cannot be decoded by video_player.
+      // Show a real external link instead of a misleading playback error.
+      final externalLink = url != null && url.scheme == 'https' &&
+          url.host.isNotEmpty;
+      setState(() { _external = externalLink; _failed = !externalLink; });
       return;
     }
-    if (_controller != null) {
-      await _controller!.play();
+    if (_controller != null && _controller!.value.isInitialized) {
+      if (widget.active) await _controller!.play();
       if (mounted) setState(() {});
       return;
     }
-    setState(() { _loading = true; _failed = false; });
+    if (_controller != null) {
+      await _controller!.dispose();
+      _controller = null;
+    }
+    setState(() { _loading = true; _failed = false; _external = false; });
     final player = VideoPlayerController.networkUrl(url!);
     _controller = player;
     try {
@@ -164,6 +175,23 @@ class _AlAniReelTileState extends State<AlAniReelTile>
     super.dispose();
   }
 
+  Future<void> _openExternal() async {
+    final url = Uri.tryParse(widget.publication.videoUrl ?? '');
+    if (url == null || url.scheme != 'https' || url.host.isEmpty) return;
+    try {
+      final opened = await launchUrl(url, mode: LaunchMode.externalApplication);
+      if (!opened && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text('تعذّر فتح الفيديو الخارجي.')));
+      }
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text('تعذّر فتح رابط الفيديو.')));
+      }
+    }
+  }
+
   Future<void> _toggle() async {
     final player = _controller;
     if (player == null || !player.value.isInitialized) return;
@@ -196,6 +224,22 @@ class _AlAniReelTileState extends State<AlAniReelTile>
           ),
         if (_loading)
           const Center(child: CircularProgressIndicator(color: Colors.white)),
+        if (_external)
+          Center(child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24),
+            child: Column(mainAxisSize: MainAxisSize.min, children: [
+              const Icon(Icons.open_in_new, color: Colors.white, size: 52),
+              const SizedBox(height: 12),
+              const Text('هذا المقطع منشور على منصة خارجية.',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: Colors.white, fontSize: 17)),
+              const SizedBox(height: 10),
+              FilledButton.icon(
+                onPressed: _openExternal,
+                icon: const Icon(Icons.play_arrow),
+                label: const Text('فتح الفيديو خارج التطبيق')),
+            ]),
+          )),
         if (_failed)
           Center(child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -203,12 +247,7 @@ class _AlAniReelTileState extends State<AlAniReelTile>
               const Text('تعذّر تشغيل الريل هنا.',
                 style: TextStyle(color: Colors.white)),
               TextButton(
-                onPressed: () async {
-                  final url = Uri.tryParse(widget.publication.videoUrl ?? '');
-                  if (url != null && url.scheme == 'https') {
-                    await launchUrl(url, mode: LaunchMode.externalApplication);
-                  }
-                },
+                onPressed: _openExternal,
                 child: const Text('فتح الفيديو خارج التطبيق'),
               ),
             ],
@@ -219,6 +258,18 @@ class _AlAniReelTileState extends State<AlAniReelTile>
             color: Colors.white.withValues(alpha: 0.75),
             size: 72,
           ))),
+        PositionedDirectional(end: 8, bottom: 120,
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 300),
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                color: Colors.black54,
+                borderRadius: BorderRadius.circular(12)),
+              child: AlAniSocialActions(
+                publicationId: widget.publication.id, dark: true),
+            ),
+          ),
+        ),
         PositionedDirectional(
           start: 14, end: 14, bottom: 32,
           child: IgnorePointer(child: Column(

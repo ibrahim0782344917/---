@@ -6,6 +6,7 @@ on:
       - release/shitreed-production-readiness-20261114
       - feature/alani-unified-admin-20261118
       - feature/shitreed-alani-three-app-suite-20261118
+      - feature/alani-final-release-content-20261122
   pull_request:
     paths:
       - '.github/workflows/shitreed-three-app-readiness.yml'
@@ -30,6 +31,12 @@ env:
   SHITREED_SUPABASE_PUBLISHABLE_KEY: sb_publishable_Tao4VcnXR93Ne9KUBJ76tg_o-Pmd75_
 
 jobs:
+  branding-validation:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify native icon and branding generator
+        run: python3 -m unittest discover -s tests -p test_alani_branding.py
   customer:
     name: Customer Android - verify and preview APK
     runs-on: ubuntu-latest
@@ -53,6 +60,8 @@ jobs:
           else
             python3 scripts/configure_android_maps.py
           fi
+      - name: Apply Al-Ani branded Android launcher icon
+        run: python3 scripts/configure_alani_icon.py . customer
       - name: Use preinstalled NDK for customer debug preview only
         run: python3 merchant_app/scripts/use_runner_ndk.py
       - run: flutter pub get
@@ -104,6 +113,8 @@ jobs:
         run: flutter create --org com.shitreed --project-name shitreed_merchant --platforms android .
       - name: Set network permission
         run: python3 scripts/configure_android.py
+      - name: Apply Al-Ani branded Android launcher icon
+        run: python3 ../scripts/configure_alani_icon.py . merchant
       - name: Use runner NDK for debug preview (avoid network download)
         run: python3 scripts/use_runner_ndk.py
       - run: flutter pub get
@@ -154,12 +165,14 @@ jobs:
           p=Path("android/app/src/main/AndroidManifest.xml")
           s=p.read_text()
           s=s.replace('android:label="shitreed_admin"',
-            'android:label="إدارة شتريد والعاني"')
+            'android:label="السيد إبراهيم العاني - الإدارة"')
           if 'android.permission.INTERNET' not in s:
               s=s.replace('<application',
                   '<uses-permission android:name="android.permission.INTERNET" />\n    <application',1)
           p.write_text(s)
           PY
+      - name: Apply Al-Ani branded Android launcher icon
+        run: python3 ../scripts/configure_alani_icon.py . admin
       - name: Remove generated template test
         run: rm -f test/widget_test.dart
       - run: flutter pub get

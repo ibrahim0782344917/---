@@ -29,6 +29,53 @@ void main() {
     expect(isDirectMediaUrl(Uri.parse('http://example.org/video.mp4')), isFalse);
   });
 
+  testWidgets('TikTok reels show an external platform link rather than a playback failure',
+      (tester) async {
+    const tiktok = AlAniPublication(
+      id: 'example-tiktok', kind: 'video', title: 'مقطع توضيحي',
+      body: 'هذا الفيديو مستضاف خارج التطبيق',
+      videoUrl: 'https://vt.tiktok.com/ZTest/',
+      ingredients: '', safetyNote: '',
+    );
+    await tester.pumpWidget(const MaterialApp(
+      home: Scaffold(body: AlAniReelTile(publication: tiktok, active: true)),
+    ));
+    await tester.pumpAndSettle();
+    expect(find.text('هذا المقطع منشور على منصة خارجية.'), findsOneWidget);
+    expect(find.text('فتح الفيديو خارج التطبيق'), findsOneWidget);
+    expect(find.text('تعذّر تشغيل الريل هنا.'), findsNothing);
+  });
+
+  testWidgets('recipe content displays its ingredients and safety note',
+      (tester) async {
+    const recipe = AlAniPublication(
+      id: 'recipe-1', kind: 'recipe', title: 'وصفة تجريبية',
+      body: 'طريقة التحضير للتجربة', ingredients: 'زيت وعسل',
+      safetyNote: 'للتثقيف فقط',
+    );
+    await tester.pumpWidget(const MaterialApp(
+      home: AlAniPublicationPage(item: recipe),
+    ));
+    await tester.pumpAndSettle();
+    expect(find.text('وصفة تجريبية'), findsOneWidget);
+    expect(find.text('زيت وعسل'), findsOneWidget);
+    expect(find.text('تنبيه: للتثقيف فقط'), findsOneWidget);
+  });
+
+  testWidgets('article content shows its published text',
+      (tester) async {
+    const article = AlAniPublication(
+      id: 'article-1', kind: 'article', title: 'مقال تعريفي',
+      body: 'معلومات عن المنتجات', ingredients: '', safetyNote: '',
+    );
+    await tester.pumpWidget(const MaterialApp(
+      home: AlAniPublicationPage(item: article),
+    ));
+    await tester.pumpAndSettle();
+    expect(find.text('مقال تعريفي'), findsOneWidget);
+    expect(find.text('معلومات عن المنتجات'), findsOneWidget);
+  });
+
   test('gallery upload rejects non-MP4, empty and oversized videos', () {
     expect(AlAniGalleryVideos.validationError('clip.mp4', 20), isNull);
     expect(AlAniGalleryVideos.validationError('clip.MP4', 20), isNull);

@@ -146,3 +146,20 @@ test('outside-app account deletion page is available', async () => {
   assert.match(html,/طلب حذف الحساب/);
   assert.match(html,/delete-account.js/);
 });
+
+test('social feed is disabled safely until database approval',async()=>{
+  const response=await fetch(root+'/api/social/activity?id=00000000-0000-4000-8000-000000000001');
+  assert.equal(response.status,200);
+  const body=await response.json();
+  assert.equal(body.enabled,false);
+  const write=await fetch(root+'/api/social/action',{
+    method:'POST',headers:{'content-type':'application/json'},
+    body:JSON.stringify({publicationId:'00000000-0000-4000-8000-000000000001',
+      action:'like'})});
+  assert.equal(write.status,503);
+});
+test('social admin API never allows visitors to moderate',async()=>{
+  const res=await fetch(root+'/api/admin/social',{
+    method:'POST',headers:{'content-type':'application/json'},body:'{}'});
+  assert.equal(res.status,401);
+});

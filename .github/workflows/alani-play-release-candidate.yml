@@ -82,13 +82,16 @@ jobs:
           from pathlib import Path
           p=Path("android/app/src/main/AndroidManifest.xml")
           text=p.read_text().replace('android:label="shitreed_admin"',
-            'android:label="إدارة شتريد والعاني"')
+            'android:label="السيد إبراهيم العاني - الإدارة"')
           if 'android.permission.INTERNET' not in text:
               text=text.replace('<application',
                 '<uses-permission android:name="android.permission.INTERNET" />\n    <application',1)
           p.write_text(text)
           PY
           fi
+      - name: Apply branded launcher icon to selected app
+        shell: bash
+        run: python3 "$GITHUB_WORKSPACE/scripts/configure_alani_icon.py" "$APP_PATH" "${{ inputs.application }}"
       - name: Apply upload-key signing for RELEASE (no debug key)
         shell: bash
         env:
