@@ -9,6 +9,7 @@ import 'package:shitreed_customer/alani/catalog_filters.dart';
 import 'package:shitreed_customer/alani/alani_pages.dart';
 import 'package:shitreed_customer/alani/alani_cart.dart';
 import 'package:shitreed_customer/alani/alani_campaign_banner.dart';
+import 'package:shitreed_customer/alani/alani_offers_page.dart';
 import 'package:shitreed_customer/profile/shitreed_profile_page.dart';
 import 'package:shitreed_customer/alani/alani_branch.dart';
 import 'package:shitreed_customer/auth/customer_auth_page.dart';
@@ -324,6 +325,18 @@ class _AlAniShopHomeState extends State<AlAniShopHome> {
         ),
         const SizedBox(height: 20),
         const AlAniCampaignBanner(),
+        Card(
+          color: const Color(0xFFE5F9ED),
+          child: ListTile(
+            leading: const Icon(Icons.local_offer_outlined, color: _pine),
+            title: const Text('عروض لفترة محدودة',
+              style: TextStyle(fontWeight: FontWeight.w800)),
+            subtitle: const Text('شاهد العروض النشطة والوقت المتبقي'),
+            trailing: const Icon(Icons.chevron_left),
+            onTap: () => Navigator.of(context).push<void>(
+              MaterialPageRoute(builder: (_) => const AlAniOffersPage())),
+          ),
+        ),
         _heading('تسوق حسب القسم'),
         const SizedBox(height: 10),
         SingleChildScrollView(
