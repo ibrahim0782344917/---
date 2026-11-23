@@ -263,11 +263,15 @@ class _LiveCartPageState extends State<LiveCartPage> {
             label: const Text('إفراغ السلة'),
           ),
           const SizedBox(height: 14),
-          Text('المجموع: ' + priceText(cart.totalIqd),
+          Text('مجموع المنتجات: ' + priceText(cart.totalIqd)),
+          const SizedBox(height: 5),
+          Text('رسوم التوصيل: ' + priceText(CommerceCart.deliveryFeeIqd)),
+          const SizedBox(height: 5),
+          Text('الإجمالي عند الاستلام: ' + priceText(cart.totalWithDeliveryIqd),
             style: const TextStyle(
               fontSize: 20, fontWeight: FontWeight.w900, color: _purple)),
           const SizedBox(height: 6),
-          const Text('المجموع يُعاد حسابه من قاعدة البيانات وقت الطلب.',
+          const Text('يعتمد السعر النهائي على حساب الخادم وقت تأكيد الطلب.',
             style: TextStyle(color: Colors.black54, fontSize: 12)),
           const SizedBox(height: 16),
           TextField(
@@ -335,12 +339,78 @@ class _OrderHistoryPageState extends State<OrderHistoryPage> {
     }
   }
 
+  Future<void> _confirmReceipt(String id) async {
+    final yes = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('تأكيد استلام الطلب'),
+        content: const Text('أكد فقط إذا وصل الطلب إليك بالفعل.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(dialogContext, false),
+              child: const Text('رجوع')),
+          FilledButton(onPressed: () => Navigator.pop(dialogContext, true),
+              child: const Text('استلمت الطلب')),
+        ],
+      ),
+    );
+    if (yes != true) return;
+    try {
+      await CommerceService.confirmReceipt(id);
+      if (!mounted) return;
+      _refresh();
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('تم توثيق تأكيد الاستلام.')));
+    } catch (_) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('تعذر تأكيد الاستلام الآن.')));
+    }
+  }
+
+  Future<void> _requestReturn(String id) async {
+    final controller = TextEditingController();
+    final reason = await showDialog<String>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('طلب استرجاع'),
+        content: TextField(
+          controller: controller, minLines: 2, maxLines: 4, maxLength: 1000,
+          decoration: const InputDecoration(
+            hintText: 'اشرح مشكلة المنتج أو سبب الاسترجاع'),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(dialogContext),
+              child: const Text('إلغاء')),
+          FilledButton(onPressed: () =>
+              Navigator.pop(dialogContext, controller.text.trim()),
+              child: const Text('إرسال للمراجعة')),
+        ],
+      ),
+    );
+    controller.dispose();
+    if (!mounted || reason == null) return;
+    if (reason.length < 10) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+        content: Text('اكتب سبب واضح لا يقل عن 10 أحرف.')));
+      return;
+    }
+    try {
+      await CommerceService.requestReturn(id, reason);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+        content: Text('تم إرسال طلب الاسترجاع للمراجعة، بدون تحويل مالي.')));
+    } catch (_) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+        content: Text('تعذر الطلب. تأكد من مهلة الاسترجاع وعدم تكراره.')));
+    }
+  }
+
   String _status(String value) {
     switch (value) {
       case 'placed': return 'بانتظار موافقة المتجر';
       case 'accepted': return 'قبله المتجر';
       case 'preparing': return 'جاري التحضير';
       case 'ready': return 'جاهز للتسليم';
+      case 'delivered': return 'تم الاستلام';
       case 'rejected': return 'رفضه المتجر';
       case 'cancelled': return 'ملغي';
       default: return value;
@@ -412,7 +482,15 @@ class _OrderHistoryPageState extends State<OrderHistoryPage> {
                       ? TextButton(
                           onPressed: () => _cancel(order['id'] as String),
                           child: const Text('إلغاء'))
-                      : const Icon(Icons.receipt_long_outlined),
+                      : order['status'] == 'ready'
+                        ? TextButton(
+                            onPressed: () => _confirmReceipt(order['id'] as String),
+                            child: const Text('استلمت'))
+                        : order['status'] == 'delivered'
+                          ? TextButton(
+                              onPressed: () => _requestReturn(order['id'] as String),
+                              child: const Text('استرجاع'))
+                          : const Icon(Icons.receipt_long_outlined),
                 ),
               ),
             ]);

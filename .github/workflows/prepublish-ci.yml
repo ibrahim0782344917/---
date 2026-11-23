@@ -1,0 +1,34 @@
+name: Shitreed prepublish checks (never deploy)
+on:
+  push:
+    branches:
+      - work/prepublish-functional-completion
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  flutter-test-and-debug:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - name: Generate local Android scaffolding
+        run: flutter create --platforms android --project-name shitreed_customer .
+      - name: Install dependencies
+        run: flutter pub get
+      - name: Run widget and business logic tests
+        run: flutter test
+      - name: Build offline debug APK only
+        run: flutter build apk --debug
+      - uses: actions/upload-artifact@v4
+        with:
+          name: shitreed-offline-prepublish-debug
+          path: build/app/outputs/flutter-apk/app-debug.apk
+          if-no-files-found: error
