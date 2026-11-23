@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:http/http.dart' as http;
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 /// Both app-side approval and trusted server readiness must be true.
 /// GitHub debug builds default to no live checkout; a successful Flutter build
@@ -8,10 +9,17 @@ import 'package:http/http.dart' as http;
 class AlAniCheckoutReadiness {
   const AlAniCheckoutReadiness._();
 
-  static const bool clientApproved =
-      bool.fromEnvironment('ALANI_CHECKOUT_ENABLED', defaultValue: false) &&
-      bool.fromEnvironment('ALANI_DELIVERY_TOTALS_VERIFIED',
-          defaultValue: false);
+  // Only the isolated shitreed-test database may enable mobile COD testing.
+  // Production releases retain the existing fail-closed approval checks.
+  static const String _testUrl = 'https://tgvdwotbrnhcoykuxdpr.supabase.co';
+  static const bool testMode =
+      bool.fromEnvironment('ALANI_TEST_CHECKOUT_ENABLED', defaultValue: false) &&
+      String.fromEnvironment('SUPABASE_URL') == _testUrl;
+
+  static const bool clientApproved = testMode ||
+      (bool.fromEnvironment('ALANI_CHECKOUT_ENABLED', defaultValue: false) &&
+       bool.fromEnvironment('ALANI_DELIVERY_TOTALS_VERIFIED',
+          defaultValue: false));
 
   // Release builds must explicitly set their approved API URL.
   static const String apiBase = String.fromEnvironment(
@@ -28,6 +36,18 @@ class AlAniCheckoutReadiness {
 
   static Future<bool> checkServer({http.Client? client}) async {
     if (!clientApproved) return false;
+    if (testMode) {
+      // Do not query Railway staging: that service is connected to production.
+      // A read-only check of the actual test store prevents false green lights.
+      try {
+        final db = Supabase.instance.client;
+        final rows = await db.from('stores').select('id')
+            .eq('id', storeId).eq('status', 'approved').limit(1);
+        return rows.isNotEmpty;
+      } catch (_) {
+        return false;
+      }
+    }
     final uri = Uri.tryParse('$apiBase/api/config');
     if (uri == null || uri.scheme != 'https' || uri.userInfo.isNotEmpty ||
         uri.host.isEmpty) {
