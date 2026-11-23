@@ -263,11 +263,15 @@ class _LiveCartPageState extends State<LiveCartPage> {
             label: const Text('إفراغ السلة'),
           ),
           const SizedBox(height: 14),
-          Text('المجموع: ' + priceText(cart.totalIqd),
+          Text('مجموع المنتجات: ' + priceText(cart.totalIqd)),
+          const SizedBox(height: 5),
+          Text('رسوم التوصيل: ' + priceText(CommerceCart.deliveryFeeIqd)),
+          const SizedBox(height: 5),
+          Text('الإجمالي عند الاستلام: ' + priceText(cart.totalWithDeliveryIqd),
             style: const TextStyle(
               fontSize: 20, fontWeight: FontWeight.w900, color: _purple)),
           const SizedBox(height: 6),
-          const Text('المجموع يُعاد حسابه من قاعدة البيانات وقت الطلب.',
+          const Text('يعتمد السعر النهائي على حساب الخادم وقت تأكيد الطلب.',
             style: TextStyle(color: Colors.black54, fontSize: 12)),
           const SizedBox(height: 16),
           TextField(
