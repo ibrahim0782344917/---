@@ -31,7 +31,8 @@ async function liveCheckoutReady() {
 const RETURNS_ENABLED = process.env.ALANI_RETURNS_ENABLED === 'true';
 const SOCIAL_ENABLED = process.env.ALANI_SOCIAL_ENABLED === 'true';
 export function offersAllowed(env) {
-  const url = (env.SUPABASE_URL || '').replace(new RegExp('/+
+  const source = env.SUPABASE_URL || '';
+  const url = source.endsWith('/') ? source.slice(0, -1) : source;
   return env.SHITREED_CAMPAIGNS_ENABLED === 'true' &&
     (url === 'https://tgvdwotbrnhcoykuxdpr.supabase.co' ||
      env.ALANI_CAMPAIGNS_PRODUCTION_APPROVED === 'true');
