@@ -112,10 +112,67 @@ class _AlAniShopHomeState extends State<AlAniShopHome> {
         label: 'السلة',
         onPressed: () {
           messenger.removeCurrentSnackBar();
-          if (mounted) setState(() => _tab = 4);
+          if (mounted) _openCart();
         },
       ) : null,
     ));
+  }
+
+  void _openCart() {
+    Navigator.of(context).push<void>(MaterialPageRoute(
+      builder: (_) => const Scaffold(
+        appBar: _CartAppBar(),
+        body: AlAniCartPage(),
+      ),
+    ));
+  }
+
+  Future<void> _openContentHub() async {
+    await showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      builder: (sheetContext) => SafeArea(child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(mainAxisSize: MainAxisSize.min, children: [
+          const Text('استكشف المحتوى', style: TextStyle(
+            fontSize: 20, fontWeight: FontWeight.w800)),
+          ListTile(
+            leading: const Icon(Icons.smart_display_outlined),
+            title: const Text('الفيديوهات القصيرة'),
+            subtitle: const Text('اسحب للأعلى للتنقل بين الفيديوهات'),
+            onTap: () {
+              Navigator.pop(sheetContext);
+              setState(() => _tab = 2);
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.article_outlined),
+            title: const Text('المنشورات والمقالات والوصفات'),
+            subtitle: const Text('تصفح المحتوى بترتيب أحدث المنشورات'),
+            onTap: () {
+              Navigator.pop(sheetContext);
+              setState(() => _tab = 3);
+            },
+          ),
+          FutureBuilder<bool>(
+            future: _canEdit,
+            builder: (_, snapshot) => snapshot.data == true
+              ? ListTile(
+                  leading: const Icon(Icons.add_circle_outline),
+                  title: const Text('إنشاء منشور أو فيديو أو وصفة'),
+                  subtitle: const Text('متاح لصاحب المحتوى المصرّح له فقط'),
+                  onTap: () async {
+                    Navigator.pop(sheetContext);
+                    await Navigator.push<void>(context, MaterialPageRoute(
+                      builder: (_) => const AlAniEditorPage()));
+                    if (mounted) await _refresh();
+                  },
+                )
+              : const SizedBox.shrink(),
+          ),
+        ]),
+      )),
+    );
   }
 
   @override
@@ -171,9 +228,24 @@ class _AlAniShopHomeState extends State<AlAniShopHome> {
               icon: const Icon(Icons.receipt_long_outlined),
             ),
             IconButton(
-              tooltip: 'حسابي والبروفايل',
+              tooltip: 'حسابي والأعضاء',
               onPressed: _openProfile,
-              icon: const Icon(Icons.person_outline),
+              icon: const CircleAvatar(radius: 17,
+                child: Icon(Icons.person_outline, size: 21)),
+            ),
+            IconButton(
+              tooltip: 'سلة مشترياتي',
+              onPressed: _openCart,
+              icon: AnimatedBuilder(
+                animation: CommerceCart.instance,
+                builder: (_, __) {
+                  final count = CommerceCart.instance.items.length;
+                  return count > 0
+                    ? Badge.count(count: count,
+                        child: const Icon(Icons.shopping_cart_outlined))
+                    : const Icon(Icons.shopping_cart_outlined);
+                },
+              ),
             ),
           ],
         ),
@@ -184,14 +256,19 @@ class _AlAniShopHomeState extends State<AlAniShopHome> {
             AlAniReelsPanel(publications: _publications, onRefresh: _refresh,
               visible: _tab == 2),
             _contentPanel({'recipe', 'article', 'post'}, 'الوصفات والمدونة'),
-            const AlAniCartPage(),
+            _contentPanel({'recipe', 'article', 'post', 'video'},
+              'كل المنشورات'),
           ]),
         ),
         bottomNavigationBar: NavigationBar(
-          selectedIndex: _tab,
+          selectedIndex: _tab == 2 ? 3 : _tab == 3 ? 4 : _tab,
           onDestinationSelected: (value) {
             ScaffoldMessenger.of(context).hideCurrentSnackBar();
-            setState(() => _tab = value);
+            if (value == 2) {
+              _openContentHub();
+            } else {
+              setState(() => _tab = value == 3 ? 2 : value == 4 ? 3 : value);
+            }
           },
           indicatorColor: const Color(0xFFD5E9DD),
           destinations: const [
@@ -199,12 +276,12 @@ class _AlAniShopHomeState extends State<AlAniShopHome> {
               selectedIcon: Icon(Icons.home), label: 'الرئيسية'),
             NavigationDestination(icon: Icon(Icons.storefront_outlined),
               selectedIcon: Icon(Icons.storefront), label: 'المتجر'),
+            NavigationDestination(icon: Icon(Icons.add_circle_rounded, size: 32),
+              label: 'المزيد +'),
             NavigationDestination(icon: Icon(Icons.play_circle_outline),
-              selectedIcon: Icon(Icons.play_circle), label: 'الفيديو'),
-            NavigationDestination(icon: Icon(Icons.menu_book_outlined),
-              selectedIcon: Icon(Icons.menu_book), label: 'وصفاتي'),
-            NavigationDestination(icon: Icon(Icons.shopping_bag_outlined),
-              selectedIcon: Icon(Icons.shopping_bag), label: 'السلة'),
+              selectedIcon: Icon(Icons.play_circle), label: 'الفيديوهات'),
+            NavigationDestination(icon: Icon(Icons.article_outlined),
+              selectedIcon: Icon(Icons.article), label: 'المنشورات'),
           ],
         ),
       ),
@@ -603,22 +680,47 @@ class _AlAniShopHomeState extends State<AlAniShopHome> {
   );
 
   Widget _publicationCard(AlAniPublication item) => Card(
-    color: Colors.white, elevation: 0, margin: const EdgeInsets.only(bottom: 9),
-    child: ListTile(
-      contentPadding: const EdgeInsets.all(12),
-      leading: CircleAvatar(
-        backgroundColor: const Color(0xFFE5EEE4),
-        child: Icon(_kindIcon(item.kind), color: _pine),
+    color: Colors.white, elevation: 0,
+    margin: const EdgeInsets.only(bottom: 14),
+    clipBehavior: Clip.antiAlias,
+    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+    child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+      ListTile(
+        leading: CircleAvatar(
+          backgroundColor: const Color(0xFFE5EEE4),
+          child: Icon(_kindIcon(item.kind), color: _pine),
+        ),
+        title: const Text('السيد إبراهيم العاني',
+          style: TextStyle(fontWeight: FontWeight.w800)),
+        subtitle: Text(_kindTitle(item.kind)),
+        trailing: const Icon(Icons.more_horiz),
       ),
-      title: Text(item.title, maxLines: 2, overflow: TextOverflow.ellipsis,
-        style: const TextStyle(fontWeight: FontWeight.bold)),
-      subtitle: Text('${_kindTitle(item.kind)} • ${item.body}',
-        maxLines: 2, overflow: TextOverflow.ellipsis),
-      trailing: const Icon(Icons.chevron_left),
-      onTap: () => Navigator.of(context).push<void>(
-        MaterialPageRoute(builder: (_) => AlAniPublicationPage(item: item)),
+      if (item.imageUrl != null && item.imageUrl!.startsWith('https://'))
+        Image.network(item.imageUrl!, height: 210, fit: BoxFit.cover,
+          errorBuilder: (_, __, ___) => const SizedBox.shrink()),
+      Padding(
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text(item.title, style: const TextStyle(
+            fontSize: 19, fontWeight: FontWeight.w800)),
+          const SizedBox(height: 8),
+          Text(item.body, maxLines: 5, overflow: TextOverflow.ellipsis,
+            style: const TextStyle(height: 1.6)),
+          const SizedBox(height: 10),
+          TextButton.icon(
+            onPressed: () => Navigator.of(context).push<void>(
+              MaterialPageRoute(builder: (_) =>
+                AlAniPublicationPage(item: item))),
+            icon: const Icon(Icons.open_in_new),
+            label: const Text('قراءة التفاصيل'),
+          ),
+        ]),
       ),
-    ),
+      const Divider(height: 1),
+      Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+        child: AlAniSocialActions(publicationId: item.id)),
+    ]),
   );
 
   Widget _notice(String message) => Container(
@@ -634,6 +736,15 @@ class _AlAniShopHomeState extends State<AlAniShopHome> {
         style: const TextStyle(color: Colors.black54)),
     ]),
   );
+}
+
+class _CartAppBar extends StatelessWidget implements PreferredSizeWidget {
+  const _CartAppBar();
+  @override
+  Size get preferredSize => const Size.fromHeight(kToolbarHeight);
+  @override
+  Widget build(BuildContext context) => AppBar(
+    title: const Text('سلة مشترياتي'));
 }
 
 class _OrdersAppBar extends StatelessWidget implements PreferredSizeWidget {
