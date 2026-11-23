@@ -1,0 +1,62 @@
+name: Al-Ani global UI/social preview (TEST ONLY, NEVER DEPLOY)
+on:
+  push:
+    branches:
+      - work/alani-global-ui-social-20261123
+  workflow_dispatch:
+permissions:
+  contents: read
+env:
+  TEST_SUPABASE_URL: https://tgvdwotbrnhcoykuxdpr.supabase.co
+  TEST_SUPABASE_PUBLISHABLE_KEY: sb_publishable_LUUtkKZWm3cqIRLQSLM4iQ_puh2ipiY
+jobs:
+  customer-preview:
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: '3.47.9'
+          cache: true
+      - name: Generate test Android and Al-Ani branding
+        run: |
+          flutter create --org com.ibrahimalani --project-name shitreed_customer --platforms android .
+          python3 scripts/configure_android_maps.py
+          python3 scripts/configure_alani_icon.py . customer
+          python3 merchant_app/scripts/use_runner_ndk.py
+      - name: Analyze, Flutter widget tests
+        run: |
+          flutter pub get
+          flutter analyze --no-fatal-infos lib test
+          flutter test
+      - name: Android preview, only isolated Supabase test database
+        run: |
+          test "$TEST_SUPABASE_URL" = 'https://tgvdwotbrnhcoykuxdpr.supabase.co'
+          [[ "$TEST_SUPABASE_PUBLISHABLE_KEY" == sb_publishable_* ]]
+          flutter build apk --debug \
+            --dart-define="SUPABASE_URL=$TEST_SUPABASE_URL" \
+            --dart-define="SUPABASE_PUBLISHABLE_KEY=$TEST_SUPABASE_PUBLISHABLE_KEY" \
+            --dart-define="ALANI_SOCIAL_ENABLED=true" \
+            --dart-define="ALANI_TEST_CHECKOUT_ENABLED=true" \
+            --dart-define="ALANI_STORE_ID=25091ca2-c0da-416c-b634-81b188ee66be" \
+            --dart-define="GOOGLE_MAPS_ENABLED=false"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: AlAni-Global-Social-Customer-TEST-APK
+          path: build/app/outputs/flutter-apk/app-debug.apk
+          if-no-files-found: error
+          retention-days: 14
+  website-quality:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Lint and test website (no deploy)
+        working-directory: alani_site
+        run: |
+          npm run check
+          NODE_ENV=test npm test
