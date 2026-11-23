@@ -43,6 +43,8 @@ const staticRoutes = {
   '/delete-account.js':'delete-account.js',
   '/site.css':'site.css', '/site.js':'site.js', '/admin.js':'admin.js',
   '/info.js':'info.js','/menu.js':'menu.js',
+  '/offers':'offers.html','/offers.html':'offers.html',
+  '/offers.js':'offers.js','/offers.css':'offers.css',
   '/welcome':'info.html','/about-us':'info.html',
   '/payment-policy':'info.html','/return-policy':'info.html',
   '/return-request':'info.html','/broken-product':'info.html',
