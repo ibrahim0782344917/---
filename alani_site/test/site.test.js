@@ -170,7 +170,7 @@ test('time-limited offers static page and assets exist', async()=>{
   for(const path of ['/offers.js','/offers.css']){
     assert.equal((await fetch(root+path)).status,200);
   }
-  assert.match(await (await fetch(root+'/')).text(),/href="\\/offers"/);
+  assert.ok((await (await fetch(root+'/')).text()).includes('href="/offers"'));
 });
 test('public offers stay disabled until explicitly approved',async()=>{
   const r=await fetch(root+'/api/offers');
