@@ -6,6 +6,11 @@ ALTER TABLE public.orders
 ALTER TABLE public.orders DROP CONSTRAINT IF EXISTS orders_status_check;
 ALTER TABLE public.orders ADD CONSTRAINT orders_status_check
   CHECK (status = ANY(ARRAY['placed','accepted','preparing','ready','delivered','rejected','cancelled']));
+ALTER TABLE public.order_status_history
+  DROP CONSTRAINT IF EXISTS order_status_history_new_status_check;
+ALTER TABLE public.order_status_history
+  ADD CONSTRAINT order_status_history_new_status_check
+  CHECK (new_status = ANY(ARRAY['placed','accepted','preparing','ready','delivered','rejected','cancelled']));
 
 CREATE TABLE IF NOT EXISTS public.return_requests (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
