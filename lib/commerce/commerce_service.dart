@@ -251,6 +251,36 @@ class CommerceService {
     return rows;
   }
 
+  /// Buyer acknowledgment of receipt; does not imply financial settlement.
+  static Future<void> confirmReceipt(String orderId) async {
+    if (_myUserId.isEmpty) throw StateError('LOGIN_REQUIRED');
+    await _db.rpc('confirm_cash_order_receipt', params: {
+      'p_order_id': orderId,
+    });
+  }
+
+  /// Returns are manually reviewed. No automatic money movement takes place.
+  static Future<String> requestReturn(String orderId, String reason) async {
+    final buyerId = _myUserId;
+    if (reason.trim().length < 10 || reason.trim().length > 1000) {
+      throw ArgumentError('RETURN_REASON_INVALID');
+    }
+    final row = await _db.from('return_requests').insert({
+      'order_id': orderId,
+      'buyer_id': buyerId,
+      'reason': reason.trim(),
+    }).select('id').single();
+    return row['id'] as String;
+  }
+
+  static Future<List<Map<String, dynamic>>> myReturnRequests() async {
+    final buyerId = _myUserId;
+    return _db.from('return_requests')
+        .select('id,order_id,status,created_at,review_notes')
+        .eq('buyer_id',buyerId)
+        .order('created_at',ascending:false);
+  }
+
   static Future<String> changeOrderStatus(String id, String status) async {
     if (_myUserId.isEmpty) throw StateError('LOGIN_REQUIRED');
     final result = await _db.rpc('change_cash_order_status', params: {
