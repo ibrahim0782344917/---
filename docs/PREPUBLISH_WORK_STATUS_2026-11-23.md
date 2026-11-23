@@ -31,3 +31,10 @@ Design is deliberately left open for the project owner to request revisions.
 - Test-only SQL scripts are under `supabase/patches/` and should be reconciled with official migrations.
 - Legacy contact source is sensitive and is not proof of consent to marketing.
 - Finance refunds/returns are manual review records, NOT actual settlements.
+
+## Historical contact staging (separate from authentication)
+- Test-only `private_legacy` schema is installed. No `anon` or `authenticated` privileges.
+- All 48 flagged records have been copied into the protected `private_legacy.review_queue` with `pending` status. Compared every source field to the original workbook using an aggregate hash; all match.
+- Import SQL has been created locally for the separate 4,952 ready contacts, but **not yet executed in Supabase**; staging count remains 0 until a private SQL upload through Termux, with operator-supplied test credentials. This personal-data SQL file must never be committed to GitHub or exposed publicly.
+- Source name quality: 4,418 rows use the literal placeholder «لا», 46 «لا يوجد», and one «0» in the ready dataset; these are **unverified names**, not actual names, and must not become Auth identities.
+- 48 review reasons: 27 shared-phone flags, 13 missing names, 9 non-standard primary phones (categories overlap). No automatic merge, notification or financial-order creation.
