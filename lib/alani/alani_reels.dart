@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:shitreed_customer/alani/alani_social.dart';
 import 'package:shitreed_customer/alani/alani_content.dart';
 import 'package:shitreed_customer/alani/alani_video.dart';
+import 'package:shitreed_customer/alani/alani_embeds.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:video_player/video_player.dart';
 
@@ -207,6 +208,8 @@ class _AlAniReelTileState extends State<AlAniReelTile>
   Widget build(BuildContext context) {
     final player = _controller;
     final ready = player?.value.isInitialized == true && !_failed;
+    final officialEmbed = alaniOfficialEmbed(
+      Uri.tryParse(widget.publication.videoUrl ?? ''));
     return ColoredBox(
       color: Colors.black,
       child: Stack(fit: StackFit.expand, children: [
@@ -224,13 +227,18 @@ class _AlAniReelTileState extends State<AlAniReelTile>
           ),
         if (_loading)
           const Center(child: CircularProgressIndicator(color: Colors.white)),
-        if (_external)
+        if (_external && officialEmbed != null && widget.active)
+          Positioned.fill(child: AlAniOfficialEmbeddedVideo(
+            uri: officialEmbed)),
+        if (_external && (officialEmbed == null || !widget.active))
           Center(child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 24),
             child: Column(mainAxisSize: MainAxisSize.min, children: [
               const Icon(Icons.open_in_new, color: Colors.white, size: 52),
               const SizedBox(height: 12),
-              const Text('هذا المقطع منشور على منصة خارجية.',
+              Text(officialEmbed == null
+                ? 'هذا المقطع منشور على منصة خارجية.'
+                : 'اسحب للأعلى للعودة إلى المشغّل الرسمي.',
                 textAlign: TextAlign.center,
                 style: TextStyle(color: Colors.white, fontSize: 17)),
               const SizedBox(height: 10),
@@ -266,7 +274,8 @@ class _AlAniReelTileState extends State<AlAniReelTile>
                 color: Colors.black54,
                 borderRadius: BorderRadius.circular(12)),
               child: AlAniSocialActions(
-                publicationId: widget.publication.id, dark: true),
+                publicationId: widget.publication.id, dark: true,
+                vertical: true),
             ),
           ),
         ),
