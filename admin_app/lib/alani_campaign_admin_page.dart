@@ -84,7 +84,7 @@ class _AlAniCampaignAdminPageState extends State<AlAniCampaignAdminPage> {
                   labelText: 'رابط صورة العرض HTTPS (اختياري)',
                   border: OutlineInputBorder())),
               DropdownButtonFormField<String>(
-                value: products.any((p) => p['id'] == productId)
+                initialValue: products.any((p) => p['id'] == productId)
                   ? productId : '',
                 decoration: const InputDecoration(
                   labelText: 'منتج مرتبط (اختياري)',
@@ -150,7 +150,7 @@ class _AlAniCampaignAdminPageState extends State<AlAniCampaignAdminPage> {
                   !end.isAfter(start) ||
                   end.difference(start) > const Duration(days: 90) ||
                   (url.isNotEmpty && (!url.startsWith('https://') ||
-                    Uri.tryParse(url)?.host.isEmpty))) {
+                    (Uri.tryParse(url)?.host.isEmpty ?? true)))) {
                 _notice('تحقق من عنوان العرض والتوقيت والرابط. '
                   'المدة لا تتجاوز 90 يوماً.');
                 return;
