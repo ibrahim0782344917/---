@@ -1,6 +1,6 @@
 import test, { before, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { server, checkoutAllowed, checkoutUsable } from '../server.js';
+import { server, checkoutAllowed, checkoutUsable, offersAllowed } from '../server.js';
 
 let root;
 before(async () => {
@@ -162,4 +162,33 @@ test('social admin API never allows visitors to moderate',async()=>{
   const res=await fetch(root+'/api/admin/social',{
     method:'POST',headers:{'content-type':'application/json'},body:'{}'});
   assert.equal(res.status,401);
+});
+
+test('time-limited offers static page and assets exist', async()=>{
+  const html=await (await fetch(root+'/offers')).text();
+  assert.match(html,/عروض.*لفترة محدودة/);
+  for(const path of ['/offers.js','/offers.css']){
+    assert.equal((await fetch(root+path)).status,200);
+  }
+  assert.ok((await (await fetch(root+'/')).text()).includes('href="/offers"'));
+});
+test('public offers stay disabled until explicitly approved',async()=>{
+  const r=await fetch(root+'/api/offers');
+  assert.equal(r.status,200);
+  assert.deepEqual(await r.json(),{enabled:false,items:[]});
+});
+test('time-limited offers management requires owner session',async()=>{
+  assert.equal((await fetch(root+'/api/admin/offers')).status,401);
+  assert.equal((await fetch(root+'/api/admin/offers',{method:'POST',
+    headers:{'content-type':'application/json'},body:'{}'})).status,401);
+});
+test('offers can be enabled against TEST only without production approval',()=>{
+  assert.equal(offersAllowed({SHITREED_CAMPAIGNS_ENABLED:'true',
+    SUPABASE_URL:'https://tgvdwotbrnhcoykuxdpr.supabase.co'}),true);
+  assert.equal(offersAllowed({SHITREED_CAMPAIGNS_ENABLED:'true',
+    SUPABASE_URL:'https://ltwncrewggdrjevakwpb.supabase.co'}),false);
+  assert.equal(offersAllowed({SUPABASE_URL:'https://tgvdwotbrnhcoykuxdpr.supabase.co'}),false);
+  assert.equal(offersAllowed({SHITREED_CAMPAIGNS_ENABLED:'true',
+    ALANI_CAMPAIGNS_PRODUCTION_APPROVED:'true',
+    SUPABASE_URL:'https://ltwncrewggdrjevakwpb.supabase.co'}),true);
 });

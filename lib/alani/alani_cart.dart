@@ -185,6 +185,17 @@ class _AlAniCartPageState extends State<AlAniCartPage> {
           'التوصيل ٥٬٠٠٠ دينار عراقي.',
           style:TextStyle(fontSize:13)),
         const SizedBox(height:15),
+        if (AlAniCheckoutReadiness.testMode) const Card(
+          color: Color(0xFFFFF3D6),
+          child: Padding(
+            padding: EdgeInsets.all(14),
+            child: Text(
+              'وضع اختبار فقط: الطلبات تُسجل على قاعدة shitreed-test '
+              'ولا تُرسل للتاجر أو للمندوب. لا توجد عملية دفع حقيقية.',
+              style: TextStyle(fontWeight: FontWeight.w700, height: 1.6),
+            ),
+          ),
+        ),
         if(items.isEmpty)const Padding(
           padding:EdgeInsets.all(33),
           child:Center(child:Text('السلة فارغة. اختر من منتجات متجرنا.'))),

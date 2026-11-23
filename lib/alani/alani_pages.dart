@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'alani_content.dart';
+import 'alani_offers_page.dart';
 import 'alani_shop.dart';
 import 'package:shitreed_customer/backend/marketplace_backend.dart';
 import 'package:shitreed_customer/auth/customer_auth_page.dart';
@@ -442,6 +443,9 @@ class AlAniStoreDrawer extends StatelessWidget {
       ListTile(leading:const Icon(Icons.home_outlined),
         title:const Text('صفحة الترحيب'),
         onTap:()=>_go(context,const AlAniWelcomePage())),
+      ListTile(leading:const Icon(Icons.local_offer_outlined),
+        title:const Text('عروض لفترة محدودة'),
+        onTap:()=>_go(context,const AlAniOffersPage())),
       ListTile(leading:const Icon(Icons.info_outline),
         title:const Text('من نحن'),
         onTap:()=>_go(context,const AlAniInfoPage(type:'about'))),

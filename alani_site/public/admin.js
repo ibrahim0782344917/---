@@ -267,6 +267,112 @@ $('social-staff-form').addEventListener('submit',async(event)=>{
   }catch(error){message(error.message,true);}
 });
 
+
+const offerInputTime=(value)=>{
+  const date=new Date(value);
+  if(!Number.isFinite(date.getTime()))return '';
+  return new Date(date.getTime()-date.getTimezoneOffset()*60000)
+    .toISOString().slice(0,16);
+};
+function resetOffer(){
+  $('offer-form').reset();$('offer-id').value='';
+  $('offer-heading').textContent='إنشاء عرض جديد';
+  const now=Date.now();
+  $('offer-start').value=offerInputTime(now+60*60*1000);
+  $('offer-end').value=offerInputTime(now+3*24*60*60*1000);
+}
+function editOffer(row){
+  $('offer-id').value=row.id;
+  $('offer-title').value=row.title||'';
+  $('offer-description').value=row.description||'';
+  $('offer-image').value=row.image_url||'';
+  $('offer-product').value=row.product_id||'';
+  $('offer-published').value=String(row.is_published===true);
+  $('offer-start').value=offerInputTime(row.starts_at);
+  $('offer-end').value=offerInputTime(row.ends_at);
+  $('offer-heading').textContent='تعديل العرض: '+row.title;
+  $('offer-form').scrollIntoView({behavior:'smooth',block:'start'});
+}
+function offerStatus(row){
+  const now=Date.now(),start=Date.parse(row.starts_at),end=Date.parse(row.ends_at);
+  if(!row.is_published)return 'مسودة';
+  if(now<start)return 'مجدول للنشر';
+  if(now>=end)return 'منتهي';
+  return 'نشط الآن';
+}
+function renderOffers(){
+  const available=adminData.offersData?.enabled===true;
+  $('offers-availability').textContent=available
+    ? 'العروض تخضع لمدة محددة؛ الأسعار داخل طلب الشراء لا تتغير تلقائياً.'
+    : 'ميزة العروض غير مفعلة في هذه البيئة. لا يمكن إنشاء عروض حتى تجهيز قاعدة الاختبار.';
+  const form=$('offer-form');
+  for(const field of form.elements)field.disabled=!available;
+  const picker=$('offer-product');
+  const previous=picker.value;
+  picker.replaceChildren();
+  const all=text('option','عرض عام بدون منتج');all.value='';
+  picker.append(all);
+  for(const product of adminData.products||[]){
+    const option=text('option',product.name);option.value=product.id;
+    picker.append(option);
+  }
+  picker.value=previous;
+  const table=$('offers-table');table.replaceChildren();
+  const rows=adminData.offersData?.items||[];
+  if(!rows.length){
+    const row=document.createElement('tr'),cell=text('td',available?
+      'لا توجد عروض مسجلة بعد.':'العروض قيد التفعيل.');
+    cell.colSpan=4;row.append(cell);table.append(row);
+  }
+  for(const offer of rows){
+    const row=document.createElement('tr');
+    row.append(text('td',offer.title),
+      text('td',offerStatus(offer)),
+      text('td',new Date(offer.starts_at).toLocaleString('ar-IQ')+
+        ' — '+new Date(offer.ends_at).toLocaleString('ar-IQ')));
+    const actions=text('td','');
+    const edit=text('button','تعديل');edit.type='button';
+    edit.addEventListener('click',()=>editOffer(offer));
+    const toggle=text('button',offer.is_published?'إيقاف':'نشر');
+    toggle.type='button';toggle.className='button ghost';
+    toggle.addEventListener('click',async()=>{
+      try{
+        active();
+        await api('/api/admin/offers',{method:'POST',body:JSON.stringify({
+          ...offer,is_published:!offer.is_published
+        })});
+        await refresh();message('تم تحديث حالة العرض.');
+      }catch(err){message(err.message,true);}
+    });
+    actions.append(edit,toggle);row.append(actions);table.append(row);
+  }
+}
+$('reset-offer').addEventListener('click',resetOffer);
+$('offer-form').addEventListener('submit',async event=>{
+  event.preventDefault();
+  try{
+    active();
+    const begins=new Date($('offer-start').value);
+    const ends=new Date($('offer-end').value);
+    if(!Number.isFinite(begins.getTime()) || !Number.isFinite(ends.getTime()) ||
+       ends<=begins || ends-begins>90*24*60*60*1000)throw Error(
+       'وقت العرض غير صحيح أو مدته تتجاوز 90 يوماً.');
+    const values={
+      id:$('offer-id').value||undefined,
+      title:$('offer-title').value,
+      description:$('offer-description').value,
+      image_url:$('offer-image').value,
+      product_id:$('offer-product').value||null,
+      is_published:$('offer-published').value==='true',
+      starts_at:begins.toISOString(),
+      ends_at:ends.toISOString()
+    };
+    await api('/api/admin/offers',{method:'POST',body:JSON.stringify(values)});
+    resetOffer();await refresh();message('تم حفظ العرض بنجاح.');
+  }catch(err){message(err.message,true);}
+});
+resetOffer();
+
 function reports(){
   const total=adminData.orders.reduce((sum,o)=>sum+(Number(o.total_iqd)||0),0);
   const pending=adminData.orders.filter(o=>o.status==='placed').length;
@@ -285,6 +391,12 @@ async function refresh(){
   $('m-returns').textContent=String((response.returns?.items||[]).filter(x=>
     !['resolved','declined'].includes(x.status)).length);
   renderProducts();renderOrders();renderPosts();renderReturns();reports();
+  try {
+    adminData.offersData=await api('/api/admin/offers');
+  } catch (_) {
+    adminData.offersData={enabled:false,items:[]};
+  }
+  renderOffers();
   await refreshSocial();
   message('تم تحديث البيانات. جميع العمليات تقتصر على المتجر الذي تملكه.');
 }
@@ -292,7 +404,7 @@ function showTab(tab){
   for(const element of document.querySelectorAll('[data-tab]')){
     element.classList.toggle('active',element.dataset.tab===tab);
   }
-  for(const name of ['products','orders','returns','posts','social','settings']){
+  for(const name of ['products','offers','orders','returns','posts','social','settings']){
     $('tab-'+name).hidden=name!==tab;
   }
 }

@@ -1,0 +1,92 @@
+name: Al-Ani merchant and admin - shitreed-test APKs only
+on:
+  push:
+    branches: [work/alani-test-cod-purchase-20261123]
+  workflow_dispatch:
+permissions:
+  contents: read
+env:
+  TEST_SUPABASE_URL: https://tgvdwotbrnhcoykuxdpr.supabase.co
+  TEST_SUPABASE_PUBLISHABLE_KEY: sb_publishable_LUUtkKZWm3cqIRLQSLM4iQ_puh2ipiY
+jobs:
+  merchant:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    defaults:
+      run:
+        working-directory: merchant_app
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: '3.47.9'
+          cache: true
+      - name: Create isolated merchant Android project
+        run: |
+          flutter create --org com.ibrahimalani --project-name shitreed_merchant --platforms android .
+          python3 scripts/configure_android.py
+          python3 ../scripts/configure_alani_icon.py . merchant
+          python3 scripts/use_runner_ndk.py
+      - name: Run merchant checks
+        run: |
+          flutter pub get
+          flutter analyze
+          flutter test
+      - name: Build merchant Android for test database only
+        run: |
+          test "$TEST_SUPABASE_URL" = "https://tgvdwotbrnhcoykuxdpr.supabase.co"
+          flutter build apk --debug \
+            --dart-define="SUPABASE_URL=$TEST_SUPABASE_URL" \
+            --dart-define="SUPABASE_PUBLISHABLE_KEY=$TEST_SUPABASE_PUBLISHABLE_KEY"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: AlAni-Merchant-Test-Only-APK
+          path: merchant_app/build/app/outputs/flutter-apk/app-debug.apk
+          retention-days: 14
+          if-no-files-found: error
+  admin:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    defaults:
+      run:
+        working-directory: admin_app
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: '3.47.9'
+          cache: true
+      - name: Create isolated admin Android project
+        run: |
+          flutter create --org com.ibrahimalani --project-name shitreed_admin --platforms android .
+          python3 ../scripts/configure_alani_icon.py . admin
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('android/app/src/main/AndroidManifest.xml')
+          s=p.read_text().replace('android:label="shitreed_admin"',
+            'android:label="السيد إبراهيم العاني - الإدارة اختبار"')
+          if 'android.permission.INTERNET' not in s:
+              s=s.replace('<application',
+                '<uses-permission android:name="android.permission.INTERNET" />\n    <application',1)
+          p.write_text(s)
+          PY
+          rm -f test/widget_test.dart
+      - name: Run admin checks
+        run: |
+          flutter pub get
+          flutter analyze --no-fatal-infos lib test
+          flutter test
+      - name: Build admin Android for test database only
+        run: |
+          test "$TEST_SUPABASE_URL" = "https://tgvdwotbrnhcoykuxdpr.supabase.co"
+          flutter build apk --debug \
+            --dart-define="SUPABASE_URL=$TEST_SUPABASE_URL" \
+            --dart-define="SUPABASE_PUBLISHABLE_KEY=$TEST_SUPABASE_PUBLISHABLE_KEY"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: AlAni-Admin-Test-Only-APK
+          path: admin_app/build/app/outputs/flutter-apk/app-debug.apk
+          retention-days: 14
+          if-no-files-found: error

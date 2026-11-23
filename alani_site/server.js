@@ -30,6 +30,14 @@ async function liveCheckoutReady() {
 }
 const RETURNS_ENABLED = process.env.ALANI_RETURNS_ENABLED === 'true';
 const SOCIAL_ENABLED = process.env.ALANI_SOCIAL_ENABLED === 'true';
+export function offersAllowed(env) {
+  const source = env.SUPABASE_URL || '';
+  const url = source.endsWith('/') ? source.slice(0, -1) : source;
+  return env.SHITREED_CAMPAIGNS_ENABLED === 'true' &&
+    (url === 'https://tgvdwotbrnhcoykuxdpr.supabase.co' ||
+     env.ALANI_CAMPAIGNS_PRODUCTION_APPROVED === 'true');
+}
+const OFFERS_ENABLED = offersAllowed(process.env);
 const root = join(dirname(fileURLToPath(import.meta.url)), 'public');
 const uuid = /^[a-f0-9]{8}-[a-f0-9]{4}-[1-8][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i;
 const staticRoutes = {
@@ -39,6 +47,8 @@ const staticRoutes = {
   '/delete-account.js':'delete-account.js',
   '/site.css':'site.css', '/site.js':'site.js', '/admin.js':'admin.js',
   '/info.js':'info.js','/menu.js':'menu.js',
+  '/offers':'offers.html','/offers.html':'offers.html',
+  '/offers.js':'offers.js','/offers.css':'offers.css',
   '/welcome':'info.html','/about-us':'info.html',
   '/payment-policy':'info.html','/return-policy':'info.html',
   '/return-request':'info.html','/broken-product':'info.html',
@@ -166,6 +176,16 @@ async function handleApi(req, res, path) {
   }
   if (req.method === 'GET' && path === '/api/publications') {
     return respond(res,200,await publications());
+  }
+  if (req.method === 'GET' && path === '/api/offers') {
+    if (!OFFERS_ENABLED) return respond(res,200,{enabled:false,items:[]});
+    const now = encodeURIComponent(new Date().toISOString());
+    const query='select=id,title,description,image_url,product_id,starts_at,ends_at'
+      +'&store_id=eq.'+encodeURIComponent(STORE_ID)
+      +'&is_published=eq.true&starts_at=lte.'+now
+      +'&ends_at=gt.'+now+'&order=ends_at.asc&limit=80';
+    const items=await supabase(selectUrl('shitreed_store_campaigns',query));
+    return respond(res,200,{enabled:true,items});
   }
   if (req.method === 'GET' && path === '/api/config') {
     return respond(res,200,{checkoutEnabled:await liveCheckoutReady(),
@@ -373,6 +393,65 @@ async function handleApi(req, res, path) {
     throw new HttpError(404,'استخدم واجهة الدخول.');
   }
   const token = await authOwner(req);
+  if (req.method === 'GET' && path === '/api/admin/offers') {
+    if (!OFFERS_ENABLED) return respond(res,200,{enabled:false,items:[]});
+    const items=await supabase(selectUrl('shitreed_store_campaigns',
+      'select=id,title,description,image_url,product_id,starts_at,ends_at,'
+      +'is_published,created_at&store_id=eq.'+encodeURIComponent(STORE_ID)
+      +'&order=created_at.desc&limit=100'),{},token);
+    return respond(res,200,{enabled:true,items});
+  }
+  if (req.method === 'POST' && path === '/api/admin/offers') {
+    if (!OFFERS_ENABLED) throw new HttpError(503,
+      'نظام العروض غير مفعّل في هذه البيئة.');
+    const body=await readBody(req);
+    const start=new Date(body.starts_at),end=new Date(body.ends_at);
+    const validDates=Number.isFinite(start.getTime()) &&
+      Number.isFinite(end.getTime()) &&
+      end.getTime()>start.getTime() &&
+      end.getTime()-start.getTime()<=90*24*60*60*1000;
+    const productId=body.product_id || null;
+    if (!validText(body.title,3,100) ||
+      typeof body.description !== 'string' || body.description.length>600 ||
+      typeof body.is_published !== 'boolean' ||
+      !validUrl(body.image_url) || !validDates ||
+      (productId!==null && !uuid.test(String(productId))) ||
+      (body.id && !uuid.test(String(body.id)))) {
+      throw new HttpError(400,'تحقق من بيانات العرض ووقت البداية والنهاية.');
+    }
+    if (productId!==null) {
+      const product=await supabase(selectUrl('products',
+        'select=id&store_id=eq.'+encodeURIComponent(STORE_ID)+
+        '&id=eq.'+encodeURIComponent(productId)+'&limit=1'),{},token);
+      if (!product.length) throw new HttpError(400,
+        'المنتج المحدد لا يتبع متجرك.');
+    }
+    const data={
+      title:body.title.trim(),description:body.description.trim(),
+      image_url:str(body.image_url)||null,
+      product_id:productId,
+      starts_at:start.toISOString(),ends_at:end.toISOString(),
+      is_published:body.is_published,
+    };
+    let items;
+    if (body.id) {
+      items=await supabase(selectUrl('shitreed_store_campaigns',
+        'id=eq.'+encodeURIComponent(body.id)+
+        '&store_id=eq.'+encodeURIComponent(STORE_ID)),
+        {method:'PATCH',body:JSON.stringify(data)},token);
+    } else {
+      const user=await supabase('/auth/v1/user',{},token);
+      if (!user?.id || !uuid.test(user.id)) throw new HttpError(401,
+        'لا توجد جلسة حساب موثّقة.');
+      items=await supabase('/rest/v1/shitreed_store_campaigns',
+        {method:'POST',body:JSON.stringify({
+          ...data,store_id:STORE_ID,created_by:user.id,
+        })},token);
+    }
+    if (!Array.isArray(items) || !items.length) throw new HttpError(403,
+      'لم يتم حفظ العرض أو لا تملك صلاحية تعديله.');
+    return respond(res,200,{ok:true,offer:items[0]});
+  }
   if (req.method === 'GET' && path === '/api/admin/overview') {
     const id=encodeURIComponent(STORE_ID);
     const [products, orders, posts, returnsResult] = await Promise.all([

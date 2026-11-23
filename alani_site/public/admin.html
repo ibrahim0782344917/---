@@ -33,6 +33,7 @@
   </div>
   <nav class="admin-nav" aria-label="أقسام الإدارة">
     <button type="button" class="active" data-tab="products">المنتجات والمخزون</button>
+    <button type="button" data-tab="offers">⏳ العروض المحدودة</button>
     <button type="button" data-tab="orders">الطلبات</button>
     <button type="button" data-tab="returns">الاسترجاع والتعويض</button>
     <button type="button" data-tab="posts">الفيديوهات والوصفات</button>
@@ -40,6 +41,29 @@
     <button type="button" data-tab="settings">التقارير والإعدادات</button>
   </nav>
   <p id="admin-message" class="status-note" role="status" hidden></p>
+
+  <section class="admin-panel" id="tab-offers" hidden>
+    <h2>إدارة العروض محدودة الوقت</h2>
+    <p class="small">حدّد عنوان العرض والصورة والمنتج وموعد البداية والنهاية. تظهر العروض للزوار فقط خلال مدتها المحددة، ولا تتغير أسعار السلة دون ترحيل تجاري معتمد.</p>
+    <p class="status-note" id="offers-availability">جارٍ التحقق من جاهزية العروض…</p>
+    <div class="table-scroll"><table class="admin-table">
+      <thead><tr><th>العرض</th><th>الحالة</th><th>المدة</th><th>إجراء</th></tr></thead>
+      <tbody id="offers-table"></tbody>
+    </table></div>
+    <h3 id="offer-heading" style="margin-top:28px">إنشاء عرض جديد</h3>
+    <form class="admin-form" id="offer-form">
+      <input id="offer-id" type="hidden">
+      <label class="wide">اسم العرض<input id="offer-title" minlength="3" maxlength="100" required></label>
+      <label class="wide">وصف العرض<textarea id="offer-description" maxlength="600" rows="3"></textarea></label>
+      <label class="wide">رابط الصورة HTTPS<input id="offer-image" type="url" maxlength="1024"></label>
+      <label>المنتج المرتبط<select id="offer-product"><option value="">عرض عام بدون منتج</option></select></label>
+      <label>حالة النشر<select id="offer-published"><option value="false">مسودة</option><option value="true">ينشر في موعده</option></select></label>
+      <label>وقت البداية<input id="offer-start" type="datetime-local" required></label>
+      <label>وقت النهاية<input id="offer-end" type="datetime-local" required></label>
+      <button type="submit" class="button primary">حفظ العرض</button>
+      <button type="button" class="button ghost" id="reset-offer">عرض جديد</button>
+    </form>
+  </section>
 
   <section class="admin-panel" id="tab-products">
     <h2>المنتجات والمخزون</h2>

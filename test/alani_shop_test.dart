@@ -113,7 +113,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('الزيوت والأعشاب والمنتجات'), findsOneWidget);
 
-    await tester.tap(find.text('وصفاتي').last);
+    await tester.tap(find.text('المنشورات').last);
     await tester.pumpAndSettle();
     expect(find.text('الوصفات والمدونة'), findsOneWidget);
   });
