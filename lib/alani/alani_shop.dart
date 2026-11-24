@@ -21,7 +21,6 @@ import 'package:url_launcher/url_launcher.dart';
 
 const _pine = Color(0xFF17583D);
 const _deep = Color(0xFF17372B);
-const _cream = Color(0xFFF7F9F5);
 const _gold = Color(0xFFC49B45);
 
 /// Al-Ani's own storefront. The shared Shitreed customer/merchant/admin
