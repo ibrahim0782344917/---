@@ -58,9 +58,12 @@ class ShitreedApp extends StatelessWidget {
         locale: const Locale('ar'),
         builder: (context, child) => MediaQuery(
           data: MediaQuery.of(context).copyWith(
-            textScaler: TextScaler.linear(
-              AlAniUiSettings.largeText.value ? 1.15 : 1.0,
-            ),
+            // Preserve the device's accessibility font scaling.
+            // The in-app large-text option adds another 15% if requested.
+            textScaler: AlAniUiSettings.largeText.value
+                ? TextScaler.linear(
+                    MediaQuery.textScalerOf(context).scale(1.0) * 1.15)
+                : MediaQuery.textScalerOf(context),
           ),
           child: Directionality(
             textDirection: TextDirection.rtl,
