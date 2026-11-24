@@ -52,7 +52,39 @@ class _AlAniOffersPageState extends State<AlAniOffersPage> {
       .eq('store_id', AlAniSettings.storeId)
       .eq('is_published', true)
       .order('ends_at', ascending: true).limit(80);
-    return rows.map((v) => Map<String, dynamic>.from(v)).toList();
+    final offers=rows.map((v)=>Map<String,dynamic>.from(v)).toList();
+    if(offers.isEmpty)return offers;
+    final now=DateTime.now().toUtc();
+    final liveIds=offers.where((o){
+      final from=DateTime.tryParse(o['starts_at']?.toString()??'');
+      final end=DateTime.tryParse(o['ends_at']?.toString()??'');
+      return from!=null && end!=null &&
+        AlAniCampaignWindow.visible(from,end,now);
+    }).map((o)=>o['id'].toString()).toList();
+    if(liveIds.isEmpty)return offers;
+    final lines=await Supabase.instance.client
+      .from('shitreed_campaign_items')
+      .select('campaign_id,product_id,sale_price_iqd')
+      .inFilter('campaign_id',liveIds).limit(1200);
+    final products=await CommerceService.storeProducts(AlAniSettings.storeId);
+    final byId={for(final p in products)p.id:p};
+    for(final o in offers){
+      final listed=<Map<String,dynamic>>[];
+      for(final raw in lines){
+        if(raw['campaign_id']!=o['id'])continue;
+        final p=byId[raw['product_id']];
+        final sale=(raw['sale_price_iqd'] as num?)?.toInt()??0;
+        if(p==null || p.stockQuantity<=0 || sale<=0 ||
+            sale>=p.priceIqd)continue;
+        listed.add({
+          'id':p.id,'name':p.name,'old_price':p.priceIqd,
+          'sale_price':sale,
+          'discount_pct':((p.priceIqd-sale)*100/p.priceIqd).round(),
+        });
+      }
+      o['discounted_products']=listed;
+    }
+    return offers;
   }
 
   Future<void> _refresh() async {
@@ -148,6 +180,8 @@ class _AlAniOffersPageState extends State<AlAniOffersPage> {
     final until = DateTime.tryParse(row['ends_at']?.toString() ?? '');
     final image = row['image_url']?.toString();
     final productId = row['product_id']?.toString();
+    final discounted=(row['discounted_products'] as List<dynamic>? ?? []);
+
     return Card(
       clipBehavior: Clip.antiAlias,
       margin: const EdgeInsets.only(bottom: 16),
@@ -175,7 +209,39 @@ class _AlAniOffersPageState extends State<AlAniOffersPage> {
               Text(_remaining(until),
                 style: const TextStyle(color: Color(0xFF9F5311),
                   fontWeight: FontWeight.w800)),
-            if (productId != null) ...[
+            if(discounted.isNotEmpty) ...[
+              const SizedBox(height:12),
+              const Text('أسعار المنتجات داخل العرض',
+                style:TextStyle(fontWeight:FontWeight.w800)),
+              const SizedBox(height:8),
+              for(final item in discounted)
+                Card(
+                  color:Colors.white,
+                  margin:const EdgeInsets.only(bottom:8),
+                  child:ListTile(
+                    contentPadding:const EdgeInsets.symmetric(
+                      horizontal:12,vertical:4),
+                    title:Text(item['name'].toString(),
+                      style:const TextStyle(fontWeight:FontWeight.w800)),
+                    subtitle:Wrap(spacing:9,runSpacing:4,
+                      crossAxisAlignment:WrapCrossAlignment.center,children:[
+                        Text(priceText(item['old_price'] as int),
+                          style:const TextStyle(
+                            decoration:TextDecoration.lineThrough,
+                            color:Colors.grey)),
+                        Text(priceText(item['sale_price'] as int),
+                          style:const TextStyle(color:Color(0xFF117045),
+                            fontWeight:FontWeight.w900,fontSize:16)),
+                        Chip(
+                          label:Text('خصم ${item['discount_pct']}%'),
+                          backgroundColor:const Color(0xFFE4F7EB)),
+                      ]),
+                    trailing:const Icon(Icons.chevron_left),
+                    onTap:()=>_openProduct(item['id'].toString()),
+                  ),
+                ),
+            ],
+            if (productId != null && discounted.isEmpty) ...[
               const SizedBox(height: 8),
               FilledButton.icon(onPressed: () => _openProduct(productId),
                 icon: const Icon(Icons.shopping_bag_outlined),
