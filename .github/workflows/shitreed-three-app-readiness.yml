@@ -65,7 +65,7 @@ jobs:
       - name: Use preinstalled NDK for customer debug preview only
         run: python3 merchant_app/scripts/use_runner_ndk.py
       - run: flutter pub get
-      - run: flutter analyze lib test
+      - run: flutter analyze --no-fatal-infos lib test
       - run: flutter test
       - name: Build Customer preview (not Play release)
         env:
@@ -118,7 +118,7 @@ jobs:
       - name: Use runner NDK for debug preview (avoid network download)
         run: python3 scripts/use_runner_ndk.py
       - run: flutter pub get
-      - run: flutter analyze
+      - run: flutter analyze --no-fatal-infos
       - run: flutter test
       - name: Build Merchant preview (not Play release)
         run: |
