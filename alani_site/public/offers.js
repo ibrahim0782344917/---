@@ -19,6 +19,22 @@ function card(offer){
   const body=t('div',null,'limited-offer-body');
   body.append(t('span','⏳ عرض محدود','limited-offer-kicker'),
     t('h3',offer.title),t('p',offer.description||''));
+  const products=Array.isArray(offer.products)?offer.products:[];
+  if(products.length){
+    const list=t('div',null,'limited-offer-products');
+    const money=n=>new Intl.NumberFormat('ar-IQ').format(n)+' د.ع';
+    for(const p of products){
+      const product=t('div',null,'limited-offer-product');
+      product.append(t('strong',p.name));
+      const prices=t('div',null,'limited-offer-prices');
+      const oldPrice=t('del',money(p.regular_price_iqd),'offer-regular-price');
+      const newPrice=t('strong',money(p.sale_price_iqd),'offer-sale-price');
+      const discount=t('span','خصم '+p.discount_percent+'%','offer-discount-percent');
+      prices.append(oldPrice,newPrice,discount);
+      product.append(prices);list.append(product);
+    }
+    body.append(list);
+  }
   const time=t('strong',remaining(offer.ends_at),'limited-offer-time');
   body.append(time);
   const link=t('a',offer.product_id?'تصفح المنتج في المتجر':'تصفح المنتجات','button primary');
