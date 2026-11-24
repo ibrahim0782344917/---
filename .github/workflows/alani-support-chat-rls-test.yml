@@ -1,0 +1,39 @@
+name: Al-Ani support chat RLS (isolated PostgreSQL)
+on:
+  push:
+    branches: [work/alani-final-release-qa-20261124]
+  pull_request:
+    paths:
+      - 'docs/ALANI_SUPPORT_CHAT_STAGE_20261124.sql'
+      - 'tests/alani_support_chat_*'
+      - '.github/workflows/alani-support-chat-rls-test.yml'
+permissions:
+  contents: read
+jobs:
+  support-chat-rls:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - name: Start disposable PostgreSQL (no production credentials)
+        shell: bash
+        run: |
+          set -euo pipefail
+          docker run -d --name alani-chat-pg -e POSTGRES_PASSWORD=synthetic             -e POSTGRES_DB=alani_chat_synthetic postgres:17-alpine >/dev/null
+          for i in $(seq 1 60); do
+            if docker exec alani-chat-pg psql -X -qAt -U postgres               -d alani_chat_synthetic -c 'SELECT 1' 2>/dev/null | grep -qx 1; then
+              break
+            fi
+            sleep 1
+          done
+          docker exec alani-chat-pg psql -X -qAt -U postgres             -d alani_chat_synthetic -c 'SELECT 1' | grep -qx 1
+      - name: Assert anonymous, buyer, cross-buyer, owner and admin isolation
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat tests/alani_support_chat_fixture.sql \
+            docs/ALANI_SUPPORT_CHAT_STAGE_20261124.sql \
+            tests/alani_support_chat_rls_checks.sql |
+            docker exec -i alani-chat-pg psql -X -v ON_ERROR_STOP=1               -U postgres -d alani_chat_synthetic
+      - if: always()
+        run: docker rm -f alani-chat-pg >/dev/null 2>&1 || true
