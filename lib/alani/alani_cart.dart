@@ -245,7 +245,7 @@ class _AlAniCartPageState extends State<AlAniCartPage> {
     builder:(context,_){
       final cart=CommerceCart.instance;
       final items=cart.items;
-      final quotedLines=<_StringKeyQuote>{};
+      final quotedLines=<String,_StringKeyQuote>{};
       for(final row in (_quote?['lines'] as List<dynamic>? ?? [])){
         final values=Map<String,dynamic>.from(row as Map);
         quotedLines[values['product_id'].toString()]=_StringKeyQuote(
