@@ -11,6 +11,7 @@
   <script src="/menu.js" defer></script>
 </head>
 <body>
+  <a class="skip-link" href="#main-content">تجاوز القائمة إلى المحتوى</a>
   <div class="noticebar"><div class="wrap noticebar-inner"><span>🌿 مرحباً بكم في متجر السيد إبراهيم العاني</span><span>بغداد — الغزالية <span aria-hidden="true">•</span> الأسعار بالدينار العراقي</span></div></div>
   <header class="site-header">
     <div class="wrap header-row">
@@ -43,7 +44,7 @@
     <a href="/admin">♙ لوحة الإدارة</a>
   </nav>
 
-  <main>
+  <main id="main-content" tabindex="-1">
     <section class="hero">
       <div class="wrap hero-grid">
         <div class="hero-copy">
@@ -87,6 +88,19 @@
       </div>
     </section>
 
+    <section class="wrap premium-content-hub" id="content-hub" aria-labelledby="content-hub-title">
+      <div class="premium-hub-heading">
+        <span class="overline">كل ما تحتاجه بمكان واحد</span>
+        <h2 id="content-hub-title">استكشف متجر السيد إبراهيم العاني</h2>
+        <p>انتقل مباشرةً إلى المنتجات أو الفيديوهات أو المقالات والعروض.</p>
+      </div>
+      <div class="premium-hub-grid">
+        <a class="premium-hub-card" href="#products"><span class="premium-hub-icon" aria-hidden="true">🌿</span><strong>منتجاتنا</strong><small>زيوت وأعشاب وعسل</small></a>
+        <a class="premium-hub-card" href="#videos"><span class="premium-hub-icon" aria-hidden="true">▶</span><strong>الفيديوهات</strong><small>شاهد داخل المتجر</small></a>
+        <a class="premium-hub-card" href="#articles"><span class="premium-hub-icon" aria-hidden="true">▤</span><strong>مقالات ووصفات</strong><small>تصفح المنشورات</small></a>
+        <a class="premium-hub-card" href="/offers"><span class="premium-hub-icon" aria-hidden="true">⏳</span><strong>عروض مؤقتة</strong><small>المواعيد والمنتجات</small></a>
+      </div>
+    </section>
     <section class="wrap limited-offer-home-link">
       <a href="/offers" class="button primary">⏳ شاهد عروض السيد إبراهيم العاني لفترة محدودة</a>
     </section>
@@ -161,7 +175,7 @@
     </div>
     <div class="footer-note">© <span id="year">2026</span> السيد إبراهيم العاني. جميع الحقوق محفوظة.<p>هذه نسخة أولية؛ لا يتم قبول طلبات شراء قبل اكتمال التحقق.</p></div>
   </div></footer>
-  <nav class="mobile-shop-nav" aria-label="التنقل السريع للمتجر"><a href="#products"><span>▦</span>المتجر</a><a href="#videos"><span>▶</span>فيديوهات</a><a href="/offers"><span>⏳</span>العروض</a><a href="#basket"><span>▤</span>السلة</a></nav>
+  <nav class="mobile-shop-nav" aria-label="التنقل السريع للمتجر"><a href="#main-content"><span>⌂</span>الرئيسية</a><a href="#products"><span>▦</span>المتجر</a><a class="mobile-shop-plus" href="#content-hub" aria-label="المزيد: الفيديوهات والمقالات والعروض"><span>＋</span>المزيد</a><a href="#videos"><span>▶</span>الفيديوهات</a><a href="#basket"><span>▤</span>السلة</a></nav>
   <dialog id="details" class="details-dialog"><div id="details-content"></div><form method="dialog"><button class="button ghost">إغلاق</button></form></dialog>
 </body>
 </html>
