@@ -17,3 +17,13 @@ background:#fff;box-shadow:0 9px 28px #093d2310}
 .limited-offer-body .button{align-self:flex-start}
 @media(max-width:620px){.limited-offers-main{padding-top:18px}
 .limited-offers-grid{grid-template-columns:1fr}}
+.limited-offer-products{display:grid;gap:10px;margin:12px 0}
+.limited-offer-product{background:#fff;border:1px solid #d1e7d8;
+  border-radius:14px;padding:13px}
+.limited-offer-product>strong{color:#164630;font-size:15px}
+.limited-offer-prices{display:flex;flex-wrap:wrap;gap:9px;
+  align-items:center;margin-top:9px}
+.offer-regular-price{color:#7a857f}
+.offer-sale-price{color:#0b7546;font-size:19px}
+.offer-discount-percent{background:#e1f4e7;color:#115a37;
+  padding:5px 9px;border-radius:20px;font-weight:800;font-size:12px}
