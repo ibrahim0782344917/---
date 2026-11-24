@@ -15,36 +15,65 @@ class MerchantShellPage extends StatefulWidget {
 
 class _MerchantShellPageState extends State<MerchantShellPage> {
   int _tab=0;
+  void _navigate(int index) => setState(() => _tab = index);
+
   @override
-  Widget build(BuildContext context) => Scaffold(
-    body:IndexedStack(index:_tab,children:[
-      MerchantOverviewPage(
-        onNavigate:(index)=>setState((){_tab=index;}),
-      ),
+  Widget build(BuildContext context) {
+    final wide = MediaQuery.sizeOf(context).width >= 900;
+    final content = IndexedStack(index: _tab, children: [
+      MerchantOverviewPage(onNavigate: _navigate),
       const MerchantDashboardPage(),
-      const MerchantResourceIndexPage(products:true),
-      const MerchantResourceIndexPage(products:false),
+      const MerchantResourceIndexPage(products: true),
+      const MerchantResourceIndexPage(products: false),
       const MerchantAccountPage(),
-    ]),
-    bottomNavigationBar:NavigationBar(
-      height:77,
-      selectedIndex:_tab,
-      onDestinationSelected:(value)=>setState((){_tab=value;}),
-      labelBehavior:NavigationDestinationLabelBehavior.alwaysShow,
-      destinations:const [
-        NavigationDestination(icon:Icon(Icons.home_outlined),
-          selectedIcon:Icon(Icons.home),label:'الرئيسية'),
-        NavigationDestination(icon:Icon(Icons.storefront_outlined),
-          selectedIcon:Icon(Icons.storefront),label:'متاجري'),
-        NavigationDestination(icon:Icon(Icons.inventory_2_outlined),
-          selectedIcon:Icon(Icons.inventory_2),label:'المنتجات'),
-        NavigationDestination(icon:Icon(Icons.receipt_long_outlined),
-          selectedIcon:Icon(Icons.receipt_long),label:'الطلبات'),
-        NavigationDestination(icon:Icon(Icons.person_outline),
-          selectedIcon:Icon(Icons.person),label:'حسابي'),
-      ],
-    ),
-  );
+    ]);
+    return Scaffold(
+      body: SafeArea(
+        child: Row(children: [
+          if (wide) NavigationRail(
+            selectedIndex: _tab,
+            labelType: NavigationRailLabelType.all,
+            onDestinationSelected: _navigate,
+            destinations: const [
+              NavigationRailDestination(
+                icon: Icon(Icons.home_outlined),
+                selectedIcon: Icon(Icons.home), label: Text('الرئيسية')),
+              NavigationRailDestination(
+                icon: Icon(Icons.storefront_outlined),
+                selectedIcon: Icon(Icons.storefront), label: Text('متاجري')),
+              NavigationRailDestination(
+                icon: Icon(Icons.inventory_2_outlined),
+                selectedIcon: Icon(Icons.inventory_2), label: Text('المنتجات')),
+              NavigationRailDestination(
+                icon: Icon(Icons.receipt_long_outlined),
+                selectedIcon: Icon(Icons.receipt_long), label: Text('الطلبات')),
+              NavigationRailDestination(
+                icon: Icon(Icons.person_outline),
+                selectedIcon: Icon(Icons.person), label: Text('حسابي')),
+            ],
+          ),
+          Expanded(child: content),
+        ]),
+      ),
+      bottomNavigationBar: wide ? null : NavigationBar(
+        selectedIndex: _tab,
+        onDestinationSelected: _navigate,
+        labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
+        destinations: const [
+          NavigationDestination(icon: Icon(Icons.home_outlined),
+            selectedIcon: Icon(Icons.home), label: 'الرئيسية'),
+          NavigationDestination(icon: Icon(Icons.storefront_outlined),
+            selectedIcon: Icon(Icons.storefront), label: 'متاجري'),
+          NavigationDestination(icon: Icon(Icons.inventory_2_outlined),
+            selectedIcon: Icon(Icons.inventory_2), label: 'المنتجات'),
+          NavigationDestination(icon: Icon(Icons.receipt_long_outlined),
+            selectedIcon: Icon(Icons.receipt_long), label: 'الطلبات'),
+          NavigationDestination(icon: Icon(Icons.person_outline),
+            selectedIcon: Icon(Icons.person), label: 'حسابي'),
+        ],
+      ),
+    );
+  }
 }
 
 class MerchantOverviewPage extends StatefulWidget {

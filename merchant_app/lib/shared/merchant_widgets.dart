@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 
-const merchantPurple = Color(0xFF01BE5F);
-const merchantOrange = Color(0xFFF2AB3A);
-const merchantCanvas = Color(0xFFF6F8F7);
-const merchantDark = Color(0xFF163E32);
+const merchantPurple = Color(0xFF17583D);
+const merchantOrange = Color(0xFFC49B45);
+const merchantCanvas = Color(0xFFF7F9F5);
+const merchantDark = Color(0xFF17372B);
 
 String priceText(int value) {
   final formatted = value.toString().replaceAllMapped(

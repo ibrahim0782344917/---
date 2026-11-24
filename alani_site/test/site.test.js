@@ -192,3 +192,20 @@ test('offers can be enabled against TEST only without production approval',()=>{
     ALANI_CAMPAIGNS_PRODUCTION_APPROVED:'true',
     SUPABASE_URL:'https://ltwncrewggdrjevakwpb.supabase.co'}),true);
 });
+
+test('Al-Ani storefront has accessible central content hub and mobile quick navigation', async()=>{
+  const response=await fetch(root+'/');
+  assert.equal(response.status,200);
+  const html=await response.text();
+  assert.ok(html.includes('id="main-content"'));
+  assert.ok(html.includes('href="#main-content"'));
+  assert.ok(html.includes('id="content-hub"'));
+  assert.ok(html.includes('class="mobile-shop-plus"'));
+  for(const target of ['#products','#videos','#articles','/offers','#basket']){
+    assert.ok(html.includes('href="'+target+'"'), 'missing '+target);
+  }
+  const style=await (await fetch(root+'/site.css')).text();
+  assert.ok(style.includes('.premium-hub-grid'));
+  assert.ok(style.includes(':focus-visible'));
+  assert.ok(style.includes('prefers-reduced-motion'));
+});

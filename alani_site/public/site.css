@@ -304,3 +304,80 @@ body {background:#fff; color:var(--ink)}
   border-radius:11px;resize:vertical}
 .social-comment-form button{justify-self:start}
 @media(max-width:620px){.social-login{display:grid}.social-actions button{flex:1}}
+
+
+/* Al-Ani premium design system, shared with the three Material 3 apps.
+   Accessible focus, responsive tap targets, forest/cream/gold identity. */
+:root{
+  --pine:#17583d;--deep:#103d2c;--leaf:#176f4c;--gold:#c49b45;
+  --cream:#f7f9f5;--beige:#edf4eb;--ink:#17372b;--muted:#526858;
+  --line:#d8e5da;
+}
+body{background:var(--cream);color:var(--ink)}
+.site-header{background:#fffefa;box-shadow:0 6px 24px #143a2810}
+.brand-mark{background:var(--pine);box-shadow:0 7px 18px #17583d25}
+.button.primary{color:#fff;background:var(--pine);box-shadow:0 8px 22px #17583d20}
+.button.primary:hover{color:#fff;background:#24724e}
+.button.ghost{border:1px solid var(--line)}
+.hero{background:linear-gradient(120deg,#eaf4e9 0%,#f7f9f5 57%,#fff 100%)}
+.hero-art{background:radial-gradient(circle,#d5e9d8 0%,#f7f9f5 75%)}
+.product-card,.content-card,.checkout-panel,.basket-items,.admin-panel,.metric{
+  border-color:var(--line);box-shadow:0 8px 30px #17372b0b;
+}
+a:focus-visible,button:focus-visible,input:focus-visible,
+textarea:focus-visible,select:focus-visible,[tabindex]:focus-visible{
+  outline:3px solid #9b6514;outline-offset:3px;
+}
+.button,.header-actions a,.primary-nav a,.mobile-shop-nav a,
+.admin-nav button,.product-actions button,.menu-trigger{
+  min-height:44px;
+}
+.skip-link{position:fixed;z-index:100;top:8px;right:8px;
+  background:#fff;color:var(--deep);border:2px solid var(--gold);
+  padding:13px 20px;border-radius:12px;transform:translateY(-180%)}
+.skip-link:focus{transform:translateY(0)}
+.premium-content-hub{padding-block:34px 40px;scroll-margin-top:90px}
+.premium-hub-heading h2{font-size:clamp(24px,3vw,33px);margin:8px 0;color:var(--deep)}
+.premium-hub-heading p{color:var(--muted)}
+.premium-hub-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:14px;margin-top:24px}
+.premium-hub-card{display:flex;flex-direction:column;gap:7px;
+  min-height:158px;padding:22px 18px;background:white;color:var(--deep);
+  border:1px solid var(--line);border-radius:21px;
+  box-shadow:0 8px 28px #163b2610;text-decoration:none;
+  transition:transform .18s,border-color .18s}
+.premium-hub-card:hover{transform:translateY(-3px);border-color:var(--leaf)}
+.premium-hub-card strong{font-weight:900;font-size:17px}
+.premium-hub-card small{color:var(--muted);font-size:12px}
+.premium-hub-icon{display:grid;place-items:center;width:46px;height:46px;
+  border-radius:15px;background:#e9f4ea;color:var(--deep);font-size:23px}
+#products,#videos,#articles,#basket{scroll-margin-top:94px}
+.admin-nav{max-width:100%;scrollbar-width:thin}
+.admin-nav button{min-height:44px}
+@media(max-width:860px){
+  .premium-hub-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(max-width:750px){
+  .mobile-shop-nav{grid-template-columns:repeat(5,minmax(0,1fr))}
+  .mobile-shop-nav a{min-height:64px;font-size:10px;text-decoration:none}
+  .mobile-shop-nav a span{font-size:22px}
+  .mobile-shop-nav .mobile-shop-plus{color:var(--deep);font-weight:900}
+  .mobile-shop-plus span{display:grid;place-items:center;
+    width:43px;height:43px;border-radius:17px;background:var(--pine);
+    color:#fff;margin-top:-20px;border:3px solid #fff}
+  .premium-hub-card{min-height:136px;padding:15px}
+  .admin-nav{flex-wrap:nowrap;overflow-x:auto;padding:5px 0 12px}
+  .admin-nav button{white-space:nowrap;flex:none}
+  .admin-form{grid-template-columns:minmax(0,1fr)}
+  .admin-form .wide{grid-column:auto}
+}
+@media(max-width:390px){
+  .premium-hub-grid{gap:10px}
+  .premium-hub-card{padding:12px}
+  .premium-hub-card strong{font-size:14px}
+  .mobile-shop-nav a{font-size:9px}
+}
+@media(prefers-reduced-motion:reduce){
+  .premium-hub-card,.skip-link{transition:none}
+  .premium-hub-card:hover{transform:none}
+}

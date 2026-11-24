@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:shitreed_customer/alani/alani_design_system.dart';
 import 'package:shitreed_customer/alani/alani_pages.dart';
 import 'package:shitreed_customer/auth/customer_auth_page.dart';
 import 'package:shitreed_customer/backend/marketplace_backend.dart';
@@ -57,29 +58,20 @@ class ShitreedApp extends StatelessWidget {
         locale: const Locale('ar'),
         builder: (context, child) => MediaQuery(
           data: MediaQuery.of(context).copyWith(
-            textScaler: TextScaler.linear(
-              AlAniUiSettings.largeText.value ? 1.15 : 1.0,
-            ),
+            // Preserve the device's accessibility font scaling.
+            // The in-app large-text option adds another 15% if requested.
+            textScaler: AlAniUiSettings.largeText.value
+                ? TextScaler.linear(
+                    MediaQuery.textScalerOf(context).scale(1.0) * 1.15)
+                : MediaQuery.textScalerOf(context),
           ),
           child: Directionality(
             textDirection: TextDirection.rtl,
             child: child ?? const SizedBox.shrink(),
           ),
         ),
-        theme: ThemeData(
-          useMaterial3: true,
-          colorScheme: ColorScheme.fromSeed(seedColor: purple),
-          scaffoldBackgroundColor: canvas,
-          appBarTheme: const AppBarTheme(
-            backgroundColor: darkPurple, foregroundColor: Colors.white),
-        ),
-        darkTheme: ThemeData(
-          useMaterial3: true,
-          colorScheme: ColorScheme.fromSeed(
-            seedColor: const Color(0xFF01BE5F),
-            brightness: Brightness.dark,
-          ),
-        ),
+        theme: AlAniDesignSystem.theme(),
+        darkTheme: AlAniDesignSystem.theme(brightness: Brightness.dark),
         themeMode: AlAniUiSettings.darkMode.value
             ? ThemeMode.dark : ThemeMode.light,
         home: const AlAniWelcomePage(),
