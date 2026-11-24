@@ -274,9 +274,55 @@ const offerInputTime=(value)=>{
   return new Date(date.getTime()-date.getTimezoneOffset()*60000)
     .toISOString().slice(0,16);
 };
+function renderOfferProductPicker(selected=[]){
+ const holder=$('offer-product-picker');holder.replaceChildren();
+ const previous=new Map(selected.map(x=>[String(x.product_id),Number(x.sale_price_iqd)]));
+ for(const product of (adminData.products||[]).filter(x=>x.is_active===true)){
+  const row=text('div','','discount-product-row');row.dataset.productId=product.id;
+  const label=text('label','','discount-product-label');
+  const check=document.createElement('input');check.type='checkbox';
+  check.checked=previous.has(product.id);
+  check.setAttribute('aria-label','اختيار '+product.name);
+  label.append(check,text('span',product.name+' — الأصلي '+money(product.price_iqd)));
+  const amount=document.createElement('input');amount.type='number';
+  amount.min='1';amount.max=String(Math.max(1,product.price_iqd-1));
+  amount.step='1';amount.inputMode='numeric';amount.hidden=!check.checked;
+  amount.placeholder='سعر العرض بالدينار العراقي';
+  amount.setAttribute('aria-label','سعر العرض للمنتج '+product.name);
+  amount.value=previous.get(product.id)||'';
+  const preview=text('small','','discount-product-preview');
+  const update=()=>{
+   amount.hidden=!check.checked;preview.hidden=!check.checked;
+   const price=Number(amount.value);
+   preview.textContent=Number.isSafeInteger(price)&&price>0&&price<product.price_iqd
+    ?money(product.price_iqd)+' ← '+money(price)+' | خصم '+
+      Math.round((product.price_iqd-price)*100/product.price_iqd)+'%'
+    :'سعر العرض يجب أن يكون أقل من السعر الأصلي.';
+  };
+  check.addEventListener('change',update);
+  amount.addEventListener('input',update);
+  row.append(label,amount,preview);holder.append(row);update();
+ }
+}
+function selectedOfferProducts(){
+ const result=[];
+ for(const row of document.querySelectorAll('.discount-product-row')){
+  if(!row.querySelector('input[type=checkbox]').checked)continue;
+  const product=(adminData.products||[]).find(x=>x.id===row.dataset.productId);
+  const price=Number(row.querySelector('input[type=number]').value);
+  if(!product||!Number.isSafeInteger(price)||price<=0||
+    price>=Number(product.price_iqd)){
+   throw Error('أدخل لكل منتج مختار سعراً مخفضاً أقل من السعر الأصلي.');
+  }
+  result.push({product_id:product.id,sale_price_iqd:price});
+ }
+ if(result.length<1||result.length>30)throw Error('اختر من 1 إلى 30 منتجاً للعرض.');
+ return result;
+}
 function resetOffer(){
   $('offer-form').reset();$('offer-id').value='';
   $('offer-heading').textContent='إنشاء عرض جديد';
+  renderOfferProductPicker([]);
   const now=Date.now();
   $('offer-start').value=offerInputTime(now+60*60*1000);
   $('offer-end').value=offerInputTime(now+3*24*60*60*1000);
@@ -286,7 +332,7 @@ function editOffer(row){
   $('offer-title').value=row.title||'';
   $('offer-description').value=row.description||'';
   $('offer-image').value=row.image_url||'';
-  $('offer-product').value=row.product_id||'';
+  renderOfferProductPicker(row.products||[]);
   $('offer-published').value=String(row.is_published===true);
   $('offer-start').value=offerInputTime(row.starts_at);
   $('offer-end').value=offerInputTime(row.ends_at);
@@ -303,20 +349,11 @@ function offerStatus(row){
 function renderOffers(){
   const available=adminData.offersData?.enabled===true;
   $('offers-availability').textContent=available
-    ? 'العروض تخضع لمدة محددة؛ الأسعار داخل طلب الشراء لا تتغير تلقائياً.'
-    : 'ميزة العروض غير مفعلة في هذه البيئة. لا يمكن إنشاء عروض حتى تجهيز قاعدة الاختبار.';
+    ? 'اختر عدة منتجات وحدد سعر الخصم لكل منتج. يحسب الخادم سعر الفاتورة.'
+    : 'العروض غير مفعلة حتى تجهيز قاعدة البيانات.';
+  renderOfferProductPicker([]);
   const form=$('offer-form');
   for(const field of form.elements)field.disabled=!available;
-  const picker=$('offer-product');
-  const previous=picker.value;
-  picker.replaceChildren();
-  const all=text('option','عرض عام بدون منتج');all.value='';
-  picker.append(all);
-  for(const product of adminData.products||[]){
-    const option=text('option',product.name);option.value=product.id;
-    picker.append(option);
-  }
-  picker.value=previous;
   const table=$('offers-table');table.replaceChildren();
   const rows=adminData.offersData?.items||[];
   if(!rows.length){
@@ -362,7 +399,7 @@ $('offer-form').addEventListener('submit',async event=>{
       title:$('offer-title').value,
       description:$('offer-description').value,
       image_url:$('offer-image').value,
-      product_id:$('offer-product').value||null,
+      products:selectedOfferProducts(),
       is_published:$('offer-published').value==='true',
       starts_at:begins.toISOString(),
       ends_at:ends.toISOString()
