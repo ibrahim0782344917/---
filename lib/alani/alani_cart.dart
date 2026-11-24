@@ -73,7 +73,6 @@ class _AlAniCartPageState extends State<AlAniCartPage> {
     }catch(_){/* Manual address entry remains available. */}
   }
 
-  @override
   void _onCartChanged(){
     if(mounted)_refreshQuote();
   }
@@ -109,6 +108,7 @@ class _AlAniCartPageState extends State<AlAniCartPage> {
     }
   }
 
+  @override
   void dispose(){
     _quoteSequence++;
     _quoteTimer?.cancel();
