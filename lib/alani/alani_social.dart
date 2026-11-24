@@ -64,13 +64,15 @@ class _AlAniSocialActionsState extends State<AlAniSocialActions> {
       final response = await db.rpc('alani_social_summary',
         params: {'p_id': widget.publicationId});
       final stats = Map<String, dynamic>.from(response as Map);
-      if (mounted) setState(() {
+      if (mounted) {
+        setState(() {
         likes = (stats['likes'] as num?)?.toInt() ?? 0;
         comments = (stats['comments'] as num?)?.toInt() ?? 0;
         liked = stats['liked'] == true;
         saved = stats['saved'] == true;
         loaded = true;
       });
+      }
     } catch (_) {
       notice('تعذّر تحميل التفاعلات. جرّب تحديث الصفحة.');
     }

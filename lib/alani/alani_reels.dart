@@ -240,7 +240,7 @@ class _AlAniReelTileState extends State<AlAniReelTile>
                 ? 'هذا المقطع منشور على منصة خارجية.'
                 : 'اسحب للأعلى للعودة إلى المشغّل الرسمي.',
                 textAlign: TextAlign.center,
-                style: TextStyle(color: Colors.white, fontSize: 17)),
+                style: const TextStyle(color: Colors.white, fontSize: 17)),
               const SizedBox(height: 10),
               FilledButton.icon(
                 onPressed: _openExternal,

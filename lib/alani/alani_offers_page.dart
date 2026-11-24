@@ -75,8 +75,10 @@ class _AlAniOffersPageState extends State<AlAniOffersPage> {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
         content: Text('المنتج المرتبط بهذا العرض غير متوفر حالياً.')));
     } catch (_) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-        content: Text('تعذّر تحميل بيانات المنتج. حاول مرة ثانية.')));
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text('تعذّر تحميل بيانات المنتج. حاول مرة ثانية.')));
+      }
     }
   }
 
@@ -117,12 +119,14 @@ class _AlAniOffersPageState extends State<AlAniOffersPage> {
                 return v['is_published'] == true && from != null && until != null
                   && AlAniCampaignWindow.visible(from, until, now);
               }).toList();
-              if (live.isEmpty) return ListView(children: [
-                const SizedBox(height: 100),
-                const Center(child: Icon(Icons.local_offer_outlined, size: 54)),
-                const Padding(padding: EdgeInsets.all(20),
-                  child: Center(child: Text('ماكو عروض محدودة الوقت حالياً.'))),
-              ]);
+              if (live.isEmpty) {
+                return ListView(children: const [
+                  SizedBox(height: 100),
+                  Center(child: Icon(Icons.local_offer_outlined, size: 54)),
+                  Padding(padding: EdgeInsets.all(20),
+                    child: Center(child: Text('ماكو عروض محدودة الوقت حالياً.'))),
+                ]);
+              }
               return ListView(
                 padding: const EdgeInsets.all(16),
                 children: [

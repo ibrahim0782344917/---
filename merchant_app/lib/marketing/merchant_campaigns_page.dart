@@ -111,8 +111,10 @@ class _MerchantCampaignsPageState extends State<MerchantCampaignsPage> {
                   if (day == null || !context.mounted) return;
                   final time = await showTimePicker(
                     context: context, initialTime: TimeOfDay.fromDateTime(start));
-                  if (time != null) update(() => start = DateTime(
-                    day.year,day.month,day.day,time.hour,time.minute));
+                  if (time != null) {
+                    update(() => start = DateTime(
+                      day.year,day.month,day.day,time.hour,time.minute));
+                  }
                 },
               ),
               ListTile(
@@ -128,8 +130,10 @@ class _MerchantCampaignsPageState extends State<MerchantCampaignsPage> {
                   if (day == null || !context.mounted) return;
                   final time = await showTimePicker(
                     context: context, initialTime: TimeOfDay.fromDateTime(end));
-                  if (time != null) update(() => end = DateTime(
-                    day.year,day.month,day.day,time.hour,time.minute));
+                  if (time != null) {
+                    update(() => end = DateTime(
+                      day.year,day.month,day.day,time.hour,time.minute));
+                  }
                 },
               ),
               SwitchListTile(

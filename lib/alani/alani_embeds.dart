@@ -5,7 +5,9 @@ import 'package:webview_flutter/webview_flutter.dart';
 /// Never attempts to download, rehost, strip credits or bypass restrictions.
 Uri? alaniOfficialEmbed(Uri? source) {
   if (source == null || source.scheme != 'https' ||
-      source.userInfo.isNotEmpty || source.host.isEmpty) return null;
+      source.userInfo.isNotEmpty || source.host.isEmpty) {
+    return null;
+  }
   final host = source.host.toLowerCase();
   if (host == 'youtube.com' || host == 'www.youtube.com' ||
       host == 'm.youtube.com' || host == 'youtu.be') {
@@ -37,7 +39,9 @@ Uri? alaniOfficialEmbed(Uri? source) {
     // Do not render non-video posts as videos.
     if (!source.path.contains('/videos/') &&
         !source.path.contains('/watch/') &&
-        !source.path.contains('/reel/')) return null;
+        !source.path.contains('/reel/')) {
+      return null;
+    }
     return Uri.https('www.facebook.com', '/plugins/video.php', {
       'href': source.toString(), 'show_text': 'false',
       'width': '350', 'height': '600',
@@ -65,7 +69,9 @@ class _AlAniOfficialEmbeddedVideoState extends State<AlAniOfficialEmbeddedVideo>
   static bool _allowedDestination(String value) {
     final uri = Uri.tryParse(value);
     if (uri == null || uri.scheme != 'https' ||
-        uri.userInfo.isNotEmpty) return false;
+        uri.userInfo.isNotEmpty) {
+      return false;
+    }
     final host = uri.host.toLowerCase();
     return const {
       'www.youtube-nocookie.com', 'www.youtube.com',
