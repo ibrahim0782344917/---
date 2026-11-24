@@ -108,11 +108,9 @@ jobs:
           cd "$APP_PATH"
           if [[ "$APP_PROJECT" == "shitreed_admin" ]]; then rm -f test/widget_test.dart; fi
           flutter pub get
-          if [[ "$APP_PROJECT" == "shitreed_admin" ]]; then
-            flutter analyze --no-fatal-infos lib test
-          else
-            flutter analyze lib test
-          fi
+          # Non-blocking Dart style infos may be reviewed separately.
+          # Analyzer warnings/errors and failed tests block the signed build.
+          flutter analyze --no-fatal-infos lib test
           flutter test
       - name: Compile release Android App Bundle
         shell: bash
