@@ -115,6 +115,23 @@ void main() {
 
     await tester.tap(find.text('المنشورات').last);
     await tester.pumpAndSettle();
-    expect(find.text('الوصفات والمدونة'), findsOneWidget);
+    expect(find.text('كل المنشورات'), findsOneWidget);
   });
+  testWidgets('wide Al-Ani storefront uses adaptive side navigation',
+      (tester) async {
+    tester.view.physicalSize = const Size(1200, 850);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(() {
+      tester.view.resetPhysicalSize();
+      tester.view.resetDevicePixelRatio();
+    });
+    await tester.pumpWidget(const MaterialApp(home: AlAniShopHome()));
+    await tester.pumpAndSettle();
+    expect(find.byType(NavigationRail), findsOneWidget);
+    expect(find.byType(NavigationBar), findsNothing);
+    await tester.tap(find.text('المنشورات').last);
+    await tester.pumpAndSettle();
+    expect(find.text('كل المنشورات'), findsOneWidget);
+  });
+
 }
