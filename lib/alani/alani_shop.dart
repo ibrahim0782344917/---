@@ -133,7 +133,7 @@ class _AlAniShopHomeState extends State<AlAniShopHome> {
     if (value == 2) {
       _openContentHub();
     } else {
-      setState(() => _tab = value == 3 ? 2 : value == 4 ? 3 : value);
+      setState(() => _tab = value == 3 ? 2 : value == 4 ? 4 : value);
     }
   }
 
@@ -163,7 +163,7 @@ class _AlAniShopHomeState extends State<AlAniShopHome> {
             subtitle: const Text('تصفح المحتوى المنشور'),
             onTap: () {
               Navigator.pop(sheetContext);
-              setState(() => _tab = 3);
+              setState(() => _tab = 4);
             },
           ),
           ListTile(
@@ -222,7 +222,7 @@ class _AlAniShopHomeState extends State<AlAniShopHome> {
     return Theme(
       data: Theme.of(context),
       child: Scaffold(
-        backgroundColor: _cream,
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         drawer: const AlAniStoreDrawer(),
         appBar: AppBar(
           titleSpacing: 12,
@@ -288,7 +288,7 @@ class _AlAniShopHomeState extends State<AlAniShopHome> {
         body: SafeArea(
           child: Row(children: [
             if (wide) NavigationRail(
-              selectedIndex: _tab == 2 ? 3 : _tab == 3 ? 4 : _tab,
+              selectedIndex: _tab == 2 ? 3 : _tab >= 3 ? 4 : _tab,
               labelType: NavigationRailLabelType.all,
               onDestinationSelected: _selectNavigation,
               destinations: const [
@@ -334,7 +334,7 @@ class _AlAniShopHomeState extends State<AlAniShopHome> {
           ]),
         ),
         bottomNavigationBar: wide ? null : NavigationBar(
-          selectedIndex: _tab == 2 ? 3 : _tab == 3 ? 4 : _tab,
+          selectedIndex: _tab == 2 ? 3 : _tab >= 3 ? 4 : _tab,
           onDestinationSelected: _selectNavigation,
           destinations: const [
             NavigationDestination(
