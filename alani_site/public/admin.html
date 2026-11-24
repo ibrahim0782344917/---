@@ -56,7 +56,11 @@
       <label class="wide">اسم العرض<input id="offer-title" minlength="3" maxlength="100" required></label>
       <label class="wide">وصف العرض<textarea id="offer-description" maxlength="600" rows="3"></textarea></label>
       <label class="wide">رابط الصورة HTTPS<input id="offer-image" type="url" maxlength="1024"></label>
-      <label>المنتج المرتبط<select id="offer-product"><option value="">عرض عام بدون منتج</option></select></label>
+      <fieldset class="wide discount-product-fieldset" id="offer-products">
+        <legend>منتجات العرض وأسعار الخصم</legend>
+        <p class="small">اختر عدة منتجات، واكتب السعر الجديد لكل منتج. سيبقى السعر القديم محفوظاً، ولا يُقبل خصم أعلى من السعر الأصلي.</p>
+        <div id="offer-product-picker" class="offer-product-picker"></div>
+      </fieldset>
       <label>حالة النشر<select id="offer-published"><option value="false">مسودة</option><option value="true">ينشر في موعده</option></select></label>
       <label>وقت البداية<input id="offer-start" type="datetime-local" required></label>
       <label>وقت النهاية<input id="offer-end" type="datetime-local" required></label>

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:math';
 import 'package:flutter/material.dart';
@@ -8,6 +9,7 @@ import 'package:shitreed_customer/auth/customer_auth_page.dart';
 import 'package:shitreed_customer/backend/marketplace_backend.dart';
 import 'package:shitreed_customer/alani/alani_content.dart';
 import 'package:shitreed_customer/alani/alani_checkout_readiness.dart';
+import 'package:shitreed_customer/alani/alani_offers_page.dart';
 import 'alani_pages.dart';
 
 const _green = Color(0xFF01BE5F);
@@ -33,9 +35,14 @@ class _AlAniCartPageState extends State<AlAniCartPage> {
   List<Map<String,dynamic>> savedAddresses = [];
   bool submitting = false;
   String? requestKey, lastPayload;
+  Map<String,dynamic>? _quote;
+  bool _quoteLoading=false;
+  int _quoteSequence=0;
+  Timer? _quoteTimer;
 
   bool get canSubmit => AlAniCheckoutReadiness.clientApproved &&
-      _serverReady && !_checking;
+      _serverReady && !_checking &&
+      (!AlAniOffersGate.enabled || (_quote!=null && !_quoteLoading));
 
   Future<void> _refreshReadiness() async {
     if (!mounted) return;
@@ -49,6 +56,13 @@ class _AlAniCartPageState extends State<AlAniCartPage> {
     super.initState();
     _loadAddresses();
     _refreshReadiness();
+    CommerceCart.instance.addListener(_onCartChanged);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if(mounted)_refreshQuote();
+    });
+    _quoteTimer=Timer.periodic(const Duration(seconds:30),(_){
+      if(mounted && CommerceCart.instance.items.isNotEmpty)_refreshQuote();
+    });
   }
 
   Future<void> _loadAddresses() async {
@@ -59,8 +73,46 @@ class _AlAniCartPageState extends State<AlAniCartPage> {
     }catch(_){/* Manual address entry remains available. */}
   }
 
+  void _onCartChanged(){
+    if(mounted)_refreshQuote();
+  }
+
+  List<Map<String,dynamic>> _requestItems() => CommerceCart.instance.items
+    .map((line)=><String,dynamic>{
+      'product_id':line.product.id,'quantity':line.quantity,
+    }).toList();
+
+  Future<Map<String,dynamic>> _priceFromServer(
+      List<Map<String,dynamic>> items) async {
+    final value=await Supabase.instance.client.rpc('alani_discount_quote',
+      params:{'p_items':items});
+    return Map<String,dynamic>.from(value as Map);
+  }
+
+  Future<void> _refreshQuote() async {
+    final seq=++_quoteSequence;
+    if(!AlAniOffersGate.enabled || !MarketplaceBackend.configured ||
+       CommerceCart.instance.items.isEmpty){
+      if(mounted)setState((){_quote=null;_quoteLoading=false;});
+      return;
+    }
+    setState((){_quote=null;_quoteLoading=true;});
+    try{
+      final quote=await _priceFromServer(_requestItems());
+      if(!mounted || seq!=_quoteSequence)return;
+      setState((){_quote=quote;_quoteLoading=false;});
+    }catch(_){
+      if(mounted && seq==_quoteSequence){
+        setState((){_quote=null;_quoteLoading=false;});
+      }
+    }
+  }
+
   @override
   void dispose(){
+    _quoteSequence++;
+    _quoteTimer?.cancel();
+    CommerceCart.instance.removeListener(_onCartChanged);
     address.dispose();phone.dispose();notes.dispose();
     super.dispose();
   }
@@ -103,12 +155,28 @@ class _AlAniCartPageState extends State<AlAniCartPage> {
     if(!approved){
       notice('المتجر لا يستقبل طلبات حالياً.');return;
     }
-    final currentItems=cart.items.map((line)=>{
-      'product_id':line.product.id,'quantity':line.quantity,
-    }).toList();
-    // The buyer explicitly confirms the quoted total INCLUDING delivery.
-    // The atomic Al-Ani RPC rejects changes to live prices or stock.
-    final expectedTotal=cart.totalIqd+deliveryFee;
+    final currentItems=_requestItems();
+    // When promotional pricing is active, only the server quote authorizes
+    // the total shown for confirmation. Its atomic checkout RPC independently
+    // recalculates the discount, stock and delivery fee.
+    Map<String,dynamic>? quote;
+    if(AlAniOffersGate.enabled){
+      try{
+        quote=await _priceFromServer(currentItems);
+      }catch(_){
+        notice('تعذّر التأكد من سعر العرض. حدّث السلة قبل الطلب.');
+        await _refreshQuote();
+        return;
+      }
+    }
+    if(!mounted)return;
+    final subtotal=(quote?['subtotal_iqd'] as num?)?.toInt()??cart.totalIqd;
+    final expectedTotal=(quote?['total_iqd'] as num?)?.toInt()??
+      cart.totalIqd+deliveryFee;
+    if(expectedTotal!=subtotal+deliveryFee){
+      notice('الإجمالي لا يطابق رسوم التوصيل. حدّث السلة.');
+      return;
+    }
     final body=<String,dynamic>{
       'p_items':currentItems,
       'p_delivery_address':address.text.trim(),
@@ -125,7 +193,7 @@ class _AlAniCartPageState extends State<AlAniCartPage> {
     final confirmed=await showDialog<bool>(
       context:context,builder:(ctx)=>AlertDialog(
         title:const Text('تأكيد الطلب — الدفع عند الاستلام'),
-        content:Text('المنتجات: ${priceText(cart.totalIqd)}\nالتوصيل: ٥٬٠٠٠ د.ع\nالإجمالي المتوقع: ${priceText(cart.totalIqd+deliveryFee)}\nسيحسب الخادم المبلغ النهائي من أسعار المنتجات الحالية.'),
+        content:Text('المنتجات بعد الخصم: ${priceText(subtotal)}\nالتوصيل: ٥٬٠٠٠ د.ع\nالإجمالي: ${priceText(expectedTotal)}\nسيعيد الخادم التحقق من الأسعار والخصومات عند تأكيد الطلب.'),
         actions:[
           TextButton(onPressed:()=>Navigator.pop(ctx,false),
             child:const Text('إلغاء')),
@@ -177,6 +245,16 @@ class _AlAniCartPageState extends State<AlAniCartPage> {
     builder:(context,_){
       final cart=CommerceCart.instance;
       final items=cart.items;
+      final quotedLines=<String,_StringKeyQuote>{};
+      for(final row in (_quote?['lines'] as List<dynamic>? ?? [])){
+        final values=Map<String,dynamic>.from(row as Map);
+        quotedLines[values['product_id'].toString()]=_StringKeyQuote(
+          (values['unit_price_iqd'] as num).toInt(),
+          (values['regular_price_iqd'] as num).toInt(),
+        );
+      }
+      final offerSubtotal=(_quote?['subtotal_iqd'] as num?)?.toInt();
+      final offerTotal=(_quote?['total_iqd'] as num?)?.toInt();
       return ListView(padding:const EdgeInsets.all(17),children:[
         const Text('سلة السيد إبراهيم العاني',
           style:TextStyle(fontSize:23,fontWeight:FontWeight.w900,color:_ink)),
@@ -201,7 +279,19 @@ class _AlAniCartPageState extends State<AlAniCartPage> {
           child:Center(child:Text('السلة فارغة. اختر من منتجات متجرنا.'))),
         for(final item in items)Card(color:Colors.white,child:ListTile(
           title:Text(item.product.name),
-          subtitle:Text(priceText(item.product.priceIqd)),
+          subtitle:quotedLines[item.product.id] == null
+            ? Text(priceText(item.product.priceIqd))
+            : Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
+                if(quotedLines[item.product.id]!.discounted)
+                  Text(priceText(item.product.priceIqd),
+                    style:const TextStyle(
+                      decoration:TextDecoration.lineThrough,
+                      color:Colors.grey)),
+                Text(priceText(quotedLines[item.product.id]!.unitPrice),
+                  style:TextStyle(fontWeight:FontWeight.w700,
+                    color:quotedLines[item.product.id]!.discounted
+                      ?const Color(0xFF0E8246):_ink)),
+              ]),
           trailing:Wrap(crossAxisAlignment:WrapCrossAlignment.center,children:[
             IconButton(tooltip:'تقليل الكمية',
               onPressed:submitting?null:()=>cart.subtract(item.product),
@@ -218,15 +308,26 @@ class _AlAniCartPageState extends State<AlAniCartPage> {
             label:const Text('إفراغ السلة')),
           const SizedBox(height:15),
           ListTile(title:const Text('مجموع المنتجات'),
-            trailing:Text(priceText(cart.totalIqd))),
+            trailing:Text(priceText(offerSubtotal??cart.totalIqd))),
           const ListTile(title:Text('أجور التوصيل'),
             trailing:Text('٥٬٠٠٠ د.ع')),
           ListTile(
             title:const Text('الإجمالي المتوقع مع التوصيل',
               style:TextStyle(fontWeight:FontWeight.bold)),
-            trailing:Text(priceText(cart.totalIqd+deliveryFee),
+            trailing:Text(priceText(offerTotal??cart.totalIqd+deliveryFee),
               style:const TextStyle(fontWeight:FontWeight.w900,color:_green)),
           ),
+          if(AlAniOffersGate.enabled && _quoteLoading)
+            const LinearProgressIndicator(),
+          if(AlAniOffersGate.enabled && _quote==null && !_quoteLoading)
+            TextButton.icon(onPressed:_refreshQuote,
+              icon:const Icon(Icons.refresh),
+              label:const Text('تحديث أسعار العروض')),
+          if(offerSubtotal!=null && offerSubtotal<cart.totalIqd)
+            ListTile(title:const Text('وفرت بالعروض الحالية'),
+              trailing:Text(priceText(cart.totalIqd-offerSubtotal),
+                style:const TextStyle(color:Color(0xFF07814E),
+                  fontWeight:FontWeight.bold))),
           if(!canSubmit)Card(
             color:const Color(0xFFFFF0D9),
             child:Padding(padding:const EdgeInsets.all(16),
@@ -289,4 +390,11 @@ class _AlAniCartPageState extends State<AlAniCartPage> {
       ]);
     },
   );
+}
+
+class _StringKeyQuote {
+  const _StringKeyQuote(this.unitPrice,this.oldPrice);
+  final int unitPrice;
+  final int oldPrice;
+  bool get discounted => unitPrice<oldPrice;
 }

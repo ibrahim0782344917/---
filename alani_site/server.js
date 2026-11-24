@@ -179,12 +179,35 @@ async function handleApi(req, res, path) {
   }
   if (req.method === 'GET' && path === '/api/offers') {
     if (!OFFERS_ENABLED) return respond(res,200,{enabled:false,items:[]});
-    const now = encodeURIComponent(new Date().toISOString());
-    const query='select=id,title,description,image_url,product_id,starts_at,ends_at'
+    const now=encodeURIComponent(new Date().toISOString());
+    const campaigns=await supabase(selectUrl('shitreed_store_campaigns',
+      'select=id,title,description,image_url,starts_at,ends_at,is_published'
       +'&store_id=eq.'+encodeURIComponent(STORE_ID)
       +'&is_published=eq.true&starts_at=lte.'+now
-      +'&ends_at=gt.'+now+'&order=ends_at.asc&limit=80';
-    const items=await supabase(selectUrl('shitreed_store_campaigns',query));
+      +'&ends_at=gt.'+now+'&order=ends_at.asc&limit=80'));
+    if (!campaigns.length) return respond(res,200,{enabled:true,items:[]});
+    const ids=campaigns.map(c=>c.id).join(',');
+    const lines=await supabase(selectUrl('shitreed_campaign_items',
+      'select=campaign_id,product_id,sale_price_iqd&campaign_id=in.('+ids+')'));
+    const productIds=[...new Set(lines.map(x=>x.product_id))];
+    const products=productIds.length
+      ? await supabase(selectUrl('products',
+          'select=id,name,price_iqd,image_url,stock_quantity&store_id=eq.'+
+          encodeURIComponent(STORE_ID)+'&id=in.('+productIds.join(',')+')'))
+      : [];
+    const map=new Map(products.map(x=>[x.id,x]));
+    const items=campaigns.map(c=>({...c,products:lines
+      .filter(x=>x.campaign_id===c.id)
+      .map(x=>{
+        const p=map.get(x.product_id);
+        const regular=Number(p?.price_iqd),sale=Number(x.sale_price_iqd);
+        if(!p||!Number.isSafeInteger(regular)||
+          !Number.isSafeInteger(sale)||sale<=0||sale>=regular||
+          Number(p.stock_quantity)<=0)return null;
+        return {id:p.id,name:p.name,image_url:p.image_url,
+          regular_price_iqd:regular,sale_price_iqd:sale,
+          discount_percent:Math.round((regular-sale)*100/regular)};
+      }).filter(Boolean)}));
     return respond(res,200,{enabled:true,items});
   }
   if (req.method === 'GET' && path === '/api/config') {
@@ -396,61 +419,64 @@ async function handleApi(req, res, path) {
   if (req.method === 'GET' && path === '/api/admin/offers') {
     if (!OFFERS_ENABLED) return respond(res,200,{enabled:false,items:[]});
     const items=await supabase(selectUrl('shitreed_store_campaigns',
-      'select=id,title,description,image_url,product_id,starts_at,ends_at,'
+      'select=id,title,description,image_url,starts_at,ends_at,'
       +'is_published,created_at&store_id=eq.'+encodeURIComponent(STORE_ID)
       +'&order=created_at.desc&limit=100'),{},token);
-    return respond(res,200,{enabled:true,items});
+    if (!items.length)return respond(res,200,{enabled:true,items:[]});
+    const lines=await supabase(selectUrl('shitreed_campaign_items',
+      'select=campaign_id,product_id,sale_price_iqd&campaign_id=in.('+
+      items.map(x=>x.id).join(',')+')'),{},token);
+    return respond(res,200,{enabled:true,
+      items:items.map(c=>({...c,products:lines.filter(
+        x=>x.campaign_id===c.id).map(x=>({
+          product_id:x.product_id,sale_price_iqd:x.sale_price_iqd
+        }))}))});
   }
   if (req.method === 'POST' && path === '/api/admin/offers') {
     if (!OFFERS_ENABLED) throw new HttpError(503,
       'نظام العروض غير مفعّل في هذه البيئة.');
     const body=await readBody(req);
     const start=new Date(body.starts_at),end=new Date(body.ends_at);
-    const validDates=Number.isFinite(start.getTime()) &&
-      Number.isFinite(end.getTime()) &&
-      end.getTime()>start.getTime() &&
-      end.getTime()-start.getTime()<=90*24*60*60*1000;
-    const productId=body.product_id || null;
-    if (!validText(body.title,3,100) ||
-      typeof body.description !== 'string' || body.description.length>600 ||
-      typeof body.is_published !== 'boolean' ||
-      !validUrl(body.image_url) || !validDates ||
-      (productId!==null && !uuid.test(String(productId))) ||
-      (body.id && !uuid.test(String(body.id)))) {
-      throw new HttpError(400,'تحقق من بيانات العرض ووقت البداية والنهاية.');
+    const rows=body.products;
+    if(!validText(body.title,3,100) ||
+      typeof body.description!=='string'||body.description.length>600||
+      typeof body.is_published!=='boolean'||!validUrl(body.image_url)||
+      !Number.isFinite(start.getTime())||!Number.isFinite(end.getTime())||
+      end<=start||end-start>90*24*60*60*1000||
+      !Array.isArray(rows)||rows.length<1||rows.length>30||
+      rows.some(x=>!uuid.test(String(x.product_id))||
+        !Number.isSafeInteger(x.sale_price_iqd)||x.sale_price_iqd<=0)||
+      (body.id&&!uuid.test(String(body.id)))) {
+      throw new HttpError(400,'تحقق من المنتجات وأسعار الخصم ووقت العرض.');
     }
-    if (productId!==null) {
-      const product=await supabase(selectUrl('products',
-        'select=id&store_id=eq.'+encodeURIComponent(STORE_ID)+
-        '&id=eq.'+encodeURIComponent(productId)+'&limit=1'),{},token);
-      if (!product.length) throw new HttpError(400,
-        'المنتج المحدد لا يتبع متجرك.');
+    const ids=rows.map(x=>x.product_id);
+    if(new Set(ids).size!==ids.length)throw new HttpError(400,
+      'لا يمكن اختيار نفس المنتج مرتين.');
+    const products=await supabase(selectUrl('products',
+      'select=id,price_iqd,is_active&store_id=eq.'+
+      encodeURIComponent(STORE_ID)+'&id=in.('+ids.join(',')+')'),{},token);
+    const indexed=new Map(products.map(x=>[x.id,x]));
+    if(rows.some(x=>!indexed.get(x.product_id)?.is_active||
+      x.sale_price_iqd>=Number(indexed.get(x.product_id)?.price_iqd))){
+      throw new HttpError(400,
+        'سعر العرض لازم يكون أقل من سعر المنتج الأصلي ومتوفراً بالمتجر.');
     }
-    const data={
-      title:body.title.trim(),description:body.description.trim(),
-      image_url:str(body.image_url)||null,
-      product_id:productId,
-      starts_at:start.toISOString(),ends_at:end.toISOString(),
-      is_published:body.is_published,
-    };
-    let items;
-    if (body.id) {
-      items=await supabase(selectUrl('shitreed_store_campaigns',
-        'id=eq.'+encodeURIComponent(body.id)+
-        '&store_id=eq.'+encodeURIComponent(STORE_ID)),
-        {method:'PATCH',body:JSON.stringify(data)},token);
-    } else {
-      const user=await supabase('/auth/v1/user',{},token);
-      if (!user?.id || !uuid.test(user.id)) throw new HttpError(401,
-        'لا توجد جلسة حساب موثّقة.');
-      items=await supabase('/rest/v1/shitreed_store_campaigns',
-        {method:'POST',body:JSON.stringify({
-          ...data,store_id:STORE_ID,created_by:user.id,
-        })},token);
-    }
-    if (!Array.isArray(items) || !items.length) throw new HttpError(403,
-      'لم يتم حفظ العرض أو لا تملك صلاحية تعديله.');
-    return respond(res,200,{ok:true,offer:items[0]});
+    const campaignId=await supabase('/rest/v1/rpc/alani_save_campaign',{
+      method:'POST',body:JSON.stringify({
+        p_id:body.id||null,p_store_id:STORE_ID,
+        p_title:body.title.trim(),
+        p_description:body.description.trim(),
+        p_image_url:str(body.image_url)||null,
+        p_starts_at:start.toISOString(),p_ends_at:end.toISOString(),
+        p_published:body.is_published,
+        p_items:rows.map(x=>({
+          product_id:x.product_id,sale_price_iqd:x.sale_price_iqd
+        })),
+      }),
+    },token);
+    if(!uuid.test(String(campaignId)))throw new HttpError(502,
+      'لم يُؤكد الخادم حفظ العرض.');
+    return respond(res,200,{ok:true,id:campaignId});
   }
   if (req.method === 'GET' && path === '/api/admin/overview') {
     const id=encodeURIComponent(STORE_ID);
