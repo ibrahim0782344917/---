@@ -381,3 +381,14 @@ textarea:focus-visible,select:focus-visible,[tabindex]:focus-visible{
   .premium-hub-card,.skip-link{transition:none}
   .premium-hub-card:hover{transform:none}
 }
+
+.discount-product-fieldset{border:1px solid #d8e5da;border-radius:17px;
+  padding:13px;margin:10px 0}
+.discount-product-fieldset legend{font-weight:900;padding-inline:8px}
+.offer-product-picker{display:grid;gap:10px}
+.discount-product-row{border:1px solid #dce8df;padding:13px;
+  border-radius:13px;background:#fff;display:grid;gap:8px}
+.discount-product-label{display:flex;align-items:center;gap:9px}
+.discount-product-label input{width:20px;height:20px;flex:none}
+.discount-product-row>input{min-height:45px;padding:10px}
+.discount-product-preview{color:#137246;font-weight:700}
