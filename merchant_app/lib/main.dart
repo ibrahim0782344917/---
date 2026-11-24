@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:shitreed_merchant/shared/alani_design_system.dart';
 import 'package:shitreed_merchant/backend/marketplace_backend.dart';
 import 'package:shitreed_merchant/navigation/merchant_shell.dart';
 import 'package:shitreed_merchant/account/merchant_legal_pages.dart';
@@ -25,16 +26,9 @@ class ShitreedMerchantApp extends StatelessWidget {
       textDirection: TextDirection.rtl,
       child: child ?? const SizedBox.shrink(),
     ),
-    theme: ThemeData(
-      useMaterial3: true,
-      colorScheme: ColorScheme.fromSeed(seedColor: merchantPurple),
-      scaffoldBackgroundColor: merchantCanvas,
-      appBarTheme: const AppBarTheme(
-        backgroundColor: merchantDark, foregroundColor: Colors.white),
-      inputDecorationTheme: const InputDecorationTheme(
-        border: OutlineInputBorder(),
-      ),
-    ),
+    theme: AlAniDesignSystem.theme(),
+    darkTheme: AlAniDesignSystem.theme(brightness: Brightness.dark),
+    themeMode: ThemeMode.system,
     home: const MerchantAuthGate(),
   );
 }
