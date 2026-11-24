@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'alani_design_system.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'admin_api.dart';
 import 'admin_pro_features.dart';
@@ -28,16 +29,9 @@ class ShitreedAdminApp extends StatelessWidget {
       textDirection: TextDirection.rtl,
       child: child ?? const SizedBox.shrink(),
     ),
-    theme: ThemeData(
-      useMaterial3: true,
-      colorScheme: ColorScheme.fromSeed(seedColor: purple),
-      scaffoldBackgroundColor: const Color(0xFFF5F6FA),
-      cardTheme: CardThemeData(elevation: 0, color: Colors.white,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15),
-          side: const BorderSide(color: Color(0xFFE7EAF2)))),
-      appBarTheme: const AppBarTheme(
-        backgroundColor: Color(0xFF141B2E), foregroundColor: Colors.white),
-    ),
+    theme: AlAniDesignSystem.theme(),
+    darkTheme: AlAniDesignSystem.theme(brightness: Brightness.dark),
+    themeMode: ThemeMode.system,
     home: const AdminGate(),
   );
 }
