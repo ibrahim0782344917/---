@@ -12,20 +12,27 @@ class AlAniCheckoutReadiness {
   // Only the isolated shitreed-test database may enable mobile COD testing.
   // Production releases retain the existing fail-closed approval checks.
   static const String _testUrl = 'https://tgvdwotbrnhcoykuxdpr.supabase.co';
+  static const String _productionUrl =
+      'https://ltwncrewggdrjevakwpb.supabase.co';
+
+  // The mobile client can show live catalog data without accepting orders.
+  // Never mistake a live DATA connection for checkout authorization.
+  static const bool productionDataConnected =
+      String.fromEnvironment('SUPABASE_URL') == _productionUrl;
   static const bool testMode =
       bool.fromEnvironment('ALANI_TEST_CHECKOUT_ENABLED', defaultValue: false) &&
       String.fromEnvironment('SUPABASE_URL') == _testUrl;
 
   static const bool clientApproved = testMode ||
-      (bool.fromEnvironment('ALANI_CHECKOUT_ENABLED', defaultValue: false) &&
+      (productionDataConnected &&
+       bool.fromEnvironment('ALANI_CHECKOUT_ENABLED', defaultValue: false) &&
        bool.fromEnvironment('ALANI_DELIVERY_TOTALS_VERIFIED',
           defaultValue: false));
 
   // Release builds must explicitly set their approved API URL.
-  static const String apiBase = String.fromEnvironment(
-    'ALANI_API_BASE',
-    defaultValue: 'https://alani-site-admin-staging.up.railway.app',
-  );
+  static const String apiBase = String.fromEnvironment('ALANI_API_BASE');
+  // Production requires an explicitly approved endpoint; the Staging
+  // Railway site must never authorize live checkout by accident.
   static const String storeId = '25091ca2-c0da-416c-b634-81b188ee66be';
 
   static bool validConfig(Map<String, dynamic> value) =>
