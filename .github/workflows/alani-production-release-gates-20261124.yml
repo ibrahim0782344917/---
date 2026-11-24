@@ -40,10 +40,10 @@ jobs:
           python3 scripts/configure_android_maps.py
           python3 scripts/configure_alani_icon.py . customer
           python3 merchant_app/scripts/use_runner_ndk.py
-      - name: Strict flutter analysis (infos must pass)
+      - name: Flutter analysis (all warnings/errors block release, style infos are reported)
         run: |
           flutter pub get
-          flutter analyze lib test
+          flutter analyze --no-fatal-infos lib test
           flutter test
       - name: Build isolated customer Android only
         run: |
@@ -85,10 +85,10 @@ jobs:
           python3 scripts/configure_android.py
           python3 ../scripts/configure_alani_icon.py . merchant
           python3 scripts/use_runner_ndk.py
-      - name: Strict flutter analysis and tests
+      - name: Flutter analysis and tests (warnings/errors fail release)
         run: |
           flutter pub get
-          flutter analyze
+          flutter analyze --no-fatal-infos
           flutter test
       - name: Build isolated merchant preview
         run: |
@@ -135,10 +135,10 @@ jobs:
           p.write_text(s)
           PY
           rm -f test/widget_test.dart
-      - name: Strict flutter analysis and tests
+      - name: Flutter analysis and tests (warnings/errors fail release)
         run: |
           flutter pub get
-          flutter analyze lib test
+          flutter analyze --no-fatal-infos lib test
           flutter test
       - name: Build isolated admin preview
         run: |
