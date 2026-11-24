@@ -6,6 +6,7 @@ import 'package:shitreed_customer/alani/alani_content.dart';
 import 'package:shitreed_customer/alani/alani_product.dart';
 import 'package:shitreed_customer/backend/marketplace_backend.dart';
 import 'package:shitreed_customer/commerce/commerce_service.dart';
+import 'package:shitreed_customer/commerce/customer_commerce_pages.dart';
 
 /// True only for the isolated test project until the release review is done.
 class AlAniOffersGate {
