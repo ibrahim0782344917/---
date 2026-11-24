@@ -9,8 +9,8 @@ import 'alani_store_admin_page.dart';
 import 'alani_campaign_admin_page.dart';
 import 'alani_legacy_customers_import_page.dart';
 
-const purple = Color(0xFF01BE5F);
-const orange = Color(0xFFF2AB3A);
+const purple = Color(0xFF17583D);
+const orange = Color(0xFFC49B45);
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -739,12 +739,12 @@ class _AdminHomeState extends State<AdminHome> {
       'audit': Icons.history,
     };
     return Scaffold(
-      drawer: narrow ? Drawer(backgroundColor: const Color(0xFF141B2E),
+      drawer: narrow ? Drawer(backgroundColor: const Color(0xFF17372B),
         child: SafeArea(child: Column(children: [
           const Padding(padding: EdgeInsets.all(24),
             child: Column(crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('شتريد | الإدارة الموحّدة', style: TextStyle(
+                Text('السيد إبراهيم العاني | الإدارة', style: TextStyle(
                   color: Colors.white, fontSize: 24,
                   fontWeight: FontWeight.w900)),
                 Text('مركز العمليات', style: TextStyle(
@@ -755,7 +755,7 @@ class _AdminHomeState extends State<AdminHome> {
               padding: const EdgeInsets.symmetric(horizontal: 9),
               child: ListTile(
                 selected:key==section,
-                selectedTileColor:const Color(0xFF20483A),
+                selectedTileColor:const Color(0xFF245E42),
                 shape:RoundedRectangleBorder(
                   borderRadius:BorderRadius.circular(11)),
                 leading:Icon(menuIcons[key],color:Colors.white70),
@@ -847,9 +847,25 @@ class _AdminHomeState extends State<AdminHome> {
         ])),
       ) : null,
       appBar: AppBar(
-        title: const Text('شتريد | الإدارة الموحدة'),
+        title: const Text('السيد إبراهيم العاني | الإدارة'),
         actions: [
-          if (AdminAccess.canOpenAlAni(widget.role))
+          if (!narrow && AdminAccess.canOpenAlAni(widget.role))
+            IconButton(
+              tooltip: 'العروض المحدودة',
+              icon: const Icon(Icons.local_offer_outlined),
+              onPressed: () => Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (_) => const AlAniCampaignAdminPage())),
+            ),
+          if (!narrow && AdminAccess.canOpenAlAni(widget.role))
+            IconButton(
+              tooltip: 'المقالات والفيديوهات',
+              icon: const Icon(Icons.video_library_outlined),
+              onPressed: () => Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (_) => const AlAniStoreAdminPage(initialTab: 3))),
+            ),
+          if (!narrow && AdminAccess.canOpenAlAni(widget.role))
             IconButton(
               tooltip: 'متجر السيد إبراهيم العاني',
               icon: const Icon(Icons.spa_outlined),
@@ -859,7 +875,7 @@ class _AdminHomeState extends State<AdminHome> {
                 ),
               ),
             ),
-          if (widget.role == 'super_admin')
+          if (!narrow && widget.role == 'super_admin')
             IconButton(
               tooltip: 'إدارة الرتب والتوثيق والمستويات',
               icon: const Icon(Icons.military_tech_outlined),
