@@ -248,7 +248,7 @@ class _AlAniMerchantDeliveryPageState
                           style: const TextStyle(fontWeight: FontWeight.w900)),
                         Text('الإجمالي: ${_iqd(order['total_iqd'])} '
                           '• التوصيل: ${_iqd(order['delivery_fee_iqd'])}'),
-                        if (order['status'] == 'ready')
+                        if (order['status'] == 'ready') ...[
                           if (couriers.isEmpty)
                             const Text('اعتمد مندوباً أولاً.')
                           else
@@ -259,8 +259,8 @@ class _AlAniMerchantDeliveryPageState
                                   courier['courier_id'].toString()),
                                 icon: const Icon(Icons.local_shipping_outlined),
                                 label: Text('تعيين المندوب ${courier['courier_id'].toString().substring(0, 8)}'),
-                              )
-                        else
+                              ),
+                        ] else
                           const Text('تم إرساله للمندوب؛ تابع حالة التسليم.'),
                       ],
                     ),
