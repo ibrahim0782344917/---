@@ -9,7 +9,7 @@ void main() {
   });
 
   test('buyer sees each supported delivery stage', () {
-    expect(AlAniDeliveryStages.label('ready'), contains('التوصيل'));
+    expect(AlAniDeliveryStages.label('ready'), contains('المندوب'));
     expect(AlAniDeliveryStages.label('out_for_delivery'), contains('خرج'));
     expect(AlAniDeliveryStages.label('delivered'), contains('التسليم'));
     expect(AlAniDeliveryStages.label('cancelled'), contains('إلغاء'));
