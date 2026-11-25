@@ -1,5 +1,6 @@
 // ignore_for_file: curly_braces_in_flow_control_structures
 import 'package:flutter/material.dart';
+import 'package:shitreed_merchant/reports/alani_inventory_page.dart';
 import 'package:shitreed_merchant/account/merchant_account_page.dart';
 import 'package:shitreed_merchant/commerce/commerce_service.dart';
 import 'package:shitreed_merchant/merchant/merchant_dashboard.dart';
@@ -269,6 +270,8 @@ class _MerchantOverviewPageState extends State<MerchantOverviewPage> {
           )),
           _action('إدارة المحلات','إضافة محلك وتعديل أوقات الدوام', 
             Icons.storefront_outlined,1),
+          if(AlAniInventoryPage.enabled)
+            Card(child:ListTile(leading:const Icon(Icons.inventory_2_outlined),title:const Text('المخزون الذكي والباركود'),subtitle:const Text('تقارير TEST'),onTap:()=>Navigator.of(context).push<void>(MaterialPageRoute(builder:(_)=>const AlAniInventoryPage())))),
           _action('المنتجات والمخزون','أضف الأسعار والصور وتابع الكميات',
             Icons.inventory_2_outlined,2),
           _action('الطلبات الجديدة','اقبل، جهّز، وتابع حالة الطلب',
