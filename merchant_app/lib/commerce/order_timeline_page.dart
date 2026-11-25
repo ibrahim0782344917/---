@@ -1,5 +1,6 @@
 // ignore_for_file: prefer_interpolation_to_compose_strings
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:shitreed_merchant/commerce/commerce_service.dart';
 
 const _purple = Color(0xFF0C946B);
@@ -15,6 +16,8 @@ String _statusLabel(String status) {
       return 'قيد التجهيز';
     case 'ready':
       return 'جاهز للتسليم';
+    case 'out_for_delivery':
+      return 'خرج للتوصيل';
     case 'delivered':
       return 'تم التسليم';
     case 'cancelled':
@@ -53,6 +56,7 @@ class OrderTimelinePage extends StatefulWidget {
 class _OrderTimelinePageState extends State<OrderTimelinePage> {
   late Future<List<Map<String, dynamic>>> _items;
   late Future<List<Map<String, dynamic>>> _events;
+  late Future<Map<String, dynamic>> _statusFuture;
 
   @override
   void initState() {
@@ -63,13 +67,16 @@ class _OrderTimelinePageState extends State<OrderTimelinePage> {
   void _load() {
     _items = CommerceService.orderItems(widget.orderId);
     _events = CommerceService.orderStatusEvents(widget.orderId);
+    _statusFuture = Supabase.instance.client.from('orders')
+      .select('status,delivery_fee_iqd,delivered_at')
+      .eq('id', widget.orderId).single();
   }
 
   Future<void> _refresh() async {
     setState(() {
       _load();
     });
-    await Future.wait<dynamic>([_items, _events]);
+    await Future.wait<dynamic>([_items, _events, _statusFuture]);
   }
 
   @override
@@ -86,9 +93,32 @@ class _OrderTimelinePageState extends State<OrderTimelinePage> {
             style: const TextStyle(
               color: _dark, fontWeight: FontWeight.w900, fontSize: 22)),
           const SizedBox(height: 7),
-          Text('الحالة: ' + _statusLabel(widget.status),
-            style: const TextStyle(
-              color: _purple, fontWeight: FontWeight.bold)),
+          FutureBuilder<Map<String, dynamic>>(
+            future: _statusFuture,
+            builder: (context, snap) {
+              final liveStatus = snap.data?['status']?.toString() ?? widget.status;
+              final fee = (snap.data?['delivery_fee_iqd'] as num?)?.toInt();
+              final deliveredAt = snap.data?['delivered_at']?.toString();
+              return Column(crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('الحالة: ' + _statusLabel(liveStatus),
+                    style: const TextStyle(
+                      color: _purple, fontWeight: FontWeight.bold)),
+                  if (fee != null) Text(
+                    'رسوم التوصيل المسجلة: ' + _iqd(fee),
+                    style: const TextStyle(fontSize: 13)),
+                  if (liveStatus == 'out_for_delivery')
+                    const Text('الطلب خرج للتوصيل. '
+                      'الزبون يحصل على رمز التسليم من «طلباتي» '
+                      'بعد أن يستلمه المندوب من المتجر.',
+                      style: TextStyle(color: _purple, fontSize: 12)),
+                  if (liveStatus == 'delivered' && deliveredAt != null)
+                    Text('وقت التسليم المسجل: ' + deliveredAt,
+                      style: const TextStyle(fontSize: 12)),
+                ],
+              );
+            },
+          ),
           const SizedBox(height: 8),
           Text('المجموع: ' + _iqd(widget.totalIqd),
             style: const TextStyle(
@@ -172,9 +202,9 @@ class _OrderTimelinePageState extends State<OrderTimelinePage> {
           ),
           const SizedBox(height: 16),
           const Text(
-            'استلام الطلب وتحصيل المبلغ لم يرتبطا بعد بنظام '
-            'تتبع مندوب أو إثبات تحصيل. هذه الحالة تبيّن '
-            'ما سجّله المتجر حتى الآن فقط.',
+            'الحالات المعروضة تُحدّث من الخادم. إثبات التسليم برمز '
+            'الزبون لا يثبت تحصيل المال النقدي. '
+            'اختبار التوصيل الجديد مفعّل فقط في بيئة TEST.',
             textAlign: TextAlign.center,
             style: TextStyle(color: Colors.black54, fontSize: 12)),
         ],
