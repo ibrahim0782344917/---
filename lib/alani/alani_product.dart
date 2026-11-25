@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:shitreed_customer/alani/alani_customer_extras.dart';
 import 'package:shitreed_customer/backend/marketplace_backend.dart';
 import 'package:shitreed_customer/commerce/commerce_service.dart';
 import 'package:shitreed_customer/commerce/customer_commerce_pages.dart';
@@ -24,7 +25,17 @@ class AlAniProductDetailsPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Scaffold(
     backgroundColor: _soft,
-    appBar: AppBar(title: const Text('تفاصيل المنتج')),
+    appBar: AppBar(title: const Text('تفاصيل المنتج'), actions: [
+      if (AlAniCustomerExtras.enabled && MarketplaceBackend.currentUser != null)
+        IconButton(icon: const Icon(Icons.favorite_border), tooltip: 'حفظ في المفضلة', onPressed: () async {
+          try {
+            await AlAniCustomerExtras.call('alani_set_favorite_test', {'p_product_id': product.id, 'p_saved': true});
+            if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('تم الحفظ في المفضلة.')));
+          } catch (_) {
+            if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('تعذر حفظ المنتج.')));
+          }
+        }),
+    ]),
     body: SafeArea(child: ListView(
       padding: const EdgeInsets.fromLTRB(18, 8, 18, 24),
       children: [
