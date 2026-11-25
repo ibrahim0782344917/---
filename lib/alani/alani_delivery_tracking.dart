@@ -180,9 +180,10 @@ class _AlAniCustomerDeliveryCardState
                 if (status == 'ready' && dispatched == null)
                   const Text('التاجر راح يعيّن مندوباً معتمداً لهذا الطلب.'),
                 const SizedBox(height: 6),
-                const Text('أجور التوصيل 5,000 د.ع ضمن المبلغ '
-                    'المؤكد في فاتورتك، ولا تعني أن الدفع تم تحصيله.',
-                    style: TextStyle(fontSize: 12)),
+                Text('رسوم التوصيل المسجلة لهذا الطلب: '
+                    '${data['delivery_fee_iqd'] ?? 0} د.ع. '
+                    'هذا لا يعني أن الدفع النقدي تم تحصيله.',
+                    style: const TextStyle(fontSize: 12)),
               ],
             );
           },
