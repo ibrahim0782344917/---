@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'alani_bundle_checkout_page.dart';
 import 'package:flutter/services.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -57,7 +58,7 @@ class _AlAniCustomerExtrasPageState extends State<AlAniCustomerExtrasPage> {
       final quote=Map<String,dynamic>.from(await AlAniCustomerExtras.call('alani_bundle_quote_test',{'p_bundle_id':id}) as Map);
       if(!mounted)return;
       final lines=(quote['items'] as List).map((e)=>Map<String,dynamic>.from(e as Map)).toList();
-      await showDialog<void>(context:context,builder:(ctx)=>AlertDialog(
+      final buy=await showDialog<bool>(context:context,builder:(ctx)=>AlertDialog(
         title:Text(quote['title'].toString()),
         content:SingleChildScrollView(child:Column(mainAxisSize:MainAxisSize.min,crossAxisAlignment:CrossAxisAlignment.start,children:[
           for(final line in lines) Text(line['product_name'].toString()+' × '+line['quantity'].toString()),
@@ -66,8 +67,10 @@ class _AlAniCustomerExtrasPageState extends State<AlAniCustomerExtrasPage> {
           Text('المجموع: '+quote['total_iqd'].toString()+' د.ع'),
           const Text('عرض سعر فقط؛ لم يُنشأ طلب.'),
         ])),
-        actions:[TextButton(onPressed:()=>Navigator.pop(ctx),child:const Text('إغلاق'))],
+        actions:[TextButton(onPressed:()=>Navigator.pop(ctx,false),child:const Text('إغلاق')),
+          if(AlAniBundleCheckoutPage.enabled) FilledButton(onPressed:()=>Navigator.pop(ctx,true),child:const Text('شراء في TEST'))],
       ));
+      if(buy==true&&mounted)await Navigator.of(context).push<void>(MaterialPageRoute(builder:(_)=>AlAniBundleCheckoutPage(quote:quote)));
     }catch(_){if(mounted)ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('الباقة غير متاحة بالسعر أو المخزون الحالي.')));}
     finally{if(mounted)setState(()=>_busy=false);}
   }
@@ -99,7 +102,7 @@ class _AlAniCustomerExtrasPageState extends State<AlAniCustomerExtrasPage> {
         ],
         const SizedBox(height: 16),
         const Text('الباقات والعروض',style:TextStyle(fontSize:18,fontWeight:FontWeight.bold)),
-        const Text('معاينة عروض TEST فقط، لا تتوفر عملية شراء الباقة حالياً.'),
+        Text(AlAniBundleCheckoutPage.enabled?'معاينة وشراء الباقات في TEST فقط.':'معاينة عروض TEST فقط، الشراء غير مفعّل في هذا البناء.'),
         if(bundles.isEmpty) const Text('لا توجد باقات نشطة.'),
         for(final bundle in bundles)
           ListTile(title:Text(bundle['title'].toString()),
