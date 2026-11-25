@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'alani_business_entry_page.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class AlAniBusinessReportPage extends StatefulWidget {
@@ -15,7 +16,10 @@ class _AlAniBusinessReportPageState extends State<AlAniBusinessReportPage>{
   Future<Map<String,dynamic>> _load()async{
     if(!AlAniBusinessReportPage.enabled)throw StateError('TEST_ONLY');
     final data=await Supabase.instance.client.rpc('alani_business_report_test');
-    return Map<String,dynamic>.from(data as Map);
+    final report=Map<String,dynamic>.from(data as Map);
+    final debt=await Supabase.instance.client.rpc('alani_debt_report_test');
+    report['debt']=debt;
+    return report;
   }
   void _refresh()=>setState(()=>_report=_load());
   @override
@@ -26,6 +30,7 @@ class _AlAniBusinessReportPageState extends State<AlAniBusinessReportPage>{
       if(snapshot.connectionState!=ConnectionState.done)return const Center(child:CircularProgressIndicator());
       if(snapshot.hasError||!snapshot.hasData)return Center(child:TextButton(onPressed:_refresh,child:const Text('تعذر تحميل التقرير، تحقق من الصلاحية')));
       final data=snapshot.data!;
+      final debt=Map<String,dynamic>.from(data['debt'] as Map);
       final suppliers=(data['suppliers'] as List? ?? []).map((e)=>Map<String,dynamic>.from(e as Map));
       return ListView(padding:const EdgeInsets.all(16),children:[
         const Text('سجلات تشغيلية تجريبية؛ ليست أرباحاً أو تسوية محاسبية أو إثبات تحويل أموال.'),
@@ -40,7 +45,13 @@ class _AlAniBusinessReportPageState extends State<AlAniBusinessReportPage>{
         Text('الموردون: ${data['supplier_count']??0}',style:const TextStyle(fontWeight:FontWeight.bold)),
         for(final supplier in suppliers)
           ListTile(title:Text(supplier['name'].toString()),subtitle:Text(supplier['active']==true?'نشط':'متوقف')),
-        const Text('تعرض هذه الصفحة التقرير فقط. إدخال العمليات يحتاج واجهات مستقلة واختبارات إضافية.'),
+        Card(child:ListTile(title:const Text('الديون المتبقية'),trailing:Text('${debt['balance_iqd']} د.ع'),subtitle:Text('السداد المسجل: ${debt['paid_iqd']} د.ع'))),
+        for(final entry in const {'supplier':'إضافة مورد','purchase':'استلام مشتريات','pos':'بيع بالباركود','debt':'تسجيل سداد دين','expense':'تسجيل مصروف'}.entries)
+          Card(child:ListTile(title:Text(entry.value),leading:const Icon(Icons.add_circle_outline),onTap:()async{
+            await Navigator.of(context).push<void>(MaterialPageRoute(builder:(_)=>AlAniBusinessEntryPage(mode:entry.key)));
+            if(mounted)_refresh();
+          })),
+        const Text('السداد والمبيعات في TEST سجلات تشغيلية فقط، لا تحويل أموال.'),
       ]);
     }),
   );
