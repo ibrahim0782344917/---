@@ -1,4 +1,5 @@
 import 'alani_cod_page.dart';
+import 'alani_courier_location_page.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -488,6 +489,13 @@ class _AlAniCourierTasksPageState extends State<AlAniCourierTasksPage> {
                             Text('أجرة التوصيل ضمن المجموع: '
                                 '${task['delivery_fee_iqd']} د.ع'),
                             const SizedBox(height: 8),
+                            if (AlAniCourierLocationPage.enabled && task['picked_up_at'] != null)
+                              OutlinedButton.icon(
+                                onPressed: _busy ? null : () => Navigator.of(context).push<void>(
+                                  MaterialPageRoute(builder: (_) => AlAniCourierLocationPage(orderId:task['order_id'].toString()))),
+                                icon: const Icon(Icons.location_on_outlined),
+                                label: const Text('مشاركة موقع التوصيل'),
+                              ),
                             task['picked_up_at'] == null
                                 ? FilledButton.icon(
                                     onPressed: _busy ? null :
