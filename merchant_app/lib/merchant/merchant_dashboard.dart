@@ -5,6 +5,7 @@ import 'package:shitreed_merchant/backend/marketplace_backend.dart';
 import 'package:shitreed_merchant/commerce/commerce_service.dart';
 import 'package:shitreed_merchant/commerce/merchant_order_rules.dart';
 import 'package:shitreed_merchant/commerce/order_timeline_page.dart';
+import 'package:shitreed_merchant/delivery/alani_delivery_page.dart';
 import 'package:shitreed_merchant/shared/merchant_widgets.dart';
 import 'package:shitreed_merchant/reports/merchant_reports.dart';
 import 'package:shitreed_merchant/merchant/merchant_settings_pages.dart';
@@ -680,6 +681,22 @@ class _MerchantOrdersPageState extends State<MerchantOrdersPage> {
             ? () => _change(orderId, 'ready') : null,
         child: const Text('جاهز للتسليم'));
     }
+    if (widget.storeId == AlAniDeliveryFeature.storeId &&
+        AlAniDeliveryFeature.enabled &&
+        (currentStatus == 'ready' || currentStatus == 'out_for_delivery')) {
+      return OutlinedButton.icon(
+        onPressed: _changingOrderId == null ? () async {
+          await Navigator.of(context).push<void>(
+            MaterialPageRoute(builder: (_) =>
+              const AlAniDeliveryManagerPage()));
+          if (mounted) _refresh();
+        } : null,
+        icon: const Icon(Icons.delivery_dining),
+        label: Text(currentStatus == 'ready'
+            ? 'تعيين المندوب وإرسال الطلب'
+            : 'متابعة المندوب والتسليم'),
+      );
+    }
     return const SizedBox.shrink();
   }
 
@@ -697,7 +714,8 @@ class _MerchantOrdersPageState extends State<MerchantOrdersPage> {
         for (final option in const <String, String>{
           'all':'كل الطلبات', 'placed':'جديدة',
           'accepted':'مقبولة', 'preparing':'قيد التجهيز',
-          'ready':'جاهزة', 'rejected':'مرفوضة',
+          'ready':'جاهزة', 'out_for_delivery':'في التوصيل',
+          'delivered':'تم التسليم', 'rejected':'مرفوضة',
           'cancelled':'ملغاة',
         }.entries)
           ChoiceChip(label: Text(option.value),

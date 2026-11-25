@@ -5,6 +5,7 @@ import 'package:shitreed_customer/backend/marketplace_backend.dart';
 import 'package:shitreed_customer/commerce/commerce_service.dart';
 import 'package:shitreed_customer/commerce/order_timeline_page.dart';
 import 'package:shitreed_customer/alani/alani_content.dart';
+import 'package:shitreed_customer/alani/alani_delivery_verification.dart';
 
 const _purple = Color(0xFF0C946B);
 const _dark = Color(0xFF163E32);
@@ -403,6 +404,68 @@ class _OrderHistoryPageState extends State<OrderHistoryPage> {
     }
   }
 
+  Future<void> _showDeliveryCode(String id) async {
+    if (_processingAlAni || !AlAniDeliveryFeature.enabled) return;
+    setState(() => _processingAlAni = true);
+    try {
+      final state = await AlAniDeliveryVerification.status(id);
+      if (!mounted) return;
+      if (state['status'] != 'out_for_delivery') {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text('الطلب ليس في مرحلة التوصيل حالياً.')));
+        _refresh();
+        return;
+      }
+      if (state['picked_up_at'] == null) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text('المندوب لم يؤكد استلام الطلب من المتجر بعد.')));
+        return;
+      }
+      final result = await AlAniDeliveryVerification.issueCode(id);
+      if (!mounted) return;
+      final code = result['code']?.toString() ?? '';
+      if (!RegExp(r'^[0-9]{6}$').hasMatch(code)) {
+        throw StateError('INVALID_DELIVERY_CODE_RESPONSE');
+      }
+      final expiry = DateTime.tryParse(
+          result['expires_at']?.toString() ?? '')?.toLocal();
+      await showDialog<void>(context: context, builder: (ctx) => AlertDialog(
+        title: const Text('رمز استلام الطلب'),
+        content: Column(mainAxisSize: MainAxisSize.min, children: [
+          const Icon(Icons.verified_user_outlined, size: 38),
+          const SizedBox(height: 12),
+          SelectableText(code, textDirection: TextDirection.ltr,
+            style: const TextStyle(fontSize: 30,
+              fontWeight: FontWeight.w900, letterSpacing: 6)),
+          const SizedBox(height: 8),
+          Text(expiry == null ? 'صالح لمدة 15 دقيقة' :
+            'ينتهي الساعة: ${expiry.hour.toString().padLeft(2,'0')}:'
+            '${expiry.minute.toString().padLeft(2,'0')}',
+            textAlign: TextAlign.center),
+          const SizedBox(height: 10),
+          const Text('لا تعطي رمز الاستلام للمندوب إلا بعد '
+            'استلام المنتجات وفحصها. الرمز يثبت التسليم فقط '
+            'ولا يمثل تأكيد دفع نقدي.',
+            textAlign: TextAlign.center,
+            style: TextStyle(height: 1.5)),
+        ]),
+        actions: [
+          FilledButton(onPressed: () => Navigator.pop(ctx),
+            child: const Text('إغلاق')),
+        ],
+      ));
+    } catch (error) {
+      if (!mounted) return;
+      final message = error.toString().contains('CODE_REISSUE_WAIT')
+          ? 'يمكنك إصدار رمز جديد بعد دقيقة من السابق.'
+          : 'تعذّر استخراج رمز التسليم. تحقق من الطلب والاتصال.';
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(message)));
+    } finally {
+      if (mounted) setState(() => _processingAlAni = false);
+    }
+  }
+
   Future<void> _confirmReceived(String id) async {
     if (_processingAlAni) return;
     final accept = await showDialog<bool>(
@@ -503,6 +566,7 @@ class _OrderHistoryPageState extends State<OrderHistoryPage> {
       case 'accepted': return 'قبله المتجر';
       case 'preparing': return 'جاري التحضير';
       case 'ready': return 'جاهز للتسليم';
+      case 'out_for_delivery': return 'خرج للتوصيل';
       case 'delivered': return 'تم التسليم';
       case 'rejected': return 'رفضه المتجر';
       case 'cancelled': return 'ملغي';
@@ -539,7 +603,8 @@ class _OrderHistoryPageState extends State<OrderHistoryPage> {
           for (final choice in const <String, String>{
             'all':'الكل', 'placed':'جديدة',
             'accepted':'مقبولة', 'preparing':'قيد التجهيز',
-            'ready':'جاهزة', 'delivered':'تم التسليم', 'cancelled':'ملغاة',
+            'ready':'جاهزة', 'out_for_delivery':'خرج للتوصيل',
+            'delivered':'تم التسليم', 'cancelled':'ملغاة',
             'rejected':'مرفوضة',
           }.entries)
             ChoiceChip(
@@ -592,11 +657,24 @@ class _OrderHistoryPageState extends State<OrderHistoryPage> {
                             () => _cancel(order['id'] as String),
                           child: const Text('إلغاء'))
                       : (order['store_id']==AlAniSettings.storeId &&
-                         order['status']=='ready')
-                        ? TextButton(
-                            onPressed:_processingAlAni?null:
-                              () => _confirmReceived(order['id'] as String),
-                            child:const Text('تأكيد الاستلام'))
+                         order['status']=='out_for_delivery' &&
+                         AlAniDeliveryFeature.enabled)
+                        ? TextButton.icon(
+                            onPressed: _processingAlAni ? null :
+                              () => _showDeliveryCode(order['id'] as String),
+                            icon: const Icon(Icons.password_outlined),
+                            label: const Text('رمز التسليم'))
+                        : (order['store_id']==AlAniSettings.storeId &&
+                           order['status']=='ready' &&
+                           AlAniDeliveryFeature.enabled)
+                          ? const Text('بانتظار المندوب',
+                              style: TextStyle(fontSize: 12))
+                        : (order['store_id']==AlAniSettings.storeId &&
+                           order['status']=='ready')
+                          ? TextButton(
+                              onPressed: _processingAlAni ? null :
+                                () => _confirmReceived(order['id'] as String),
+                              child: const Text('تأكيد الاستلام'))
                         : (order['store_id']==AlAniSettings.storeId &&
                            order['status']=='delivered')
                           ? TextButton(
