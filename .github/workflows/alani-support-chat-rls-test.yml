@@ -1,11 +1,13 @@
 name: Al-Ani support chat RLS (isolated PostgreSQL)
 on:
   push:
-    branches: [work/alani-final-release-qa-20261124]
+    branches: [work/alani-chat-unread-receipts-20261125]
   pull_request:
     paths:
       - 'docs/ALANI_SUPPORT_CHAT_STAGE_20261124.sql'
       - 'tests/alani_support_chat_*'
+      - 'tests/alani_support_read_receipts_checks.sql'
+      - 'docs/ALANI_SUPPORT_READ_RECEIPTS_TEST_20261125.sql'
       - '.github/workflows/alani-support-chat-rls-test.yml'
 permissions:
   contents: read
@@ -33,7 +35,9 @@ jobs:
           set -euo pipefail
           cat tests/alani_support_chat_fixture.sql \
             docs/ALANI_SUPPORT_CHAT_STAGE_20261124.sql \
-            tests/alani_support_chat_rls_checks.sql |
+            tests/alani_support_chat_rls_checks.sql \
+            docs/ALANI_SUPPORT_READ_RECEIPTS_TEST_20261125.sql \
+            tests/alani_support_read_receipts_checks.sql |
             docker exec -i alani-chat-pg psql -X -v ON_ERROR_STOP=1               -U postgres -d alani_chat_synthetic
       - if: always()
         run: docker rm -f alani-chat-pg >/dev/null 2>&1 || true

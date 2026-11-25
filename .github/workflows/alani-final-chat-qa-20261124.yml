@@ -1,7 +1,7 @@
-name: Al-Ani final secure chat and commerce QA - all three apps and website
+name: Al-Ani unread support chat - three apps and site (test only)
 on:
   push:
-    branches: [work/alani-final-release-qa-20261124]
+    branches: [work/alani-chat-unread-receipts-20261125]
   workflow_dispatch:
 permissions:
   contents: read
@@ -63,7 +63,7 @@ jobs:
           test -n "$TARGET" && test "$TARGET" -ge 36
       - uses: actions/upload-artifact@v4
         with:
-          name: AlAni-Customer-Final-QA-TEST-ONLY-APK
+          name: AlAni-Customer-Chat-Unread-TEST-ONLY-APK
           path: build/app/outputs/flutter-apk/app-debug.apk
           retention-days: 14
           if-no-files-found: error
@@ -105,7 +105,7 @@ jobs:
           test -n "$TARGET" && test "$TARGET" -ge 36
       - uses: actions/upload-artifact@v4
         with:
-          name: AlAni-Merchant-Final-QA-TEST-ONLY-APK
+          name: AlAni-Merchant-Chat-Unread-TEST-ONLY-APK
           path: merchant_app/build/app/outputs/flutter-apk/app-debug.apk
           retention-days: 14
           if-no-files-found: error
@@ -156,7 +156,7 @@ jobs:
           test -n "$TARGET" && test "$TARGET" -ge 36
       - uses: actions/upload-artifact@v4
         with:
-          name: AlAni-Admin-Final-QA-TEST-ONLY-APK
+          name: AlAni-Admin-Chat-Unread-TEST-ONLY-APK
           path: admin_app/build/app/outputs/flutter-apk/app-debug.apk
           retention-days: 14
           if-no-files-found: error
