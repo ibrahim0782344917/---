@@ -1,5 +1,7 @@
 // ignore_for_file: prefer_interpolation_to_compose_strings, curly_braces_in_flow_control_structures
 import 'package:flutter/material.dart';
+import 'package:shitreed_customer/alani/alani_customer_extras.dart';
+import 'package:shitreed_customer/alani/alani_cart.dart';
 import 'package:shitreed_customer/auth/customer_auth_page.dart';
 import 'package:shitreed_customer/backend/marketplace_backend.dart';
 import 'package:shitreed_customer/commerce/commerce_service.dart';
@@ -368,6 +370,44 @@ class _OrderHistoryPageState extends State<OrderHistoryPage> {
   bool _processingAlAni = false;
   String _statusFilter = 'all';
 
+  Future<void> _reorder(String id) async {
+    if (_processingAlAni || !AlAniCustomerExtras.enabled) return;
+    setState(() => _processingAlAni = true);
+    try {
+      final cart = CommerceCart.instance;
+      if (cart.items.isNotEmpty) throw StateError('CART_NOT_EMPTY');
+      final actor = MarketplaceBackend.currentUser?.id;
+      final quote = Map<String,dynamic>.from(await AlAniCustomerExtras.call(
+        'alani_reorder_quote_test', {'p_order_id':id}) as Map);
+      if (!mounted) return;
+      if (quote['all_available'] != true) throw StateError('ITEM_UNAVAILABLE');
+      final rows = (quote['items'] as List).map((e) => Map<String,dynamic>.from(e as Map)).toList();
+      final lines = rows.map((row) => CommerceCartItem(
+        MarketplaceProduct(id:row['id'] as String, storeId:row['store_id'] as String,
+          name:row['name'] as String, priceIqd:(row['price_iqd'] as num).toInt(),
+          stockQuantity:(row['stock_quantity'] as num).toInt(),
+          description:row['description'] as String? ?? '', imageUrl:row['image_url'] as String?),
+        (row['quantity'] as num).toInt())).toList();
+      final accepted = await showDialog<bool>(context:context, builder:(ctx) => AlertDialog(
+        title:const Text('إعادة شراء الطلب'),
+        content:Text('السعر الحالي مع التوصيل: ' + priceText((quote['total_iqd'] as num).toInt()) +
+          '\nسنضيف المنتجات إلى سلتك فقط. راجع السعر وأكد الشراء في الخطوة التالية.'),
+        actions:[
+          TextButton(onPressed:()=>Navigator.pop(ctx,false),child:const Text('رجوع')),
+          FilledButton(onPressed:()=>Navigator.pop(ctx,true),child:const Text('إضافة إلى السلة')),
+        ],
+      ));
+      if (!mounted || accepted != true || actor == null || MarketplaceBackend.currentUser?.id != actor) return;
+      if (!cart.loadReorder(lines)) throw StateError('CART_CHANGED');
+      await Navigator.of(context).push<void>(MaterialPageRoute(builder:(_) => const Scaffold(
+        body:SafeArea(child:AlAniCartPage()),
+      )));
+    } catch (_) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+        content:Text('تعذرت إعادة الشراء. تحقق من توفر المنتجات وأفرغ السلة أولاً.')));
+    } finally { if (mounted) setState(() => _processingAlAni = false); }
+  }
+
   Future<void> _cancel(String id) async {
     if (_cancelling) return;
     final confirmed = await showDialog<bool>(
@@ -646,10 +686,13 @@ class _OrderHistoryPageState extends State<OrderHistoryPage> {
                   },
                   title: Text('طلب رقم ' +
                     (order['id'] as String).substring(0, 8)),
-                  subtitle: Text(
-                    _status(order['status'] as String) + '\n' +
-                    priceText((order['total_iqd'] as num).toInt()) +
-                    ' • الدفع عند الاستلام'),
+                  subtitle: Column(crossAxisAlignment:CrossAxisAlignment.start, children:[
+                    Text(_status(order['status'] as String) + '\n' +
+                      priceText((order['total_iqd'] as num).toInt()) + ' • الدفع عند الاستلام'),
+                    if (AlAniCustomerExtras.enabled && order['store_id']==AlAniCustomerExtras.storeId && order['status']=='delivered')
+                      TextButton.icon(onPressed:_processingAlAni?null:()=>_reorder(order['id'] as String),
+                        icon:const Icon(Icons.replay),label:const Text('إعادة الشراء')),
+                  ]),
                   isThreeLine: true,
                   trailing: order['status'] == 'placed'
                       ? TextButton(
