@@ -1,5 +1,7 @@
 // ignore_for_file: prefer_interpolation_to_compose_strings
 import 'package:flutter/material.dart';
+import 'package:shitreed_customer/alani/alani_customer_extras.dart';
+import 'package:shitreed_customer/alani/alani_order_updates.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:shitreed_customer/commerce/commerce_service.dart';
 
@@ -68,7 +70,7 @@ class _OrderTimelinePageState extends State<OrderTimelinePage> {
     _items = CommerceService.orderItems(widget.orderId);
     _events = CommerceService.orderStatusEvents(widget.orderId);
     _statusFuture = Supabase.instance.client.from('orders')
-      .select('status,delivery_fee_iqd,delivered_at')
+      .select('status,delivery_fee_iqd,delivered_at,store_id')
       .eq('id', widget.orderId).single();
   }
 
@@ -112,6 +114,8 @@ class _OrderTimelinePageState extends State<OrderTimelinePage> {
                       'الزبون يحصل على رمز التسليم من «طلباتي» '
                       'بعد أن يستلمه المندوب من المتجر.',
                       style: TextStyle(color: _purple, fontSize: 12)),
+                  if (AlAniCustomerExtras.enabled && snap.data?['store_id']==AlAniCustomerExtras.storeId && liveStatus=='out_for_delivery')
+                    TextButton.icon(onPressed:()=>Navigator.of(context).push<void>(MaterialPageRoute(builder:(_)=>AlAniTrackingPage(orderId:widget.orderId))),icon:const Icon(Icons.location_on_outlined),label:const Text('موقع المندوب')),
                   if (liveStatus == 'delivered' && deliveredAt != null)
                     Text('وقت التسليم المسجل: ' + deliveredAt,
                       style: const TextStyle(fontSize: 12)),
