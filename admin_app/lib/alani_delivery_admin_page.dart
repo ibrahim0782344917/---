@@ -1,3 +1,4 @@
+import 'alani_cod_page.dart';
 import 'package:flutter/material.dart';
 import 'package:shitreed_admin/admin_api.dart';
 
@@ -154,7 +155,15 @@ class _AlAniDeliveryAdminPageState extends State<AlAniDeliveryAdminPage> {
   @override
   Widget build(BuildContext context) => Scaffold(
     appBar: AppBar(title: const Text('إدارة التوصيل — العاني'),
-      actions: [IconButton(onPressed: _reload,
+      actions: [
+        if (AlAniCodPage.enabled)
+          IconButton(
+            tooltip: 'تقارير التحصيل التجريبي',
+            icon: const Icon(Icons.receipt_long),
+            onPressed: () => Navigator.of(context).push<void>(
+              MaterialPageRoute(builder: (_) => const AlAniCodPage(staff: true))),
+          ),
+        IconButton(onPressed: _reload,
         tooltip: 'تحديث',icon:const Icon(Icons.refresh))]),
     body: !AlAniDeliveryAdminFeature.enabled
         ? const Center(child: Text('نظام التوصيل غير مفعّل بالإنتاج.'))
