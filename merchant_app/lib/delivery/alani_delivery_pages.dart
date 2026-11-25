@@ -222,7 +222,7 @@ class _AlAniMerchantDeliveryPageState
           const Divider(height: 32),
           const Text('طلبات جاهزة للتوصيل',
             style: TextStyle(fontWeight: FontWeight.w900, fontSize: 18)),
-          FutureBuilder<List<Map<String, dynamic>>>(
+          FutureBuilder<List<List<Map<String, dynamic>>>>(
             future: Future.wait<List<Map<String, dynamic>>>([_orders, _couriers]),
             builder: (context, snap) {
               if (snap.connectionState != ConnectionState.done) {
