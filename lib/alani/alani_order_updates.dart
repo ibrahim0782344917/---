@@ -125,7 +125,7 @@ class _AlAniTrackingPageState extends State<AlAniTrackingPage> with WidgetsBindi
           ListTile(leading:const Icon(Icons.location_on),title:const Text('آخر إحداثيات مستلمة'),
             subtitle:Text('${loc['latitude']}, ${loc['longitude']}')),
           Text('الدقة التقريبية: ${loc['accuracy_m']} متر'),
-          Text('وقت التحديث: ${updated.toLocal()}'),
+          Text('وقت التحديث: ${updated?.toLocal()}'),
         ],
         TextButton(onPressed:_loading?null:_poll,child:const Text('تحديث الآن')),
       ]));
