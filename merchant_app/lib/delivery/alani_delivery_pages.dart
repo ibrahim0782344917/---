@@ -223,7 +223,7 @@ class _AlAniMerchantDeliveryPageState
           const Text('طلبات جاهزة للتوصيل',
             style: TextStyle(fontWeight: FontWeight.w900, fontSize: 18)),
           FutureBuilder<List<Map<String, dynamic>>>(
-            future: Future.wait([_orders, _couriers]),
+            future: Future.wait<List<Map<String, dynamic>>>([_orders, _couriers]),
             builder: (context, snap) {
               if (snap.connectionState != ConnectionState.done) {
                 return const LinearProgressIndicator();
