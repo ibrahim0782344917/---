@@ -301,7 +301,7 @@ BEGIN
  IF v_order.buyer_id<>v_actor AND NOT EXISTS(
   SELECT 1 FROM public.stores s
    WHERE s.id=v_order.store_id AND s.owner_id=v_actor)
-  AND NOT (v_job.courier_id=v_actor)
+  AND COALESCE(v_job.courier_id<>v_actor,true)
   AND NOT public.shitreed_is_admin()
  THEN RAISE EXCEPTION 'PERMISSION_DENIED'; END IF;
  RETURN jsonb_build_object(
