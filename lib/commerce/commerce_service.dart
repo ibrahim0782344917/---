@@ -49,6 +49,23 @@ class CommerceCart extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Load a validated reorder into an empty cart atomically, without placing an order.
+  bool loadReorder(List<CommerceCartItem> lines) {
+    if (_items.isNotEmpty || lines.isEmpty || lines.length > 20) return false;
+    final store = lines.first.product.storeId;
+    final ids = <String>{};
+    for (final line in lines) {
+      if (line.product.storeId != store || !ids.add(line.product.id) ||
+          line.quantity < 1 || line.quantity > 20 ||
+          line.quantity > line.product.stockQuantity) return false;
+    }
+    for (final line in lines) {
+      _items[line.product.id] = CommerceCartItem(line.product, line.quantity);
+    }
+    notifyListeners();
+    return true;
+  }
+
   void clear() {
     _items.clear();
     notifyListeners();
