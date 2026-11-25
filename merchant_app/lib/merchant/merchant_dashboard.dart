@@ -5,6 +5,7 @@ import 'package:shitreed_merchant/backend/marketplace_backend.dart';
 import 'package:shitreed_merchant/commerce/commerce_service.dart';
 import 'package:shitreed_merchant/commerce/merchant_order_rules.dart';
 import 'package:shitreed_merchant/commerce/order_timeline_page.dart';
+import 'package:shitreed_merchant/delivery/alani_delivery_pages.dart';
 import 'package:shitreed_merchant/shared/merchant_widgets.dart';
 import 'package:shitreed_merchant/reports/merchant_reports.dart';
 import 'package:shitreed_merchant/merchant/merchant_settings_pages.dart';
@@ -668,6 +669,23 @@ class _MerchantOrdersPageState extends State<MerchantOrdersPage> {
           child: const Text('قبول الطلب')),
       ]);
     }
+    if (currentStatus == 'ready' &&
+        widget.storeId == AlAniMerchantDeliveryGate.storeId &&
+        AlAniMerchantDeliveryGate.enabled) {
+      return FilledButton.icon(
+        icon: const Icon(Icons.local_shipping_outlined),
+        onPressed: _changingOrderId == null ? () async {
+          await Navigator.of(context).push<void>(
+            MaterialPageRoute(
+              builder: (_) => AlAniMerchantDeliveryPage(
+                storeId: widget.storeId),
+            ),
+          );
+          if (mounted) _refresh();
+        } : null,
+        label: const Text('تعيين مندوب توصيل'),
+      );
+    }
     if (currentStatus == 'accepted') {
       return FilledButton.tonal(
         onPressed: _changingOrderId == null
@@ -697,7 +715,8 @@ class _MerchantOrdersPageState extends State<MerchantOrdersPage> {
         for (final option in const <String, String>{
           'all':'كل الطلبات', 'placed':'جديدة',
           'accepted':'مقبولة', 'preparing':'قيد التجهيز',
-          'ready':'جاهزة', 'rejected':'مرفوضة',
+          'ready':'جاهزة', 'out_for_delivery':'خرج للتوصيل',
+          'delivered':'مكتملة', 'rejected':'مرفوضة',
           'cancelled':'ملغاة',
         }.entries)
           ChoiceChip(label: Text(option.value),
