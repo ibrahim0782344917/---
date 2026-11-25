@@ -170,8 +170,9 @@ class _AlAniMerchantDeliveryPageState
             'استلام من المتجر ← رمز الزبون ← تسليم',
             style: TextStyle(fontWeight: FontWeight.w700)),
           const SizedBox(height: 8),
-          const Text('رسوم التوصيل ٥٬٠٠٠ د.ع ضمن الفاتورة، '
-            'ولا تُعد تحصيلاً نقدياً.'),
+          const Text('رسوم الطلبات الجديدة المعتمدة ٥٬٠٠٠ د.ع. '
+            'الطلبات الأقدم قد تحمل رسوماً مختلفة؛ راجع قيمة كل فاتورة '
+            'ولا تعتبرها إثبات تحصيل نقدي.'),
           const SizedBox(height: 15),
           FilledButton.icon(onPressed: busy ? null : _authorizeCourier,
             icon: const Icon(Icons.person_add_alt_1_outlined),
