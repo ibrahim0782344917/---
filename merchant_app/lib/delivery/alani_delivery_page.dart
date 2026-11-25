@@ -1,3 +1,4 @@
+import 'alani_cod_page.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -218,7 +219,15 @@ class _AlAniDeliveryManagerPageState extends State<AlAniDeliveryManagerPage> {
   @override
   Widget build(BuildContext context) => Scaffold(
     appBar: AppBar(title: const Text('إدارة التوصيل'),
-      actions: [IconButton(onPressed: _reload,
+      actions: [
+        if (AlAniCodPage.enabled)
+          IconButton(
+            tooltip: 'تقارير التحصيل التجريبي',
+            icon: const Icon(Icons.receipt_long),
+            onPressed: () => Navigator.of(context).push<void>(
+              MaterialPageRoute(builder: (_) => const AlAniCodPage(staff: true))),
+          ),
+        IconButton(onPressed: _reload,
         tooltip: 'تحديث', icon: const Icon(Icons.refresh))]),
     body: !AlAniDeliveryFeature.enabled
         ? const Center(child: Text(
@@ -429,7 +438,15 @@ class _AlAniCourierTasksPageState extends State<AlAniCourierTasksPage> {
   @override
   Widget build(BuildContext context) => Scaffold(
     appBar: AppBar(title: const Text('مهامي كمندوب'),
-      actions: [IconButton(onPressed: _reload,
+      actions: [
+        if (AlAniCodPage.enabled)
+          IconButton(
+            tooltip: 'تحصيل النقد التجريبي',
+            icon: const Icon(Icons.receipt_long),
+            onPressed: () => Navigator.of(context).push<void>(
+              MaterialPageRoute(builder: (_) => const AlAniCodPage(staff: false))),
+          ),
+        IconButton(onPressed: _reload,
         tooltip: 'تحديث', icon: const Icon(Icons.refresh))]),
     body: !AlAniDeliveryFeature.enabled
         ? const Center(child: Text('التوصيل التجريبي غير مفعّل.'))
