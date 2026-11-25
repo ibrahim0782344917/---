@@ -8,6 +8,7 @@ import 'admin_ranks_levels_page.dart';
 import 'alani_store_admin_page.dart';
 import 'alani_campaign_admin_page.dart';
 import 'alani_support_chat.dart';
+import 'alani_delivery_admin_page.dart';
 import 'alani_legacy_customers_import_page.dart';
 
 const purple = Color(0xFF17583D);
@@ -790,6 +791,19 @@ class _AdminHomeState extends State<AdminHome> {
                     builder:(_)=>const AlAniStoreAdminPage(initialTab:3)));
                 },
               ),
+              if(widget.role=='super_admin' &&
+                  AlAniDeliveryAdminFeature.enabled)
+                ListTile(
+                  leading:const Icon(Icons.delivery_dining,
+                    color:Colors.white70),
+                  title:const Text('إدارة المندوبين والتوصيل',
+                    style:TextStyle(color:Colors.white)),
+                  onTap:(){
+                    Navigator.pop(context);
+                    Navigator.push(context,MaterialPageRoute<void>(
+                      builder:(_)=>const AlAniDeliveryAdminPage()));
+                  },
+                ),
               ListTile(
                 leading:const Icon(Icons.assignment_return_outlined,
                   color:Colors.white70),
@@ -862,6 +876,15 @@ class _AdminHomeState extends State<AdminHome> {
       appBar: AppBar(
         title: const Text('السيد إبراهيم العاني | الإدارة'),
         actions: [
+          if (!narrow && widget.role=='super_admin' &&
+              AlAniDeliveryAdminFeature.enabled)
+            IconButton(
+              tooltip:'إدارة المندوبين والتوصيل',
+              icon:const Icon(Icons.delivery_dining),
+              onPressed:()=>Navigator.of(context).push<void>(
+                MaterialPageRoute(builder:(_)=>
+                  const AlAniDeliveryAdminPage())),
+            ),
           if (!narrow && AdminAccess.canOpenAlAni(widget.role))
             IconButton(
               tooltip: 'العروض المحدودة',
