@@ -19,6 +19,7 @@ class _AlAniBusinessReportPageState extends State<AlAniBusinessReportPage>{
     final report=Map<String,dynamic>.from(data as Map);
     final debt=await Supabase.instance.client.rpc('alani_debt_report_test');
     report['debt']=debt;
+    report['trial_balance']=await Supabase.instance.client.rpc('alani_operational_trial_balance_test');
     return report;
   }
   void _refresh()=>setState(()=>_report=_load());
@@ -31,6 +32,7 @@ class _AlAniBusinessReportPageState extends State<AlAniBusinessReportPage>{
       if(snapshot.hasError||!snapshot.hasData)return Center(child:TextButton(onPressed:_refresh,child:const Text('تعذر تحميل التقرير، تحقق من الصلاحية')));
       final data=snapshot.data!;
       final debt=Map<String,dynamic>.from(data['debt'] as Map);
+      final trial=Map<String,dynamic>.from(data['trial_balance'] as Map);
       final suppliers=(data['suppliers'] as List? ?? []).map((e)=>Map<String,dynamic>.from(e as Map));
       return ListView(padding:const EdgeInsets.all(16),children:[
         const Text('سجلات تشغيلية تجريبية؛ ليست أرباحاً أو تسوية محاسبية أو إثبات تحويل أموال.'),
@@ -51,6 +53,12 @@ class _AlAniBusinessReportPageState extends State<AlAniBusinessReportPage>{
             await Navigator.of(context).push<void>(MaterialPageRoute(builder:(_)=>AlAniBusinessEntryPage(mode:entry.key)));
             if(mounted)_refresh();
           })),
+        Card(child:Column(children:[
+          const ListTile(title:Text('ميزان المراجعة التشغيلي — TEST'),subtitle:Text('لا يشمل تكلفة المبيعات أو الطلبات الإلكترونية. ليس تقرير أرباح.')),
+          ListTile(title:const Text('إجمالي المدين'),trailing:Text('${trial['debit_iqd']} د.ع')),
+          ListTile(title:const Text('إجمالي الدائن'),trailing:Text('${trial['credit_iqd']} د.ع')),
+          ListTile(title:Text(trial['balanced']==true?'القيود متوازنة':'القيود غير متوازنة')),
+        ])),
         const Text('السداد والمبيعات في TEST سجلات تشغيلية فقط، لا تحويل أموال.'),
       ]);
     }),
