@@ -78,6 +78,22 @@ class AlAniProductDetailsPage extends StatelessWidget {
         const Text('السعر النهائي ورسوم التوصيل يتم تأكيدهما '
           'عند إتمام الطلب. معلومات المنتجات لا تمثل نصيحة طبية.',
           style: TextStyle(fontSize: 12, color: Colors.black54)),
+        if (AlAniCustomerExtras.enabled && MarketplaceBackend.currentUser != null)
+          OutlinedButton.icon(icon:const Icon(Icons.calendar_month_outlined),
+            label:const Text('تفضيل شراء شهري'),
+            onPressed:() async {
+              final accepted=await showDialog<bool>(context:context,builder:(ctx)=>AlertDialog(
+                title:const Text('تسجيل تفضيل شهري'),
+                content:const Text('حفظ وحدة واحدة من المنتج للمراجعة الشهرية. لا ينشئ طلباً ولا يخصم أي مبلغ تلقائياً.'),
+                actions:[TextButton(onPressed:()=>Navigator.pop(ctx,false),child:const Text('إلغاء')),
+                  FilledButton(onPressed:()=>Navigator.pop(ctx,true),child:const Text('حفظ'))],
+              ));
+              if(accepted!=true || !context.mounted)return;
+              try{
+                await AlAniCustomerExtras.call('alani_set_subscription_test',{'p_product_id':product.id,'p_quantity':1,'p_active':true});
+                if(context.mounted)ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('تم حفظ التفضيل الشهري.')));
+              }catch(_){if(context.mounted)ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('تعذر حفظ التفضيل.')));}
+            }),
         const SizedBox(height: 14),
         FilledButton.icon(
           style: FilledButton.styleFrom(
