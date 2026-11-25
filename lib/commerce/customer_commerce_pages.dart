@@ -403,37 +403,6 @@ class _OrderHistoryPageState extends State<OrderHistoryPage> {
     }
   }
 
-  Future<void> _confirmReceived(String id) async {
-    if (_processingAlAni) return;
-    final accept = await showDialog<bool>(
-      context:context,builder:(ctx)=>AlertDialog(
-        title:const Text('تأكيد استلام الطلب'),
-        content:const Text('اضغط تأكيد فقط بعد استلام المنتجات فعلياً. '
-          'بعدها يمكن تقديم طلب استرجاع أو شكوى.'),
-        actions:[
-          TextButton(onPressed:()=>Navigator.pop(ctx,false),
-            child:const Text('رجوع')),
-          FilledButton(onPressed:()=>Navigator.pop(ctx,true),
-            child:const Text('استلمت الطلب')),
-        ],
-      ),
-    );
-    if(accept!=true||!mounted)return;
-    setState(()=>_processingAlAni=true);
-    try{
-      await CommerceService.confirmAlAniReceived(id);
-      if(!mounted)return;
-      _refresh();
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-        content:Text('تم توثيق تأكيد الاستلام في سجل الطلب.')));
-    }catch(_){
-      if(mounted)ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-        content:Text('لم يتأكد الاستلام من الخادم. تحقق من الحالة أو الاتصال.')));
-    }finally{
-      if(mounted)setState(()=>_processingAlAni=false);
-    }
-  }
-
   Future<void> _requestAlAniReturn(String id) async {
     if(_processingAlAni)return;
     String reason='damaged';
@@ -502,7 +471,8 @@ class _OrderHistoryPageState extends State<OrderHistoryPage> {
       case 'placed': return 'بانتظار موافقة المتجر';
       case 'accepted': return 'قبله المتجر';
       case 'preparing': return 'جاري التحضير';
-      case 'ready': return 'جاهز للتسليم';
+      case 'ready': return 'جاهز للتوصيل';
+      case 'out_for_delivery': return 'خرج للتوصيل';
       case 'delivered': return 'تم التسليم';
       case 'rejected': return 'رفضه المتجر';
       case 'cancelled': return 'ملغي';
@@ -539,7 +509,8 @@ class _OrderHistoryPageState extends State<OrderHistoryPage> {
           for (final choice in const <String, String>{
             'all':'الكل', 'placed':'جديدة',
             'accepted':'مقبولة', 'preparing':'قيد التجهيز',
-            'ready':'جاهزة', 'delivered':'تم التسليم', 'cancelled':'ملغاة',
+            'ready':'جاهزة', 'out_for_delivery':'خرج للتوصيل',
+            'delivered':'تم التسليم', 'cancelled':'ملغاة',
             'rejected':'مرفوضة',
           }.entries)
             ChoiceChip(
@@ -575,6 +546,7 @@ class _OrderHistoryPageState extends State<OrderHistoryPage> {
                         orderId: order['id'] as String,
                         totalIqd: (order['total_iqd'] as num).toInt(),
                         status: order['status'] as String,
+                        storeId: order['store_id'] as String?,
                       )),
                     );
                     if (mounted) _refresh();
@@ -592,12 +564,6 @@ class _OrderHistoryPageState extends State<OrderHistoryPage> {
                             () => _cancel(order['id'] as String),
                           child: const Text('إلغاء'))
                       : (order['store_id']==AlAniSettings.storeId &&
-                         order['status']=='ready')
-                        ? TextButton(
-                            onPressed:_processingAlAni?null:
-                              () => _confirmReceived(order['id'] as String),
-                            child:const Text('تأكيد الاستلام'))
-                        : (order['store_id']==AlAniSettings.storeId &&
                            order['status']=='delivered')
                           ? TextButton(
                               onPressed:_processingAlAni?null:

@@ -1,9 +1,10 @@
 // ignore_for_file: prefer_interpolation_to_compose_strings
 import 'package:flutter/material.dart';
 import 'package:shitreed_customer/commerce/commerce_service.dart';
+import 'package:shitreed_customer/alani/alani_delivery_tracking.dart';
 
-const _purple = Color(0xFF51159B);
-const _dark = Color(0xFF280B53);
+const _purple = Color(0xFF17583D);
+const _dark = Color(0xFF17372B);
 
 String _statusLabel(String status) {
   switch (status) {
@@ -14,7 +15,9 @@ String _statusLabel(String status) {
     case 'preparing':
       return 'قيد التجهيز';
     case 'ready':
-      return 'جاهز للتسليم';
+      return 'جاهز للتوصيل';
+    case 'out_for_delivery':
+      return 'خرج للتوصيل';
     case 'delivered':
       return 'تم التسليم';
     case 'cancelled':
@@ -40,11 +43,13 @@ class OrderTimelinePage extends StatefulWidget {
     required this.orderId,
     required this.totalIqd,
     required this.status,
+    this.storeId,
   });
 
   final String orderId;
   final int totalIqd;
   final String status;
+  final String? storeId;
 
   @override
   State<OrderTimelinePage> createState() => _OrderTimelinePageState();
@@ -171,12 +176,13 @@ class _OrderTimelinePageState extends State<OrderTimelinePage> {
             },
           ),
           const SizedBox(height: 16),
-          const Text(
-            'استلام الطلب وتحصيل المبلغ لم يرتبطا بعد بنظام '
-            'تتبع مندوب أو إثبات تحصيل. هذه الحالة تبيّن '
-            'ما سجّله المتجر حتى الآن فقط.',
-            textAlign: TextAlign.center,
-            style: TextStyle(color: Colors.black54, fontSize: 12)),
+          if (widget.storeId == AlAniDeliveryGate.storeId)
+            AlAniCustomerDeliveryCard(orderId: widget.orderId)
+          else
+            const Text(
+              'حالة الطلب مبنية على سجلات المتجر ولا تعني تحصيل المبلغ.',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: Colors.black54, fontSize: 12)),
         ],
       ),
     ),
