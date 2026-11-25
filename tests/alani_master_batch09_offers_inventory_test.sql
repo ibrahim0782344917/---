@@ -26,6 +26,8 @@ END $$;
 SELECT set_config('request.jwt.claim.sub','00000000-0000-4000-8000-000000009901',true) IS NOT NULL;
 SELECT set_config('request.jwt.claims',jsonb_build_object('sub',current_setting('request.jwt.claim.sub'),'role','authenticated')::text,true) IS NOT NULL;
 DO $$ BEGIN
+IF NOT COALESCE(EXISTS(SELECT 1 FROM jsonb_array_elements(public.alani_list_bundles_test()) e WHERE e->>'id'=current_setting('alani.qa.bundle')),false) THEN RAISE EXCEPTION 'FAIL active bundle listed'; END IF;
+IF EXISTS(SELECT 1 FROM jsonb_array_elements(public.alani_list_bundles_test()) e WHERE e->>'id'=current_setting('alani.qa.expired')) THEN RAISE EXCEPTION 'FAIL expired bundle listed'; END IF;
 IF NOT COALESCE(((public.alani_bundle_quote_test(current_setting('alani.qa.bundle')::uuid)->>'total_iqd')::bigint=40000),false) THEN RAISE EXCEPTION 'FAIL bundle total'; END IF;
 IF NOT COALESCE(((public.alani_bundle_quote_test(current_setting('alani.qa.bundle')::uuid)->>'delivery_fee_iqd')::int=0),false) THEN RAISE EXCEPTION 'FAIL free delivery preview'; END IF;
 IF NOT COALESCE(((public.alani_bundle_quote_test(current_setting('alani.qa.bundle')::uuid)->>'checkout_enabled')::boolean=false),false) THEN RAISE EXCEPTION 'FAIL checkout disabled'; END IF;
@@ -68,5 +70,5 @@ IF NOT COALESCE(((SELECT count(*) FROM public.orders WHERE buyer_id='00000000-00
 IF NOT COALESCE((NOT has_table_privilege('authenticated','private_checkout.alani_subscription_test','SELECT,INSERT,UPDATE,DELETE') AND NOT has_function_privilege('anon','public.alani_bundle_quote_test(uuid)','EXECUTE')),false) THEN RAISE EXCEPTION 'FAIL access denied'; END IF;
 END $$;
 
-SELECT 'PASS: 25 batch09 assertions' AS result;
+SELECT 'PASS: 27 batch09 assertions' AS result;
 ROLLBACK;
