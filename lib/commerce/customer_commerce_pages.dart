@@ -1,6 +1,7 @@
 // ignore_for_file: prefer_interpolation_to_compose_strings, curly_braces_in_flow_control_structures
 import 'package:flutter/material.dart';
 import 'package:shitreed_customer/alani/alani_customer_extras.dart';
+import 'package:shitreed_customer/alani/alani_order_updates.dart';
 import 'package:shitreed_customer/alani/alani_cart.dart';
 import 'package:shitreed_customer/auth/customer_auth_page.dart';
 import 'package:shitreed_customer/backend/marketplace_backend.dart';
@@ -636,8 +637,10 @@ class _OrderHistoryPageState extends State<OrderHistoryPage> {
         await _orders;
       },
       child: ListView(padding: const EdgeInsets.all(16), children: [
-        const Text('طلباتي', style: TextStyle(
-          fontSize: 23, color: _dark, fontWeight: FontWeight.w900)),
+        Row(children:[
+          const Expanded(child:Text('طلباتي',style:TextStyle(fontSize:23,color:_dark,fontWeight:FontWeight.w900))),
+          if(AlAniCustomerExtras.enabled) IconButton(tooltip:'إشعارات الطلبات',icon:const Icon(Icons.notifications_outlined),onPressed:()=>Navigator.of(context).push<void>(MaterialPageRoute(builder:(_)=>const AlAniOrderNotificationsPage()))),
+        ]),
         const SizedBox(height: 10),
         Wrap(spacing: 6, runSpacing: 6, children: [
           for (final choice in const <String, String>{
@@ -686,7 +689,7 @@ class _OrderHistoryPageState extends State<OrderHistoryPage> {
                   },
                   title: Text('طلب رقم ' +
                     (order['id'] as String).substring(0, 8)),
-                  subtitle: Column(crossAxisAlignment:CrossAxisAlignment.start, children:[
+                  subtitle: Column(mainAxisSize:MainAxisSize.min,crossAxisAlignment:CrossAxisAlignment.start, children:[
                     Text(_status(order['status'] as String) + '\n' +
                       priceText((order['total_iqd'] as num).toInt()) + ' • الدفع عند الاستلام'),
                     if (AlAniCustomerExtras.enabled && order['store_id']==AlAniCustomerExtras.storeId && order['status']=='delivered')
