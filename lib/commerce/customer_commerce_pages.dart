@@ -471,7 +471,8 @@ class _OrderHistoryPageState extends State<OrderHistoryPage> {
       case 'placed': return 'بانتظار موافقة المتجر';
       case 'accepted': return 'قبله المتجر';
       case 'preparing': return 'جاري التحضير';
-      case 'ready': return 'جاهز للتسليم';
+      case 'ready': return 'جاهز للتوصيل';
+      case 'out_for_delivery': return 'خرج للتوصيل';
       case 'delivered': return 'تم التسليم';
       case 'rejected': return 'رفضه المتجر';
       case 'cancelled': return 'ملغي';
@@ -508,7 +509,8 @@ class _OrderHistoryPageState extends State<OrderHistoryPage> {
           for (final choice in const <String, String>{
             'all':'الكل', 'placed':'جديدة',
             'accepted':'مقبولة', 'preparing':'قيد التجهيز',
-            'ready':'جاهزة', 'delivered':'تم التسليم', 'cancelled':'ملغاة',
+            'ready':'جاهزة', 'out_for_delivery':'خرج للتوصيل',
+            'delivered':'تم التسليم', 'cancelled':'ملغاة',
             'rejected':'مرفوضة',
           }.entries)
             ChoiceChip(
