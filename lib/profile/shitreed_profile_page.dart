@@ -1,5 +1,6 @@
 // ignore_for_file: curly_braces_in_flow_control_structures, prefer_interpolation_to_compose_strings
 import 'package:flutter/material.dart';
+import 'package:shitreed_customer/alani/alani_customer_extras.dart';
 import 'package:shitreed_customer/account/customer_delete_account_page.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -420,6 +421,11 @@ class _ShitreedProfilePageState extends State<ShitreedProfilePage> {
             icon: const Icon(Icons.storefront_outlined),
             label: const Text('إدارة متجري')),
         ],
+        if (!widget.merchantMode && AlAniCustomerExtras.enabled)
+          FilledButton.icon(
+            onPressed: () => Navigator.of(context).push<void>(MaterialPageRoute(builder: (_) => const AlAniCustomerExtrasPage())),
+            icon: const Icon(Icons.favorite_outline),
+            label: const Text('المفضلة ونقاط الشراء ودعوة الأصدقاء')),
         if (!widget.merchantMode)
           TextButton.icon(
             onPressed: requestAccountDeletion,
