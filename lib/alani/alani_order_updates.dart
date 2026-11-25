@@ -1,5 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter_map/flutter_map.dart';
+import 'package:latlong2/latlong.dart' as ll;
 import 'alani_customer_extras.dart';
 
 class AlAniOrderNotificationsPage extends StatefulWidget {
@@ -75,6 +77,9 @@ class _AlAniTrackingPageState extends State<AlAniTrackingPage> with WidgetsBindi
   bool _failed=false;
   bool _active=true;
   int _generation=0;
+  bool _showMap=false;
+  static const _trackingTileUrl=String.fromEnvironment('ALANI_TRACKING_TEST_TILE_URL');
+  bool get _tilesConfigured => _trackingTileUrl.startsWith('https://') && _trackingTileUrl.contains('{z}') && _trackingTileUrl.contains('{x}') && _trackingTileUrl.contains('{y}');
   @override
   void initState(){
     super.initState();
@@ -126,6 +131,27 @@ class _AlAniTrackingPageState extends State<AlAniTrackingPage> with WidgetsBindi
             subtitle:Text('${loc['latitude']}, ${loc['longitude']}')),
           Text('الدقة التقريبية: ${loc['accuracy_m']} متر'),
           Text('وقت التحديث: ${updated?.toLocal()}'),
+          if (_tilesConfigured) ...[
+            SwitchListTile(title:const Text('عرض الموقع على الخريطة'),
+              subtitle:const Text('مزود الخرائط الخارجي يستقبل طلبات صور المنطقة المعروضة.'),
+              value:_showMap,onChanged:(value)=>setState(()=>_showMap=value)),
+            if (_showMap)
+              SizedBox(height:280,child:FlutterMap(
+                key:ValueKey(loc['updated_at']),
+                options:MapOptions(
+                  initialCenter:ll.LatLng((loc['latitude'] as num).toDouble(),(loc['longitude'] as num).toDouble()),
+                  initialZoom:14,minZoom:8,maxZoom:18),
+                children:[
+                  TileLayer(urlTemplate:_trackingTileUrl,userAgentPackageName:'com.shitreed.shitreed_customer'),
+                  MarkerLayer(markers:[Marker(
+                    point:ll.LatLng((loc['latitude'] as num).toDouble(),(loc['longitude'] as num).toDouble()),
+                    width:44,height:44,child:const Icon(Icons.location_on,color:Colors.green,size:40))]),
+                  RichAttributionWidget(attributions:[TextSourceAttribution('© OpenStreetMap contributors')]),
+                ],
+              )),
+          ] else const Text('الخريطة تحتاج مزود صور خرائط معتمداً في TEST.'),
+          const Text('وقت الوصول غير متاح دون خدمة مسارات معتمدة.'),
+
         ],
         TextButton(onPressed:_loading?null:_poll,child:const Text('تحديث الآن')),
       ]));
