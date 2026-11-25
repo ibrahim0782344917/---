@@ -125,8 +125,22 @@ class _AlAniSupportInboxPageState extends State<AlAniSupportInboxPage> {
           .eq('store_id', AlAniSupportFeature.storeId)
           .order('updated_at', ascending: false)
           .limit(60);
+      // Only the RLS-checked RPC returns unread counts; no customer
+      // profiles, phone numbers or private message bodies enter this inbox.
+      final rawCounts = await Supabase.instance.client
+          .rpc('alani_support_unread_counts');
+      final counts = <String, int>{};
+      for (final item in (rawCounts as List<dynamic>)) {
+        final count = Map<String, dynamic>.from(item as Map);
+        counts[count['thread_id'].toString()] =
+            (count['unread_count'] as num?)?.toInt() ?? 0;
+      }
       if (mounted) setState(() {
-        threads = rows.map((x) => Map<String, dynamic>.from(x)).toList();
+        threads = rows.map((x) {
+          final thread = Map<String, dynamic>.from(x);
+          thread['unread_count'] = counts[thread['id'].toString()] ?? 0;
+          return thread;
+        }).toList();
         loading = false;
         error = null;
       });
@@ -167,18 +181,34 @@ class _AlAniSupportInboxPageState extends State<AlAniSupportInboxPage> {
                             title: Text('محادثة زبون #${index + 1}'),
                             subtitle: const Text(
                               'المحادثات خاصة؛ لا تظهر أرقام الهاتف'),
-                            trailing: const Icon(Icons.chevron_left),
-                            onTap: () => Navigator.of(context).push<void>(
-                              MaterialPageRoute(
-                                builder: (_) => Scaffold(
-                                  appBar: AppBar(title: const Text(
-                                      'محادثة خاصة')),
-                                  body: AlAniConversation(
-                                    threadId: thread['id'].toString(),
+                            trailing: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                if ((thread['unread_count'] as num? ?? 0) > 0)
+                                  Badge(
+                                    label: Text(
+                                      (thread['unread_count'] as num).toInt()
+                                          .clamp(0, 99).toString()),
+                                    child: const Icon(Icons.mark_chat_unread),
+                                  ),
+                                const SizedBox(width: 8),
+                                const Icon(Icons.chevron_left),
+                              ],
+                            ),
+                            onTap: () async {
+                              await Navigator.of(context).push<void>(
+                                MaterialPageRoute(
+                                  builder: (_) => Scaffold(
+                                    appBar: AppBar(title: const Text(
+                                        'محادثة خاصة')),
+                                    body: AlAniConversation(
+                                      threadId: thread['id'].toString(),
+                                    ),
                                   ),
                                 ),
-                              ),
-                            ),
+                              );
+                              if (mounted) await _load();
+                            },
                           );
                         },
                       ),
@@ -202,6 +232,7 @@ class _AlAniConversationState extends State<AlAniConversation> {
   List<Map<String, dynamic>> messages = [];
   bool submitting = false;
   String? error;
+  String? _lastAcknowledgedMessageId;
 
   @override
   void initState() {
@@ -227,20 +258,50 @@ class _AlAniConversationState extends State<AlAniConversation> {
           .from('alani_support_messages')
           .select('id,sender_id,body,created_at')
           .eq('thread_id', widget.threadId)
-          .order('created_at', ascending: true)
+          // Newest 100 records first, then display in chronological order.
+          // The old ascending query silently hid all recent messages once
+          // a conversation passed 100 messages.
+          .order('created_at', ascending: false)
           .limit(100);
       if (!mounted) return;
-      final hadCount = messages.length;
+      final lastMessageId = messages.isEmpty
+          ? null : messages.last['id']?.toString();
+      final chronological = rows.reversed
+          .map((x) => Map<String, dynamic>.from(x)).toList();
+      final newestId = chronological.isEmpty
+          ? null : chronological.last['id']?.toString();
       setState(() {
-        messages = rows.map((x) => Map<String, dynamic>.from(x)).toList();
+        messages = chronological;
         error = null;
       });
-      if (messages.length != hadCount) {
+      if (newestId != lastMessageId) {
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (mounted && scroller.hasClients) {
             scroller.jumpTo(scroller.position.maxScrollExtent);
           }
         });
+      }
+      // Acknowledge the last message actually loaded, never 'now'.
+      // Do not mark messages read while this route is covered or the
+      // application is backgrounded.
+      if (newestId != null &&
+          newestId != _lastAcknowledgedMessageId &&
+          ModalRoute.of(context)?.isCurrent != false &&
+          WidgetsBinding.instance.lifecycleState ==
+              AppLifecycleState.resumed) {
+        try {
+          await Supabase.instance.client.rpc(
+            'alani_mark_support_read',
+            params: {
+              'p_thread_id': widget.threadId,
+              'p_last_seen_message_id': newestId,
+            },
+          );
+          _lastAcknowledgedMessageId = newestId;
+        } catch (_) {
+          // Display messages even if the acknowledgement is temporarily
+          // unavailable. The next refresh will try again.
+        }
       }
     } catch (_) {
       if (mounted) setState(() =>
