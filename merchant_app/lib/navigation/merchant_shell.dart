@@ -5,6 +5,7 @@ import 'package:shitreed_merchant/commerce/commerce_service.dart';
 import 'package:shitreed_merchant/merchant/merchant_dashboard.dart';
 import 'package:shitreed_merchant/reports/merchant_reports.dart';
 import 'package:shitreed_merchant/merchant/merchant_control_center.dart';
+import 'package:shitreed_merchant/delivery/alani_delivery_pages.dart';
 import 'package:shitreed_merchant/shared/merchant_widgets.dart';
 
 class MerchantShellPage extends StatefulWidget {
@@ -271,7 +272,15 @@ class _MerchantOverviewPageState extends State<MerchantOverviewPage> {
           _action('المنتجات والمخزون','أضف الأسعار والصور وتابع الكميات',
             Icons.inventory_2_outlined,2),
           _action('الطلبات الجديدة','اقبل، جهّز، وتابع حالة الطلب',
-            Icons.receipt_long_outlined,3),
+            if (AlAniMerchantDeliveryGate.enabled)
+             Card(child: ListTile(
+               leading: const Icon(Icons.delivery_dining_outlined),
+               title: const Text('مهام المندوب'),
+               subtitle: const Text('الطلبات المسندة لحسابك واستلامها برمز الزبون'),
+               onTap: () => Navigator.of(context).push(MaterialPageRoute<void>(
+                 builder: (_) => const AlAniCourierTasksPage())),
+             )),
+           Icons.receipt_long_outlined,3),
           _action('الحساب والدعم','الخصوصية والشروط والمساعدة',
             Icons.support_agent_outlined,4),
           const SizedBox(height:18),
