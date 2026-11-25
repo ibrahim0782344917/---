@@ -408,24 +408,65 @@ class _OrderHistoryPageState extends State<OrderHistoryPage> {
     if (_processingAlAni || !AlAniDeliveryFeature.enabled) return;
     setState(() => _processingAlAni = true);
     try {
-      final status = await AlAniDeliveryVerification.status(id);
+      final state = await AlAniDeliveryVerification.status(id);
       if (!mounted) return;
-      if (status['status'] != 'out_for_delivery') {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('الطلب ليس في مرحلة التوصيل حالياً.')));
+      if (state['status'] != 'out_for_delivery') {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text('الطلب ليس في مرحلة التوصيل حالياً.')));
         _refresh();
         return;
       }
-      if (status['picked_up_at'] == null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text(
-            'الطلب خرج للتوصيل، لكن المندوب لم يؤكد استلامه بعد.')));
+      if (state['picked_up_at'] == null) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text('المندوب لم يؤكد استلام الطلب من المتجر بعد.')));
         return;
       }
       final result = await AlAniDeliveryVerification.issueCode(id);
       if (!mounted) return;
       final code = result['code']?.toString() ?? '';
-      if (!RegExp(r'^[0-9]{6}
+      if (!RegExp(r'^[0-9]{6}$').hasMatch(code)) {
+        throw StateError('INVALID_DELIVERY_CODE_RESPONSE');
+      }
+      final expiry = DateTime.tryParse(
+          result['expires_at']?.toString() ?? '')?.toLocal();
+      await showDialog<void>(context: context, builder: (ctx) => AlertDialog(
+        title: const Text('رمز استلام الطلب'),
+        content: Column(mainAxisSize: MainAxisSize.min, children: [
+          const Icon(Icons.verified_user_outlined, size: 38),
+          const SizedBox(height: 12),
+          SelectableText(code, textDirection: TextDirection.ltr,
+            style: const TextStyle(fontSize: 30,
+              fontWeight: FontWeight.w900, letterSpacing: 6)),
+          const SizedBox(height: 8),
+          Text(expiry == null ? 'صالح لمدة 15 دقيقة' :
+            'ينتهي الساعة: ${expiry.hour.toString().padLeft(2,'0')}:'
+            '${expiry.minute.toString().padLeft(2,'0')}',
+            textAlign: TextAlign.center),
+          const SizedBox(height: 10),
+          const Text('لا تعطي رمز الاستلام للمندوب إلا بعد '
+            'استلام المنتجات وفحصها. الرمز يثبت التسليم فقط '
+            'ولا يمثل تأكيد دفع نقدي.',
+            textAlign: TextAlign.center,
+            style: TextStyle(height: 1.5)),
+        ]),
+        actions: [
+          FilledButton(onPressed: () => Navigator.pop(ctx),
+            child: const Text('إغلاق')),
+        ],
+      ));
+    } catch (error) {
+      if (!mounted) return;
+      final message = error.toString().contains('CODE_REISSUE_WAIT')
+          ? 'يمكنك إصدار رمز جديد بعد دقيقة من السابق.'
+          : 'تعذّر استخراج رمز التسليم. تحقق من الطلب والاتصال.';
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(message)));
+    } finally {
+      if (mounted) setState(() => _processingAlAni = false);
+    }
+  }
+
+  Future<void> _confirmReceived(String id) async {
     if (_processingAlAni) return;
     final accept = await showDialog<bool>(
       context:context,builder:(ctx)=>AlertDialog(
@@ -619,276 +660,21 @@ class _OrderHistoryPageState extends State<OrderHistoryPage> {
                          order['status']=='out_for_delivery' &&
                          AlAniDeliveryFeature.enabled)
                         ? TextButton.icon(
-                            onPressed:_processingAlAni?null:
+                            onPressed: _processingAlAni ? null :
                               () => _showDeliveryCode(order['id'] as String),
-                            icon:const Icon(Icons.pin_outlined),
-                            label:const Text('رمز التسليم'))
+                            icon: const Icon(Icons.password_outlined),
+                            label: const Text('رمز التسليم'))
                         : (order['store_id']==AlAniSettings.storeId &&
                            order['status']=='ready' &&
                            AlAniDeliveryFeature.enabled)
                           ? const Text('بانتظار المندوب',
-                              style:TextStyle(fontSize:12))
+                              style: TextStyle(fontSize: 12))
                         : (order['store_id']==AlAniSettings.storeId &&
                            order['status']=='ready')
                           ? TextButton(
-                              onPressed:_processingAlAni?null:
+                              onPressed: _processingAlAni ? null :
                                 () => _confirmReceived(order['id'] as String),
-                              child:const Text('تأكيد الاستلام'))
-                        : (order['store_id']==AlAniSettings.storeId &&
-                           order['status']=='delivered')
-                          ? TextButton(
-                              onPressed:_processingAlAni?null:
-                                () => _requestAlAniReturn(order['id'] as String),
-                              child:const Text('استرجاع / شكوى'))
-                          : const Icon(Icons.receipt_long_outlined),
-                ),
-              ),
-            ]);
-          },
-        ),
-      ]),
-    );
-  }
-}
-).hasMatch(code)) {
-        throw StateError('INVALID_CODE_RESPONSE');
-      }
-      final expiry = DateTime.tryParse(
-        result['expires_at']?.toString() ?? '')?.toLocal();
-      await showDialog<void>(context: context,
-        builder: (ctx) => AlertDialog(
-          title: const Text('رمز تسليم الطلب'),
-          content: Column(mainAxisSize: MainAxisSize.min, children: [
-            const Icon(Icons.verified_user_outlined,
-              color: Color(0xFF17583D), size: 40),
-            const SizedBox(height: 10),
-            SelectableText(code, textDirection: TextDirection.ltr,
-              style: const TextStyle(
-                fontSize: 32, fontWeight: FontWeight.w900,
-                letterSpacing: 7)),
-            const SizedBox(height: 10),
-            Text(expiry == null ? 'صالح لمدة 15 دقيقة'
-              : 'ينتهي: ${expiry.hour.toString().padLeft(2, '0')}:'
-                '${expiry.minute.toString().padLeft(2, '0')}',
-              textAlign: TextAlign.center),
-            const SizedBox(height: 10),
-            const Text('لا تعطِ الرمز للمندوب إلا بعد استلام المنتجات '
-              'وفحصها. هذا الرمز يثبت التسليم فقط، ولا يعني '
-              'أن المبلغ النقدي قد دُفع تلقائياً.',
-              textAlign: TextAlign.center,
-              style: TextStyle(height: 1.6)),
-          ]),
-          actions: [FilledButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('فهمت'))],
-        ),
-      );
-    } catch (error) {
-      if (!mounted) return;
-      final msg = error.toString().contains('CODE_REISSUE_WAIT')
-          ? 'يمكن إصدار رمز جديد بعد دقيقة من السابق.'
-          : 'تعذّر استخراج رمز التسليم. تحقق من حالة الطلب والاتصال.';
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(msg)));
-    } finally {
-      if (mounted) setState(() => _processingAlAni = false);
-    }
-  }
-
-  Future<void> _confirmReceived(String id) async {
-    if (_processingAlAni) return;
-    final accept = await showDialog<bool>(
-      context:context,builder:(ctx)=>AlertDialog(
-        title:const Text('تأكيد استلام الطلب'),
-        content:const Text('اضغط تأكيد فقط بعد استلام المنتجات فعلياً. '
-          'بعدها يمكن تقديم طلب استرجاع أو شكوى.'),
-        actions:[
-          TextButton(onPressed:()=>Navigator.pop(ctx,false),
-            child:const Text('رجوع')),
-          FilledButton(onPressed:()=>Navigator.pop(ctx,true),
-            child:const Text('استلمت الطلب')),
-        ],
-      ),
-    );
-    if(accept!=true||!mounted)return;
-    setState(()=>_processingAlAni=true);
-    try{
-      await CommerceService.confirmAlAniReceived(id);
-      if(!mounted)return;
-      _refresh();
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-        content:Text('تم توثيق تأكيد الاستلام في سجل الطلب.')));
-    }catch(_){
-      if(mounted)ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-        content:Text('لم يتأكد الاستلام من الخادم. تحقق من الحالة أو الاتصال.')));
-    }finally{
-      if(mounted)setState(()=>_processingAlAni=false);
-    }
-  }
-
-  Future<void> _requestAlAniReturn(String id) async {
-    if(_processingAlAni)return;
-    String reason='damaged';
-    final details=TextEditingController();
-    final accept=await showDialog<bool>(
-      context:context,
-      builder:(dialogContext)=>StatefulBuilder(
-        builder:(ctx,update)=>AlertDialog(
-          title:const Text('طلب استرجاع أو شكوى توصيل'),
-          content:SingleChildScrollView(child:Column(
-            mainAxisSize:MainAxisSize.min,children:[
-              DropdownButtonFormField<String>(
-                initialValue:reason,
-                items:const [
-                  DropdownMenuItem(value:'damaged',child:Text('منتج تالف')),
-                  DropdownMenuItem(value:'wrong_item',child:Text('منتج مختلف')),
-                  DropdownMenuItem(value:'defective',child:Text('عيب في المنتج')),
-                  DropdownMenuItem(value:'change_mind',child:Text('تغيير الرأي')),
-                  DropdownMenuItem(value:'delivery_issue',child:Text('مشكلة توصيل')),
-                ],
-                onChanged:(value)=>update(()=>reason=value??reason),
-              ),
-              const SizedBox(height:12),
-              TextField(controller:details,maxLines:4,maxLength:2000,
-                decoration:const InputDecoration(
-                  labelText:'اشرح المشكلة (١٥ حرفاً على الأقل)',
-                  border:OutlineInputBorder())),
-              const Text('الطلب يذهب للمراجعة ولا يعني استرداد المال تلقائياً.',
-                style:TextStyle(fontSize:12)),
-            ],
-          )),
-          actions:[
-            TextButton(onPressed:()=>Navigator.pop(ctx,false),
-              child:const Text('رجوع')),
-            FilledButton(onPressed:()=>Navigator.pop(ctx,true),
-              child:const Text('إرسال الطلب')),
-          ],
-        ),
-      ),
-    );
-    final description=details.text.trim();
-    details.dispose();
-    if(accept!=true||!mounted)return;
-    if(description.length<15){
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-        content:Text('اشرح سبب الاسترجاع أو الشكوى بالتفصيل.')));
-      return;
-    }
-    setState(()=>_processingAlAni=true);
-    try{
-      await CommerceService.requestAlAniReturn(
-        orderId:id,reason:reason,details:description);
-      if(!mounted)return;
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-        content:Text('تم تسجيل طلب المراجعة. لا يوجد استرداد تلقائي.')));
-    }catch(_){
-      if(mounted)ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-        content:Text('تعذر إرسال الطلب. تحقق من تفعيل خدمة الاسترجاع.')));
-    }finally{
-      if(mounted)setState(()=>_processingAlAni=false);
-    }
-  }
-
-  String _status(String value) {
-    switch (value) {
-      case 'placed': return 'بانتظار موافقة المتجر';
-      case 'accepted': return 'قبله المتجر';
-      case 'preparing': return 'جاري التحضير';
-      case 'ready': return 'جاهز للتسليم';
-      case 'delivered': return 'تم التسليم';
-      case 'rejected': return 'رفضه المتجر';
-      case 'cancelled': return 'ملغي';
-      default: return value;
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    if (MarketplaceBackend.currentUser == null) {
-      return Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
-        const Text('سجّل دخول حتى تشوف طلباتك'),
-        const SizedBox(height: 10),
-        FilledButton(
-          onPressed: () async {
-            await Navigator.of(context).push<bool>(
-              MaterialPageRoute(builder: (_) => const CustomerAuthPage()));
-            if (mounted) _refresh();
-          },
-          child: const Text('تسجيل الدخول'),
-        ),
-      ]));
-    }
-    return RefreshIndicator(
-      onRefresh: () async {
-        _refresh();
-        await _orders;
-      },
-      child: ListView(padding: const EdgeInsets.all(16), children: [
-        const Text('طلباتي', style: TextStyle(
-          fontSize: 23, color: _dark, fontWeight: FontWeight.w900)),
-        const SizedBox(height: 10),
-        Wrap(spacing: 6, runSpacing: 6, children: [
-          for (final choice in const <String, String>{
-            'all':'الكل', 'placed':'جديدة',
-            'accepted':'مقبولة', 'preparing':'قيد التجهيز',
-            'ready':'جاهزة', 'delivered':'تم التسليم', 'cancelled':'ملغاة',
-            'rejected':'مرفوضة',
-          }.entries)
-            ChoiceChip(
-              label: Text(choice.value),
-              selected: _statusFilter == choice.key,
-              onSelected: (_) => setState(() => _statusFilter = choice.key)),
-        ]),
-        const SizedBox(height: 10),
-        FutureBuilder<List<Map<String, dynamic>>>(
-          future: _orders,
-          builder: (context, snapshot) {
-            if (snapshot.connectionState != ConnectionState.done) {
-              return const Center(child: CircularProgressIndicator());
-            }
-            if (snapshot.hasError) {
-              return const Text('تعذّر جلب الطلبات. اسحب للأسفل لتحديث القائمة.');
-            }
-            final allOrders = snapshot.data ?? [];
-            final orders = allOrders.where((row) =>
-              _statusFilter == 'all' || row['status'] == _statusFilter).toList();
-            if (orders.isEmpty) {
-              return const Padding(padding: EdgeInsets.all(30),
-                child: Text('ما عندك طلبات حقيقية حالياً.',
-                  textAlign: TextAlign.center));
-            }
-            return Column(children: [
-              for (final order in orders) Card(
-                color: Colors.white,
-                child: ListTile(
-                  onTap: () async {
-                    await Navigator.of(context).push<void>(
-                      MaterialPageRoute(builder: (_) => OrderTimelinePage(
-                        orderId: order['id'] as String,
-                        totalIqd: (order['total_iqd'] as num).toInt(),
-                        status: order['status'] as String,
-                      )),
-                    );
-                    if (mounted) _refresh();
-                  },
-                  title: Text('طلب رقم ' +
-                    (order['id'] as String).substring(0, 8)),
-                  subtitle: Text(
-                    _status(order['status'] as String) + '\n' +
-                    priceText((order['total_iqd'] as num).toInt()) +
-                    ' • الدفع عند الاستلام'),
-                  isThreeLine: true,
-                  trailing: order['status'] == 'placed'
-                      ? TextButton(
-                          onPressed: _processingAlAni ? null :
-                            () => _cancel(order['id'] as String),
-                          child: const Text('إلغاء'))
-                      : (order['store_id']==AlAniSettings.storeId &&
-                         order['status']=='ready')
-                        ? TextButton(
-                            onPressed:_processingAlAni?null:
-                              () => _confirmReceived(order['id'] as String),
-                            child:const Text('تأكيد الاستلام'))
+                              child: const Text('تأكيد الاستلام'))
                         : (order['store_id']==AlAniSettings.storeId &&
                            order['status']=='delivered')
                           ? TextButton(
