@@ -1,4 +1,4 @@
-name: Al-Ani three account center Firebase TEST builds (NO DEPLOY)
+name: Al-Ani private import and device registration TEST builds (NO DEPLOY)
 on:
   push:
     branches: [work/alani-fcm-integrated-test-20261126]
@@ -8,7 +8,7 @@ on:
 permissions:
   contents: read
 concurrency:
-  group: alani-account-center-build-${{ github.ref }}
+  group: alani-registration-build-${{ github.ref }}
   cancel-in-progress: true
 env:
   TEST_SUPABASE_URL: https://tgvdwotbrnhcoykuxdpr.supabase.co
@@ -84,7 +84,7 @@ jobs:
           test -n "$TARGET" && test "$TARGET" -ge 36
       - uses: actions/upload-artifact@v4
         with:
-          name: AlAni-customer-AccountCenter-Firebase-TEST-ONLY-APK
+          name: AlAni-customer-PrivateImport-Device-Firebase-TEST-ONLY-APK
           path: build/app/outputs/flutter-apk/app-debug.apk
           retention-days: 14
           if-no-files-found: error
@@ -186,7 +186,7 @@ jobs:
           test -n "$TARGET" && test "$TARGET" -ge 36
       - uses: actions/upload-artifact@v4
         with:
-          name: AlAni-merchant-AccountCenter-Firebase-TEST-ONLY-APK
+          name: AlAni-merchant-PrivateImport-Device-Firebase-TEST-ONLY-APK
           path: merchant_app/build/app/outputs/flutter-apk/app-debug.apk
           retention-days: 14
           if-no-files-found: error
@@ -296,7 +296,7 @@ jobs:
           test -n "$TARGET" && test "$TARGET" -ge 36
       - uses: actions/upload-artifact@v4
         with:
-          name: AlAni-admin-AccountCenter-Firebase-TEST-ONLY-APK
+          name: AlAni-admin-PrivateImport-Device-Firebase-TEST-ONLY-APK
           path: admin_app/build/app/outputs/flutter-apk/app-debug.apk
           retention-days: 14
           if-no-files-found: error
