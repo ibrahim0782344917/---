@@ -10,6 +10,7 @@ void main() {
   };
   test('client builds are locked until deliberately approved', () {
     expect(AlAniCheckoutReadiness.clientApproved, isFalse);
+    expect(AlAniCheckoutReadiness.directProductionPilot, isFalse);
   });
   test('server checkout gate is fail closed', () {
     expect(AlAniCheckoutReadiness.validConfig(valid), isTrue);
