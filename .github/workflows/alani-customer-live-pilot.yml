@@ -1,0 +1,85 @@
+name: Al-Ani customer private LIVE COD phone pilot (NO PLAY PUBLISH)
+on:
+  push:
+    branches: [release/alani-production-candidate-20261126]
+    paths:
+      - '.github/workflows/alani-customer-live-pilot.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  live-pilot:
+    if: github.ref == 'refs/heads/release/alani-production-candidate-20261126'
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    env:
+      PRODUCTION_SUPABASE_URL: https://ltwncrewggdrjevakwpb.supabase.co
+      PRODUCTION_SUPABASE_PUBLISHABLE_KEY: sb_publishable_Tao4VcnXR93Ne9KUBJ76tg_o-Pmd75_
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: '3.47.9'
+          cache: true
+      - name: Generate isolated live pilot package
+        run: |
+          flutter create --org com.ibrahimalani --project-name shitreed_customer --platforms android .
+          python3 scripts/configure_android_maps.py
+          python3 scripts/configure_alani_icon.py . customer
+          python3 merchant_app/scripts/use_runner_ndk.py
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('android/app/build.gradle.kts')
+          s = p.read_text()
+          old = 'applicationId = "com.ibrahimalani.shitreed_customer"'
+          if s.count(old) != 1:
+              raise SystemExit('Unexpected generated applicationId')
+          p.write_text(s.replace(old, 'applicationId = "com.ibrahimalani.shitreed_customer.livepilot"'))
+          p = Path('android/app/src/main/AndroidManifest.xml')
+          s = p.read_text()
+          old = 'android:label="السيد إبراهيم العاني"'
+          if s.count(old) != 1:
+              raise SystemExit('Unexpected generated application label')
+          p.write_text(s.replace(old, 'android:label="العاني - شراء حقيقي (خاص)"'))
+          PY
+      - name: Analyze and test default locked client
+        run: |
+          flutter pub get
+          flutter analyze --no-fatal-infos lib test
+          flutter test
+      - name: Read-only verify production readiness with public key
+        run: |
+          set -euo pipefail
+          result=$(curl --fail --silent --show-error --max-time 15 \
+            -H "apikey: $PRODUCTION_SUPABASE_PUBLISHABLE_KEY" \
+            "$PRODUCTION_SUPABASE_URL/rest/v1/rpc/shitreed_alani_checkout_schema_ready")
+          test "$result" = true
+      - name: Build private live COD Android APK (debug signed)
+        run: |
+          flutter build apk --debug \
+            --dart-define="SUPABASE_URL=$PRODUCTION_SUPABASE_URL" \
+            --dart-define="SUPABASE_PUBLISHABLE_KEY=$PRODUCTION_SUPABASE_PUBLISHABLE_KEY" \
+            --dart-define=ALANI_STORE_ID=25091ca2-c0da-416c-b634-81b188ee66be \
+            --dart-define=ALANI_CHECKOUT_ENABLED=true \
+            --dart-define=ALANI_DELIVERY_TOTALS_VERIFIED=true \
+            --dart-define=ALANI_DIRECT_PRODUCTION_PILOT=true \
+            --dart-define=ALANI_TEST_CHECKOUT_ENABLED=false \
+            --dart-define=SHITREED_CAMPAIGNS_ENABLED=false \
+            --dart-define=ALANI_CUSTOMER_EXTRAS_ENABLED=false \
+            --dart-define=ALANI_BUNDLE_CHECKOUT_TEST_ENABLED=false \
+            --dart-define=GOOGLE_MAPS_ENABLED=false
+      - name: Verify dedicated package and Android target
+        run: |
+          set -euo pipefail
+          AAPT=$(find "$ANDROID_HOME/build-tools" -type f -name aapt | sort -V | tail -1)
+          BADGING=$("$AAPT" dump badging build/app/outputs/flutter-apk/app-debug.apk)
+          printf '%s\n' "$BADGING" | grep -F "package: name='com.ibrahimalani.shitreed_customer.livepilot'"
+          TARGET=$(printf '%s\n' "$BADGING" | sed -n "s/.*targetSdkVersion:'\([0-9]*\)'.*/\1/p" | head -1)
+          test -n "$TARGET" && test "$TARGET" -ge 36
+      - uses: actions/upload-artifact@v4
+        with:
+          name: AlAni-Customer-LIVE-COD-PRIVATE-PILOT-APK
+          path: build/app/outputs/flutter-apk/app-debug.apk
+          retention-days: 7
+          if-no-files-found: error
