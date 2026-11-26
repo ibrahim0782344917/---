@@ -64,18 +64,31 @@ class _AdminGateState extends State<AdminGate> {
     }
   }
 
+  int _accessSequence = 0;
+
   Future<void> checkAccess() async {
     if (!mounted) return;
-    setState(() { loading = true; error = null; });
-    if (AdminApi.client.auth.currentUser == null) {
-      if (mounted) setState(() { role = null; loading = false; });
+    final seq = ++_accessSequence;
+    final actor = AdminApi.client.auth.currentUser?.id;
+    setState(() { loading = true; role = null; error = null; });
+    if (actor == null) {
+      if (mounted && seq == _accessSequence) {
+        setState(() { loading = false; });
+      }
       return;
     }
     try {
       final result = await AdminApi.currentRole();
-      if (mounted) setState(() { role = result; loading = false; });
+      if (!mounted || seq != _accessSequence ||
+          AdminApi.client.auth.currentUser?.id != actor) return;
+      setState(() {
+        role = AdminAccess.roleLabels.containsKey(result) ? result : null;
+        loading = false;
+      });
     } catch (_) {
-      if (mounted) setState(() {
+      if (!mounted || seq != _accessSequence ||
+          AdminApi.client.auth.currentUser?.id != actor) return;
+      setState(() {
         role = null;
         loading = false;
         error = 'تعذر التحقق من صلاحية المدير. تحقق من اتصال الخادم والترحيل.';
@@ -85,6 +98,7 @@ class _AdminGateState extends State<AdminGate> {
 
   @override
   void dispose() {
+    _accessSequence++;
     _subscription?.cancel();
     super.dispose();
   }
@@ -122,7 +136,7 @@ class _AdminGateState extends State<AdminGate> {
         )),
       );
     }
-    return AdminHome(role: role!);
+    return AdminHome(key: ValueKey('${AdminApi.client.auth.currentUser?.id}:$role'), role: role!);
   }
 }
 
