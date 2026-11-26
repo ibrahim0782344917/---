@@ -1,5 +1,7 @@
 // ignore_for_file: curly_braces_in_flow_control_structures
 import 'package:flutter/material.dart';
+import 'package:shitreed_merchant/reports/alani_pos_invoice_page.dart';
+import 'package:shitreed_merchant/reports/alani_period_report_page.dart';
 import 'package:shitreed_merchant/reports/alani_business_report_page.dart';
 import 'package:shitreed_merchant/reports/alani_inventory_page.dart';
 import 'package:shitreed_merchant/account/merchant_account_page.dart';
@@ -97,32 +99,31 @@ class _MerchantOverviewPageState extends State<MerchantOverviewPage> {
   }
 
   Widget _metric(String name,String count,IconData icon) => Container(
-    width:159,
+    width: (MediaQuery.sizeOf(context).width < 400 ? 136 : 159),
     padding:const EdgeInsets.all(15),
     decoration:BoxDecoration(
-      color:Colors.white,
+      color:Theme.of(context).colorScheme.surface,
       borderRadius:BorderRadius.circular(18),
-      border:Border.all(color:const Color(0xFFE7DAF8))),
+      border:Border.all(color:Theme.of(context).colorScheme.outlineVariant)),
     child:Column(
       crossAxisAlignment:CrossAxisAlignment.start,
       children:[
         Icon(icon,color:merchantPurple,size:28),
         const SizedBox(height:7),
-        Text(count,style:const TextStyle(
-          color:merchantDark,fontWeight:FontWeight.w900,
+        Text(count,style:TextStyle(
+          color:Theme.of(context).colorScheme.onSurface,fontWeight:FontWeight.w900,
           fontSize:22)),
-        Text(name,style:const TextStyle(
-          fontSize:12,color:Colors.black54)),
+        Text(name,style:TextStyle(
+          fontSize:12,color:Theme.of(context).colorScheme.onSurfaceVariant)),
       ],
     ),
   );
 
   Widget _action(String title,String subtitle,
       IconData icon,int tab) => Card(
-    color:Colors.white,
     child:ListTile(
-      leading:CircleAvatar(backgroundColor:const Color(0xFFF1E6FD),
-        child:Icon(icon,color:merchantPurple)),
+      leading:CircleAvatar(backgroundColor:Theme.of(context).colorScheme.primaryContainer,
+        child:Icon(icon,color:Theme.of(context).colorScheme.onPrimaryContainer)),
       title:Text(title,style:const TextStyle(
         fontWeight:FontWeight.w800)),
       subtitle:Text(subtitle,
@@ -142,7 +143,7 @@ class _MerchantOverviewPageState extends State<MerchantOverviewPage> {
             mainAxisAlignment:MainAxisAlignment.center,children:[
             Icon(Icons.storefront_outlined,color:merchantOrange,size:42),
             SizedBox(height:8),
-            Text('شتريد تاجر',style:TextStyle(color:Colors.white,
+            Text('السيد إبراهيم العاني — التاجر',style:TextStyle(color:Colors.white,
               fontWeight:FontWeight.w900,fontSize:23)),
             Text('إدارة متاجرك ومنتجاتك وطلباتك',
               style:TextStyle(color:Colors.white70,fontSize:12)),
@@ -176,7 +177,7 @@ class _MerchantOverviewPageState extends State<MerchantOverviewPage> {
           onTap:(){Navigator.of(context).pop();widget.onNavigate(4);}),
       ])),
     ),
-    appBar:AppBar(title:const Text('الرئيسية • شتريد تاجر')),
+    appBar:AppBar(title:const Text('الرئيسية • العاني')),
     body:SafeArea(child:RefreshIndicator(
       onRefresh:_refresh,
       child:ListView(
@@ -196,7 +197,7 @@ class _MerchantOverviewPageState extends State<MerchantOverviewPage> {
               Expanded(child:Column(
                 crossAxisAlignment:CrossAxisAlignment.start,
                 children:[
-                  Text('هلا بيك في شتريد تاجر',style:TextStyle(
+                  Text('أهلاً بك في إدارة العاني',style:TextStyle(
                     color:Colors.white,fontWeight:FontWeight.w900,
                     fontSize:22)),
                   Text('ادخل المنتجات، تابع الطلبات '
@@ -207,8 +208,8 @@ class _MerchantOverviewPageState extends State<MerchantOverviewPage> {
             ]),
           ),
           const SizedBox(height:20),
-          const Text('ملخّص متاجري',style:TextStyle(
-            color:merchantDark,fontSize:21,fontWeight:FontWeight.w900)),
+          Text('ملخّص متاجري',style:TextStyle(
+            color:Theme.of(context).colorScheme.onSurface,fontSize:21,fontWeight:FontWeight.w900)),
           const SizedBox(height:11),
           FutureBuilder<MerchantReport>(
             future:_report,
@@ -219,7 +220,7 @@ class _MerchantOverviewPageState extends State<MerchantOverviewPage> {
                   child:CircularProgressIndicator()));
               }
               if(snap.hasError){
-                return const Text('تعذّر تحميل الملخص. اسحب للتحديث.');
+                return Center(child: TextButton.icon(onPressed: _refresh, icon: const Icon(Icons.refresh), label: const Text('تعذّر تحميل الملخص — إعادة المحاولة')));
               }
               final v=snap.data!;
               return Column(
@@ -254,10 +255,10 @@ class _MerchantOverviewPageState extends State<MerchantOverviewPage> {
             },
           ),
           const SizedBox(height:23),
-          const Text('إدارة سريعة',style:TextStyle(
-            color:merchantDark,fontSize:21,fontWeight:FontWeight.w900)),
+          Text('إدارة سريعة',style:TextStyle(
+            color:Theme.of(context).colorScheme.onSurface,fontSize:21,fontWeight:FontWeight.w900)),
           const SizedBox(height:10),
-          Card(color:const Color(0xFFE7F9EE),child:ListTile(
+          Card(color:Theme.of(context).colorScheme.primaryContainer,child:ListTile(
             leading:const Icon(Icons.admin_panel_settings_outlined,
               color:merchantPurple),
             title:const Text('مركز إدارة المتجر',
@@ -271,6 +272,10 @@ class _MerchantOverviewPageState extends State<MerchantOverviewPage> {
           )),
           _action('إدارة المحلات','إضافة محلك وتعديل أوقات الدوام', 
             Icons.storefront_outlined,1),
+          if(AlAniPosInvoicePage.enabled && AlAniBusinessReportPage.enabled)
+            Card(child:ListTile(leading:const Icon(Icons.point_of_sale),title:const Text('فتح الكاشير'),subtitle:const Text('بيع وفاتورة متعددة المنتجات — TEST'),onTap:()=>Navigator.of(context).push<void>(MaterialPageRoute(builder:(_)=>const AlAniPosInvoicePage())))),
+          if(AlAniBusinessReportPage.enabled && AlAniPeriodReportPage.enabled)
+            Card(child:ListTile(leading:const Icon(Icons.calendar_month),title:const Text('التقارير اليومية والشهرية والسنوية'),subtitle:const Text('مبيعات ومخزون — TEST'),onTap:()=>Navigator.of(context).push<void>(MaterialPageRoute(builder:(_)=>const AlAniPeriodReportPage())))),
           if(AlAniBusinessReportPage.enabled)
             Card(child:ListTile(leading:const Icon(Icons.receipt_long_outlined),title:const Text('الموردون ونقاط البيع والمصاريف'),subtitle:const Text('تقرير العمليات التجارية — TEST'),onTap:()=>Navigator.of(context).push<void>(MaterialPageRoute(builder:(_)=>const AlAniBusinessReportPage())))),
           if(AlAniInventoryPage.enabled)
