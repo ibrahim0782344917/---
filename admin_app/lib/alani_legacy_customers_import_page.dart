@@ -1,3 +1,4 @@
+import 'alani_admin_mfa_page.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'dart:convert';
 import 'package:file_picker/file_picker.dart';
@@ -72,6 +73,12 @@ class _AlAniLegacyCustomersImportPageState
   Future<void> commitImport() async {
     if (!_testOnly || importing || selecting || _readyRows.isEmpty ||
         invalid!=0 || duplicates!=0) return;
+    final assurance=Supabase.instance.client.auth.mfa.getAuthenticatorAssuranceLevel();
+    if(assurance.currentLevel!=AuthenticatorAssuranceLevels.aal2){
+      final ok=await Navigator.of(context).push<bool>(MaterialPageRoute(
+        builder:(_)=>const AlAniAdminMfaPage()));
+      if(ok!=true||!mounted)return;
+    }
     final confirmed=await showDialog<bool>(context:context,builder:(ctx)=>AlertDialog(
       title:const Text('استيراد خاص إلى TEST'),
       content:Text('حفظ ${_readyRows.length} سجل زبون خاص دون إنشاء حسابات أو إرسال رسائل. يلزم حساب مدير عام وتحقق بخطوتين. هل تؤكد؟'),
@@ -239,6 +246,10 @@ class _AlAniLegacyCustomersImportPageState
             'شخصية إلا عند تأكيد الاستيراد الخاص.',
             style:TextStyle(fontSize:12,color:Colors.black54))),
       ],
+      if(_testOnly) OutlinedButton.icon(
+        onPressed:importing||selecting?null:()=>Navigator.of(context).push<bool>(
+          MaterialPageRoute(builder:(_)=>const AlAniAdminMfaPage())),
+        icon:const Icon(Icons.security),label:const Text('إعداد التحقق بخطوتين')),
       if(_testOnly && total!=null) ...[
         FilledButton.icon(onPressed:importing||selecting||_readyRows.isEmpty||
           invalid!=0||duplicates!=0?null:commitImport,

@@ -1,4 +1,4 @@
-name: Al-Ani admin private import fix TEST build (NO DEPLOY)
+name: Al-Ani admin MFA and private import TEST build (NO DEPLOY)
 on:
   push:
     branches: [work/alani-fcm-integrated-test-20261126]
@@ -120,7 +120,7 @@ jobs:
           test -n "$TARGET" && test "$TARGET" -ge 36
       - uses: actions/upload-artifact@v4
         with:
-          name: AlAni-admin-PrivateImport-Device-Firebase-TEST-ONLY-APK
+          name: AlAni-admin-MFA-PrivateImport-Firebase-TEST-ONLY-APK
           path: admin_app/build/app/outputs/flutter-apk/app-debug.apk
           retention-days: 14
           if-no-files-found: error
