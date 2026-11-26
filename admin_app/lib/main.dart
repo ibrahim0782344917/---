@@ -769,6 +769,16 @@ class _AdminHomeState extends State<AdminHome> {
                   changeSection(key);
                 },
               )),
+            if(widget.role=='support' && AlAniSupportFeature.liveTest)
+              ListTile(
+                leading:const Icon(Icons.support_agent,color:Colors.white70),
+                title:const Text('صندوق فريق الدعم — TEST',style:TextStyle(color:Colors.white)),
+                onTap:(){
+                  Navigator.pop(context);
+                  Navigator.push(context,MaterialPageRoute<void>(
+                    builder:(_)=>const AlAniSupportInboxPage()));
+                },
+              ),
             if(AdminAccess.canOpenAlAni(widget.role)) ...[
               const Divider(color:Colors.white24),
               ListTile(
