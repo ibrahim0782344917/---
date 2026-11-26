@@ -8,6 +8,7 @@ import 'admin_ranks_levels_page.dart';
 import 'alani_store_admin_page.dart';
 import 'alani_campaign_admin_page.dart';
 import 'alani_support_chat.dart';
+import 'alani_wallet_review_page.dart';
 import 'alani_delivery_admin_page.dart';
 import 'alani_business_admin_page.dart';
 import 'alani_legacy_customers_import_page.dart';
@@ -865,6 +866,15 @@ class _AdminHomeState extends State<AdminHome> {
               ),
             ],
             if(widget.role=='super_admin') ...[
+              ListTile(
+                leading:const Icon(Icons.account_balance_wallet_outlined,color:Colors.white70),
+                title:const Text('إثباتات التحويل والمحفظة',style:TextStyle(color:Colors.white)),
+                onTap:(){
+                  Navigator.pop(context);
+                  Navigator.push(context,MaterialPageRoute<void>(
+                    builder:(_)=>const AlAniWalletReviewPage()));
+                },
+              ),
               if(AlAniBusinessAdminPage.enabled) ListTile(leading:const Icon(Icons.receipt_long_outlined,color:Colors.white70),title:const Text('التقارير التجارية — TEST',style:TextStyle(color:Colors.white)),onTap:(){Navigator.pop(context);Navigator.push(context,MaterialPageRoute<void>(builder:(_)=>const AlAniBusinessAdminPage()));}),
               ListTile(
                 leading:const Icon(Icons.people_alt_outlined,
