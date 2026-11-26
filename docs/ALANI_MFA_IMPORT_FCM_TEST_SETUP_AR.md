@@ -1,0 +1,17 @@
+# تهيئة الاستيراد وFirebase — TEST فقط
+- Supabase: tgvdwotbrnhcoykuxdpr، لا تستخدم ltwncrewggdrjevakwpb.
+- تطبيق الإدارة: إعداد TOTP من صفحة استيراد الزبائن، باستخدام تطبيق المصادقة على هاتف المالك. لا تشارك السر أو رمز التحقق. يجب أن تكون جلسة الاستيراد aal2 وأن تكون صلاحية المدير العام مؤكدة في الخادم.
+- ملف CSV الخاص: 4952 صفاً صالحاً محلياً، 50 دفعة بحد أقصى 100. لا تُضف الملف إلى المستودع. خذ نسخة احتياطية آمنة قبل الحفظ الفعلي. تحقق من العداد بعد كل استيراد؛ لا تُنشأ حسابات أو دعوات أو طلبات مالية. 48 حالة مراجعة منفصلة.
+- Firebase: تهيئة هوية TEST مستقلة، وليس توسيع شرط هوية release.
+  - المشروع alani-store-e3dc9، رقم 261854110996.
+  - اسم مقترح لحساب الخدمة: alani-fcm-test-sender.
+  - اسم مقترح لمجموعة Workload Identity: alani-fcm-test-server.
+  - اسم مقترح للموفر: github-actions-test، issuer https://token.actions.githubusercontent.com.
+  - ربط attribute.repository_id بـ assertion.repository_id، و google.subject بـ assertion.sub.
+  - شرط الموفر: assertion.repository_owner_id == '212771501' && assertion.repository_id == '1449042147' && assertion.ref == 'refs/heads/work/alani-fcm-integrated-test-20261126'.
+  - صلاحية الإرسال الدنيا المطلوبة على مشروع Firebase، ومنح Workload Identity User لحساب الخدمة عبر principalSet المقيد بمعرّف المستودع في مجموعة TEST فقط.
+  - GitHub Actions repository variables: ALANI_TEST_FCM_WIF_PROVIDER = projects/261854110996/locations/global/workloadIdentityPools/alani-fcm-test-server/providers/github-actions-test ; ALANI_TEST_FCM_SERVICE_ACCOUNT = alani-fcm-test-sender@alani-store-e3dc9.iam.gserviceaccount.com.
+  - لا تستخدم مفاتيح JSON لحسابات الخدمة ولا تضع بيانات وصول قاعدة البيانات في APK.
+  - workflow alani-fcm-test-identity-smoke.yml يتحقق من إصدار OAuth فقط، لا يرسل ولا يصل إلى قاعدة البيانات.
+  - بعد نجاح الهوية: يلزم عامل خادم مخصص ببيانات وصول قاعدة اختبار محدودة الصلاحيات، وربط claim/finish الخاصة، واختبار جهاز واحد وافق على الإشعارات، ثم اختبار الإلغاء وانتهاء الجلسة. لا يُفعّل الجدول الدوري قبل ذلك.
+- لا يوجد تشغيل تلقائي فعلي أو نقل إنتاج أو استيراد حقيقي مثبت في هذه المرحلة.
