@@ -32,6 +32,36 @@ abstract final class AlAniDesignSystem {
       useMaterial3: true,
       colorScheme: scheme,
       scaffoldBackgroundColor: background,
+      visualDensity: VisualDensity.standard,
+      materialTapTargetSize: MaterialTapTargetSize.padded,
+      textTheme: ThemeData(brightness: brightness).textTheme.apply(
+        bodyColor: foreground, displayColor: foreground,
+      ).copyWith(
+        headlineMedium: TextStyle(fontSize: 28,fontWeight: FontWeight.w800,color:foreground),
+        titleLarge: TextStyle(fontSize:22,fontWeight:FontWeight.w800,color:foreground),
+        titleMedium: TextStyle(fontSize:16,fontWeight:FontWeight.w700,color:foreground),
+        bodyMedium: TextStyle(fontSize:14,height:1.55,color:foreground),
+      ),
+      listTileTheme: ListTileThemeData(
+        minTileHeight: 56,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        iconColor: scheme.primary,
+      ),
+      dialogTheme: DialogThemeData(
+        backgroundColor: surface,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+      ),
+      bottomSheetTheme: BottomSheetThemeData(
+        backgroundColor: surface, showDragHandle: true,
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(28))),
+      ),
+      progressIndicatorTheme: ProgressIndicatorThemeData(color: scheme.primary),
+      floatingActionButtonTheme: FloatingActionButtonThemeData(
+        backgroundColor: scheme.primaryContainer,
+        foregroundColor: scheme.onPrimaryContainer,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+      ),
       appBarTheme: AppBarTheme(
         backgroundColor: surface,
         foregroundColor: foreground,
@@ -57,6 +87,14 @@ abstract final class AlAniDesignSystem {
         fillColor: surface,
         contentPadding: const EdgeInsets.symmetric(
           horizontal: 16, vertical: 14),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(14),
+          borderSide: BorderSide(color: scheme.primary, width: 2),
+        ),
+        errorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(14),
+          borderSide: BorderSide(color: scheme.error),
+        ),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
           borderSide: BorderSide(color: scheme.outline),
