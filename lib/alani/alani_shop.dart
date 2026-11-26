@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'alani_customer_extras.dart';
+import 'alani_order_updates.dart';
 import 'package:shitreed_customer/alani/alani_social.dart';
 import 'package:shitreed_customer/alani/alani_content.dart';
 import 'package:shitreed_customer/alani/alani_editor.dart';
@@ -98,6 +100,21 @@ class _AlAniShopHomeState extends State<AlAniShopHome> {
     }
     if (mounted) setState(() => _canEdit = AlAniEditorService.isOwner());
   }
+
+  Future<void> _openAccountFeature(Widget page) async {
+    if (!AlAniCustomerExtras.enabled) return;
+    if (MarketplaceBackend.currentUser == null) {
+      await Navigator.of(context).push<bool>(MaterialPageRoute(
+        builder: (_) => const CustomerAuthPage(),
+      ));
+    }
+    if (!mounted || MarketplaceBackend.currentUser == null) return;
+    await Navigator.of(context).push<void>(MaterialPageRoute(builder: (_) => page));
+  }
+
+  Widget _quickAction(String label, IconData icon, VoidCallback onTap) =>
+      OutlinedButton.icon(onPressed: onTap, icon: Icon(icon),
+        label: Text(label, textAlign: TextAlign.center));
 
   void _add(MarketplaceProduct product) {
     final added = CommerceCart.instance.add(product);
@@ -274,7 +291,7 @@ class _AlAniShopHomeState extends State<AlAniShopHome> {
               icon: AnimatedBuilder(
                 animation: CommerceCart.instance,
                 builder: (_, __) {
-                  final count = CommerceCart.instance.items.length;
+                  final count = CommerceCart.instance.count;
                   return count > 0
                     ? Badge.count(count: count,
                         child: const Icon(Icons.shopping_cart_outlined))
@@ -360,6 +377,7 @@ class _AlAniShopHomeState extends State<AlAniShopHome> {
   Widget _home() => RefreshIndicator(
     onRefresh: _refresh,
     child: ListView(
+      physics: const AlwaysScrollableScrollPhysics(),
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 30),
       children: [
         Container(
@@ -392,9 +410,25 @@ class _AlAniShopHomeState extends State<AlAniShopHome> {
           ),
         ),
         const SizedBox(height: 20),
+        _heading('اختصارات التسوق'),
+        const SizedBox(height: 8),
+        Wrap(spacing: 8, runSpacing: 8, children: [
+          _quickAction('طلباتي', Icons.receipt_long_outlined, _showOrders),
+          _quickAction('السلة', Icons.shopping_cart_outlined, _openCart),
+          if (AlAniCustomerExtras.enabled) ...[
+            _quickAction('المفضلة والمكافآت', Icons.favorite_border,
+              () => _openAccountFeature(const AlAniCustomerExtrasPage())),
+            _quickAction('الإشعارات', Icons.notifications_outlined,
+              () => _openAccountFeature(const AlAniOrderNotificationsPage())),
+          ],
+          _quickAction('العروض', Icons.local_offer_outlined,
+            () => Navigator.of(context).push<void>(MaterialPageRoute(
+              builder: (_) => const AlAniOffersPage()))),
+        ]),
+        const SizedBox(height: 16),
         const AlAniCampaignBanner(),
         Card(
-          color: const Color(0xFFE5F9ED),
+          color: Theme.of(context).colorScheme.primaryContainer,
           child: ListTile(
             leading: const Icon(Icons.local_offer_outlined, color: _pine),
             title: const Text('عروض لفترة محدودة',
@@ -447,7 +481,7 @@ class _AlAniShopHomeState extends State<AlAniShopHome> {
         ),
         const SizedBox(height: 18),
         Card(
-          color: Colors.white, elevation: 0,
+          elevation: 0,
           child: ListTile(
             leading: const Icon(Icons.place_outlined, color: _pine),
             title: const Text(AlAniSettings.area),
@@ -502,8 +536,8 @@ class _AlAniShopHomeState extends State<AlAniShopHome> {
 
   Widget _heading(String title, {VoidCallback? onMore}) => Row(
     children: [
-      Expanded(child: Text(title, style: const TextStyle(
-        color: _deep, fontSize: 19, fontWeight: FontWeight.w900,
+      Expanded(child: Text(title, style: TextStyle(
+        color: Theme.of(context).colorScheme.onSurface, fontSize: 19, fontWeight: FontWeight.w900,
       ))),
       if (onMore != null) TextButton(
         onPressed: onMore, child: const Text('عرض الكل'),
@@ -514,6 +548,7 @@ class _AlAniShopHomeState extends State<AlAniShopHome> {
   Widget _catalog() => RefreshIndicator(
     onRefresh: _refresh,
     child: ListView(
+      physics: const AlwaysScrollableScrollPhysics(),
       padding: const EdgeInsets.fromLTRB(16, 10, 16, 26),
       children: [
         _heading('الزيوت والأعشاب والمنتجات'),
