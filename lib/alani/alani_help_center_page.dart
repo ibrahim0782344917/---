@@ -9,7 +9,7 @@ class AlAniHelpCenterPage extends StatefulWidget {
 }
 class _AlAniHelpCenterPageState extends State<AlAniHelpCenterPage>{
   String query='';
-  static const entries=< (String,String) >[
+  static const entries=<(String,String)>[
     ('كيف أدفع قيمة الطلب؟','الدفع الحالي نقداً عند الاستلام. شحن المحفظة الإلكترونية غير متاح حالياً.'),
     ('كم أجور التوصيل؟','أجور الطلب العادي 5,000 دينار عراقي. راجع المجموع الظاهر قبل التأكيد.'),
     ('كيف أتابع طلبي؟','افتح سجل طلباتك لمراجعة الحالة الحالية. لا يعرض هذا الإصدار موقع المندوب المباشر.'),
