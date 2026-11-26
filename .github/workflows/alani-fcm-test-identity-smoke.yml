@@ -51,3 +51,5 @@ jobs:
           set -euo pipefail
           test -n "$ACCESS_TOKEN"
           echo "PASS: dedicated TEST FCM OAuth credential issued. No database accessed or notification sent."
+
+# Recheck after owner configured dedicated TEST identity variables.
