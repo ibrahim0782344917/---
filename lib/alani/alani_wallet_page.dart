@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
@@ -18,19 +19,34 @@ class _AlAniWalletPageState extends State<AlAniWalletPage> {
   List<Map<String,dynamic>> requests=[];
   String? provider,notice,attemptKey,extension;
   XFile? proof;
-  bool busy=false,loading=true;
-  bool get sameActor=>actor!=null&&actor==db.auth.currentUser?.id;
+  bool busy=false,loading=true,sessionChanged=false;
+  StreamSubscription<AuthState>? _auth;
+  bool get sameActor=>!sessionChanged&&actor!=null&&actor==db.auth.currentUser?.id;
   bool get intake=>status?['intake_enabled']==true&&sameActor;
   @override
-  void initState(){super.initState();actor=db.auth.currentUser?.id;load();}
+  void initState(){
+    super.initState();
+    actor=db.auth.currentUser?.id;
+    _auth=db.auth.onAuthStateChange.listen((_){
+      if(mounted&&db.auth.currentUser?.id!=actor){
+        amount.clear();reference.clear();
+        setState((){
+          sessionChanged=true;status=null;requests=[];proof=null;extension=null;
+          provider=null;attemptKey=null;notice=null;loading=false;
+        });
+      }
+    });
+    unawaited(load());
+  }
   @override
-  void dispose(){amount.dispose();reference.dispose();super.dispose();}
+  void dispose(){_auth?.cancel();amount.dispose();reference.dispose();super.dispose();}
   Future<void> load()async{
     if(!mounted)return;
     if(!sameActor){setState((){status=null;requests=[];loading=false;notice='سجّل الدخول بحسابك لعرض طلبات الشحن.';});return;}
     setState(()=>loading=true);
     try{
       final a=await db.rpc('alani_wallet_status');
+      if(!mounted||!sameActor)return;
       final b=await db.rpc('alani_wallet_my_requests');
       if(!mounted||!sameActor)return;
       setState((){
@@ -64,6 +80,7 @@ class _AlAniWalletPageState extends State<AlAniWalletPage> {
   Future<void> submit()async{
     if(!intake||busy||proof==null||provider==null||extension==null)return;
     final value=int.tryParse(amount.text.trim()),ref=reference.text.trim();
+    final selectedProof=proof,selectedExtension=extension,selectedProvider=provider;
     if(value==null||value<1||value>1000000000||ref.length<4||ref.length>120){
       setState(()=>notice='راجع المبلغ والمرجع قبل الإرسال.');return;
     }
@@ -73,20 +90,22 @@ class _AlAniWalletPageState extends State<AlAniWalletPage> {
         content:const Text('لا ترسل أموالاً بسبب هذه الصفحة. الإيصال للمراجعة فقط ولا يضيف رصيداً تلقائياً.'),
         actions:[TextButton(onPressed:()=>Navigator.pop(context,false),child:const Text('إلغاء')),
           FilledButton(onPressed:()=>Navigator.pop(context,true),child:const Text('تأكيد الإرسال'))]));
-      if(ok!=true||!mounted||!intake)return;
+      if(ok!=true||!mounted||!intake||busy)return;
+      // Do not submit if another confirmation or account change altered the form.
+      if(int.tryParse(amount.text.trim())!=value||reference.text.trim()!=ref||proof!=selectedProof||extension!=selectedExtension||provider!=selectedProvider)return;
       attemptKey=newKey();
     }
     if(!mounted||!sameActor||busy)return;
     setState(()=>busy=true);
     try{
-      final bytes=await proof!.readAsBytes();
+      final bytes=await selectedProof!.readAsBytes();
       final png=bytes.length>=8&&bytes[0]==137&&bytes[1]==80&&bytes[2]==78&&bytes[3]==71&&bytes[4]==13&&bytes[5]==10&&bytes[6]==26&&bytes[7]==10;
       final jpg=bytes.length>=3&&bytes[0]==255&&bytes[1]==216&&bytes[2]==255;
-      if(bytes.isEmpty||bytes.length>5242880||(extension=='png'?!png:!jpg))throw StateError('INVALID_IMAGE');
+      if(bytes.isEmpty||bytes.length>5242880||(selectedExtension=='png'?!png:!jpg))throw StateError('INVALID_IMAGE');
       if(!sameActor||!mounted)return;
       final raw=await db.rpc('alani_wallet_reserve_proof',params:{
-        'p_key':attemptKey,'p_amount_iqd':value,'p_provider':provider,
-        'p_reference':ref,'p_extension':extension});
+        'p_key':attemptKey,'p_amount_iqd':value,'p_provider':selectedProvider,
+        'p_reference':ref,'p_extension':selectedExtension});
       final reserved=Map<String,dynamic>.from(raw as Map);
       if(!sameActor||!mounted)return;
       final path=reserved['path'] as String,id=reserved['id'] as String;
@@ -94,7 +113,7 @@ class _AlAniWalletPageState extends State<AlAniWalletPage> {
       if(reserved['submitted']!=true){
         try{
           await db.storage.from('alani-wallet-proof-private').uploadBinary(path,bytes,
-            fileOptions:FileOptions(contentType:extension=='png'?'image/png':'image/jpeg',upsert:false));
+            fileOptions:FileOptions(contentType:selectedExtension=='png'?'image/png':'image/jpeg',upsert:false));
         }on StorageException catch(e){
           // A repeated attempt may encounter an existing immutable file.
           if(e.statusCode!='409'&&e.statusCode!='Duplicate')rethrow;
