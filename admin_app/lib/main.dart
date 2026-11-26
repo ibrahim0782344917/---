@@ -876,7 +876,7 @@ class _AdminHomeState extends State<AdminHome> {
         ])),
       ) : null,
       appBar: AppBar(
-        title: const Text('السيد إبراهيم العاني | الإدارة'),
+        title: const Text('السيد إبراهيم العاني | الإدارة', maxLines: 1, overflow: TextOverflow.ellipsis),
         actions: [
           if (!narrow && widget.role=='super_admin' && AlAniBusinessAdminPage.enabled)
             IconButton(tooltip:'التقارير التجارية — TEST',icon:const Icon(Icons.receipt_long_outlined),onPressed:()=>Navigator.of(context).push<void>(MaterialPageRoute(builder:(_)=>const AlAniBusinessAdminPage()))),
@@ -933,9 +933,18 @@ class _AdminHomeState extends State<AdminHome> {
         child: Column(children: [
           Container(width: double.infinity,
             padding: const EdgeInsets.all(12),
-            color: const Color(0xFFE8F9EE),
+            color: Theme.of(context).colorScheme.primaryContainer,
             child: Text('الصلاحية: ' +
-              (AdminAccess.roleLabels[widget.role] ?? widget.role))),
+              (AdminAccess.roleLabels[widget.role] ?? widget.role),
+              style: TextStyle(color: Theme.of(context).colorScheme.onPrimaryContainer))),
+          if (narrow && section == 'overview') Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            child: Wrap(spacing: 8, runSpacing: 8, children: [
+              if (sections.contains('orders')) OutlinedButton.icon(onPressed: () => changeSection('orders'), icon: const Icon(Icons.receipt_long), label: const Text('الطلبات')),
+              if (sections.contains('products')) OutlinedButton.icon(onPressed: () => changeSection('products'), icon: const Icon(Icons.inventory_2_outlined), label: const Text('المنتجات')),
+              if (widget.role=='super_admin' && AlAniBusinessAdminPage.enabled) OutlinedButton.icon(onPressed:()=>Navigator.of(context).push<void>(MaterialPageRoute(builder:(_)=>const AlAniBusinessAdminPage())), icon:const Icon(Icons.assessment_outlined),label:const Text('التقارير')),
+            ]),
+          ),
           if (!narrow) SizedBox(height: 55, child: ListView(
             padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 6),
             scrollDirection: Axis.horizontal,
@@ -964,17 +973,14 @@ class _AdminHomeState extends State<AdminHome> {
                       child: const Text('إعادة المحاولة')),
                   ]))
               : section == 'overview' ? overviewBody() : itemsBody()),
-          if (section != 'overview') Row(children: [
-            const SizedBox(width: 8),
+          if (section != 'overview') Wrap(alignment: WrapAlignment.center, crossAxisAlignment: WrapCrossAlignment.center, spacing: 8, runSpacing: 4, children: [
             OutlinedButton(onPressed: loading || offset == 0 ? null : () {
               setState(() => offset -= 25);
               unawaited(load());
             }, child: const Text('السابق')),
-            const SizedBox(width: 12),
             Text(total == 0 ? 'لا توجد نتائج' :
               ((offset + 1).toString() + '–' +
               (offset + items.length).toString() + ' من ' + total.toString())),
-            const SizedBox(width: 12),
             OutlinedButton(
               onPressed: loading || offset + items.length >= total ? null : () {
                 setState(() => offset += 25);
