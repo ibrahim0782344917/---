@@ -1,0 +1,53 @@
+name: Al-Ani isolated TEST FCM identity smoke (NO SEND)
+on:
+  push:
+    branches: [work/alani-fcm-integrated-test-20261126]
+    paths: ['.github/workflows/alani-fcm-test-identity-smoke.yml']
+  workflow_dispatch:
+permissions: {}
+jobs:
+  preflight:
+    if: github.repository_id == '1449042147' && github.ref == 'refs/heads/work/alani-fcm-integrated-test-20261126'
+    runs-on: ubuntu-latest
+    outputs:
+      ready: ${{ steps.check.outputs.ready }}
+    steps:
+      - id: check
+        env:
+          WIF: ${{ vars.ALANI_TEST_FCM_WIF_PROVIDER }}
+          ACCOUNT: ${{ vars.ALANI_TEST_FCM_SERVICE_ACCOUNT }}
+        run: |
+          set -euo pipefail
+          if [[ "$WIF" =~ ^projects/261854110996/locations/global/workloadIdentityPools/alani-fcm-test-server/providers/github-actions-test$ ]] && [[ "$ACCOUNT" == "alani-fcm-test-sender@alani-store-e3dc9.iam.gserviceaccount.com" ]]; then
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+            echo "::warning::Dedicated TEST identity not configured. No authentication or send attempted."
+          fi
+  authenticate:
+    needs: preflight
+    if: needs.preflight.outputs.ready == 'true' && github.repository_id == '1449042147' && github.ref == 'refs/heads/work/alani-fcm-integrated-test-20261126'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - id: auth
+        uses: google-github-actions/auth@v3
+        with:
+          project_id: alani-store-e3dc9
+          workload_identity_provider: ${{ vars.ALANI_TEST_FCM_WIF_PROVIDER }}
+          service_account: ${{ vars.ALANI_TEST_FCM_SERVICE_ACCOUNT }}
+          token_format: access_token
+          access_token_scopes: https://www.googleapis.com/auth/firebase.messaging
+          access_token_lifetime: 300s
+          create_credentials_file: false
+          export_environment_variables: false
+      - name: Check scoped credential without sending
+        env:
+          ACCESS_TOKEN: ${{ steps.auth.outputs.access_token }}
+        run: |
+          set -euo pipefail
+          test -n "$ACCESS_TOKEN"
+          echo "PASS: dedicated TEST FCM OAuth credential issued. No database accessed or notification sent."
