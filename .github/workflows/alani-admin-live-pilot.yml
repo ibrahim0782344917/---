@@ -1,0 +1,89 @@
+name: Al-Ani admin private LIVE pilot (NO PLAY PUBLISH)
+on:
+  push:
+    branches: [release/alani-production-candidate-20261126]
+    paths:
+      - '.github/workflows/alani-admin-live-pilot.yml'
+      - 'admin_app/lib/main.dart'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  admin-live-pilot:
+    if: github.ref == 'refs/heads/release/alani-production-candidate-20261126'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 50
+    defaults:
+      run:
+        working-directory: admin_app
+    env:
+      PRODUCTION_SUPABASE_URL: https://ltwncrewggdrjevakwpb.supabase.co
+      PRODUCTION_SUPABASE_PUBLISHABLE_KEY: sb_publishable_Tao4VcnXR93Ne9KUBJ76tg_o-Pmd75_
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: '3.47.9'
+          cache: true
+      - name: Prepare separate admin live pilot
+        run: |
+          if [ -f test/widget_test.dart ]; then HAD_WIDGET_TEST=1; else HAD_WIDGET_TEST=0; fi
+          flutter create --org com.ibrahimalani --project-name shitreed_admin --platforms android .
+          if [ "$HAD_WIDGET_TEST" = 0 ]; then rm -f test/widget_test.dart; fi
+          python3 ../scripts/configure_alani_icon.py . admin
+          python3 - <<'PY'
+          from pathlib import Path
+          import xml.etree.ElementTree as ET
+          p = Path('android/app/build.gradle.kts')
+          s = p.read_text()
+          old = 'applicationId = "com.ibrahimalani.shitreed_admin"'
+          if s.count(old) != 1:
+              raise SystemExit('Unexpected applicationId')
+          p.write_text(s.replace(old, 'applicationId = "com.ibrahimalani.shitreed_admin.livepilot"'))
+          p = Path('android/app/src/main/AndroidManifest.xml')
+          ET.register_namespace('android', 'http://schemas.android.com/apk/res/android')
+          t = ET.parse(p)
+          root = t.getroot()
+          ns = '{http://schemas.android.com/apk/res/android}'
+          a = root.find('application')
+          if a is None:
+              raise SystemExit('Missing application')
+          a.set(ns+'label', 'العاني - إدارة إنتاج (خاص)')
+          if not any(x.get(ns+'name')=='android.permission.INTERNET' for x in root.findall('uses-permission')):
+              root.insert(0, ET.Element('uses-permission', {ns+'name':'android.permission.INTERNET'}))
+          t.write(p, encoding='utf-8', xml_declaration=True)
+          PY
+      - name: Analyze and test admin
+        run: |
+          flutter pub get
+          flutter analyze --no-fatal-infos lib test
+          flutter test
+      - name: Read-only production readiness check
+        run: |
+          set -euo pipefail
+          result=$(curl --fail --silent --show-error --max-time 15 -H "apikey: $PRODUCTION_SUPABASE_PUBLISHABLE_KEY" "$PRODUCTION_SUPABASE_URL/rest/v1/rpc/shitreed_alani_checkout_schema_ready")
+          test "$result" = true
+      - name: Build private production admin APK
+        run: |
+          flutter build apk --debug \
+            --dart-define="SUPABASE_URL=$PRODUCTION_SUPABASE_URL" \
+            --dart-define="SUPABASE_PUBLISHABLE_KEY=$PRODUCTION_SUPABASE_PUBLISHABLE_KEY" \
+            --dart-define=ALANI_DELIVERY_WORKFLOW_ENABLED=false \
+            --dart-define=ALANI_SUPPORT_CHAT_ENABLED=false \
+            --dart-define=SHITREED_CAMPAIGNS_ENABLED=false \
+            --dart-define=ALANI_BUSINESS_TEST_ENABLED=false
+      - name: Verify package and Android target
+        run: |
+          set -euo pipefail
+          AAPT=$(find "$ANDROID_HOME/build-tools" -type f -name aapt | sort -V | tail -1)
+          BADGING=$("$AAPT" dump badging build/app/outputs/flutter-apk/app-debug.apk)
+          printf '%s\n' "$BADGING" | grep -F "package: name='com.ibrahimalani.shitreed_admin.livepilot'"
+          TARGET=$(printf '%s\n' "$BADGING" | sed -n "s/.*targetSdkVersion:'\([0-9]*\)'.*/\1/p" | head -1)
+          test -n "$TARGET" && test "$TARGET" -ge 36
+      - uses: actions/upload-artifact@v4
+        with:
+          name: AlAni-Admin-LIVE-PRIVATE-PILOT-APK
+          path: admin_app/build/app/outputs/flutter-apk/app-debug.apk
+          retention-days: 7
+          if-no-files-found: error
