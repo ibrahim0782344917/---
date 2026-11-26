@@ -160,7 +160,7 @@ class _AlAniTrackingPageState extends State<AlAniTrackingPage> with WidgetsBindi
           ListTile(leading:const Icon(Icons.location_on),title:const Text('آخر إحداثيات مستلمة'),
             subtitle:Text('${loc['latitude']}, ${loc['longitude']}')),
           Text('الدقة التقريبية: ${loc['accuracy_m']} متر'),
-          Text('وقت التحديث: ${updated?.toLocal()}'),
+          Text('وقت التحديث: ${updated.toLocal()}'),
           if (_tilesConfigured) ...[
             SwitchListTile(title:const Text('عرض الموقع على الخريطة'),
               subtitle:const Text('مزود الخرائط الخارجي يستقبل طلبات صور المنطقة المعروضة.'),
