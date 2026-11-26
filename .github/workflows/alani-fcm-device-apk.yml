@@ -1,0 +1,111 @@
+name: Al-Ani Firebase Android device test APK (NO BACKEND)
+on:
+  push:
+    branches: [release/alani-production-candidate-20261126]
+    paths:
+      - '.github/workflows/alani-fcm-device-apk.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  device-test:
+    if: github.repository_id == '1449042147' && github.ref == 'refs/heads/release/alani-production-candidate-20261126'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check private Android client configuration
+        env:
+          FIREBASE_CONFIG: ${{ secrets.ALANI_FIREBASE_GOOGLE_SERVICES_JSON }}
+        run: |
+          set -euo pipefail
+          if [ -z "$FIREBASE_CONFIG" ]; then
+            echo "::error::Missing repository secret ALANI_FIREBASE_GOOGLE_SERVICES_JSON (Android client configuration only)"
+            exit 1
+          fi
+          umask 077
+          printf '%s' "$FIREBASE_CONFIG" > "$RUNNER_TEMP/alani-fcm-client.json"
+          python3 - <<'PY'
+          import json, os
+          from pathlib import Path
+          try:
+              d=json.loads((Path(os.environ['RUNNER_TEMP'])/'alani-fcm-client.json').read_text())
+              assert d.get('project_info',{}).get('project_id')=='alani-store-e3dc9'
+              assert str(d['project_info']['project_number'])=='261854110996'
+              assert d.get('type')!='service_account' and 'private_key' not in d
+              matches=[c for c in d.get('client',[]) if c.get('client_info',{}).get('android_client_info',{}).get('package_name')=='com.ibrahimalani.shitreed_customer.livepilot']
+              assert len(matches)==1
+          except Exception:
+              raise SystemExit('Invalid Android client config or missing customer livepilot package') from None
+          print('PASS: correct Android client project and package')
+          PY
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: '3.47.9'
+          cache: true
+      - name: Generate device-only Flutter app in isolated directory
+        run: |
+          set -euo pipefail
+          APP="$RUNNER_TEMP/alani-fcm-app"
+          flutter create --org com.ibrahimalani --project-name shitreed_customer --platforms android "$APP"
+          cp lib/alani_fcm_pilot.dart "$APP/lib/alani_fcm_pilot.dart"
+          cd "$APP"
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('android/app/build.gradle.kts')
+          s=p.read_text()
+          old='applicationId = "com.ibrahimalani.shitreed_customer"'
+          assert s.count(old)==1
+          p.write_text(s.replace(old,'applicationId = "com.ibrahimalani.shitreed_customer.livepilot"'))
+          p=Path('android/app/src/main/AndroidManifest.xml')
+          s=p.read_text()
+          assert 'android:label="shitreed_customer"' in s
+          p.write_text(s.replace('android:label="shitreed_customer"','android:label="العاني - اختبار الإشعارات فقط"'))
+          p=Path('pubspec.yaml')
+          s=p.read_text()
+          assert s.count('dependencies:\n')>=1
+          s=s.replace('dependencies:\n','dependencies:\n  firebase_core: 4.2.1\n  firebase_messaging: 16.0.4\n',1)
+          p.write_text(s)
+          Path('lib/main.dart').write_text("""import 'package:flutter/material.dart';
+          import 'package:firebase_core/firebase_core.dart';
+          import 'package:firebase_messaging/firebase_messaging.dart';
+          import 'alani_fcm_pilot.dart';
+          Future<void> main() async {
+            WidgetsFlutterBinding.ensureInitialized();
+            try {
+              final app = await Firebase.initializeApp().timeout(const Duration(seconds: 15));
+              if (app.options.projectId == 'alani-store-e3dc9') {
+                FirebaseMessaging.onBackgroundMessage(alaniFirebaseBackground);
+                AlAniFcmPilot.ready = true;
+              }
+            } catch (_) { AlAniFcmPilot.ready = false; }
+            runApp(const MaterialApp(debugShowCheckedModeBanner: false,
+              home: Directionality(textDirection: TextDirection.rtl, child: AlAniFcmSettingsPage())));
+          }
+          """)
+          PY
+          rm -f test/widget_test.dart
+          python3 "$GITHUB_WORKSPACE/scripts/prepare_alani_firebase_android.py" --app-root "$APP" --role customer --config "$RUNNER_TEMP/alani-fcm-client.json"
+          rm -f "$RUNNER_TEMP/alani-fcm-client.json"
+          flutter pub get
+          flutter analyze --no-fatal-infos lib
+          flutter build apk --debug
+      - name: Verify APK identity
+        run: |
+          set -euo pipefail
+          APK="$RUNNER_TEMP/alani-fcm-app/build/app/outputs/flutter-apk/app-debug.apk"
+          AAPT=$(find "$ANDROID_HOME/build-tools" -type f -name aapt | sort -V | tail -1)
+          "$AAPT" dump badging "$APK" > "$RUNNER_TEMP/alani-badging.txt"
+          grep -F "package: name='com.ibrahimalani.shitreed_customer.livepilot'" "$RUNNER_TEMP/alani-badging.txt"
+          grep -F "android.permission.POST_NOTIFICATIONS" "$RUNNER_TEMP/alani-badging.txt"
+          cp "$APK" "$RUNNER_TEMP/AlAni-Firebase-Device-Test.apk"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: AlAni-Firebase-Device-Test-APK
+          path: ${{ runner.temp }}/AlAni-Firebase-Device-Test.apk
+          retention-days: 3
+          if-no-files-found: error
+      - name: Remove temporary client configuration
+        if: always()
+        run: rm -f "$RUNNER_TEMP/alani-fcm-client.json"
