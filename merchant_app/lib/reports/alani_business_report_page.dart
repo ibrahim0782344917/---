@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'alani_period_report_page.dart';
 import 'alani_business_entry_page.dart';
 import 'alani_pos_invoice_page.dart';
 import 'alani_bundle_manage_page.dart';
@@ -40,6 +41,7 @@ class _AlAniBusinessReportPageState extends State<AlAniBusinessReportPage>{
       final acct=Map<String,dynamic>.from(data['accounting'] as Map);
       final suppliers=(data['suppliers'] as List? ?? []).map((e)=>Map<String,dynamic>.from(e as Map));
       return ListView(padding:const EdgeInsets.all(16),children:[
+        Card(child:ListTile(title:const Text('التقارير اليومية والشهرية والسنوية'),leading:const Icon(Icons.calendar_month),onTap:()=>Navigator.of(context).push<void>(MaterialPageRoute(builder:(_)=>const AlAniPeriodReportPage())))),
         const Text('سجلات تشغيلية تجريبية؛ ليست أرباحاً أو تسوية محاسبية أو إثبات تحويل أموال.'),
         for(final entry in const {
           'purchases_iqd':'إجمالي المشتريات المسجلة',
