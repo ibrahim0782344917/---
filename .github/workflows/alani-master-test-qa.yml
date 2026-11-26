@@ -1,28 +1,21 @@
-name: Al-Ani master TEST customer and merchant QA (no deployment)
+name: Al-Ani three Android TEST builds (NO DEPLOY)
 on:
   push:
     branches: [work/alani-10000-master-test-20261125]
-    paths:
-      - 'lib/**'
-      - 'test/**'
-      - 'pubspec.yaml'
-      - 'merchant_app/**'
-      - '.github/workflows/alani-master-test-qa.yml'
   workflow_dispatch:
 permissions:
   contents: read
+concurrency:
+  group: alani-master-build-${{ github.ref }}
+  cancel-in-progress: true
+env:
+  TEST_SUPABASE_URL: https://tgvdwotbrnhcoykuxdpr.supabase.co
+  TEST_SUPABASE_PUBLISHABLE_KEY: sb_publishable_LUUtkKZWm3cqIRLQSLM4iQ_puh2ipiY
 jobs:
-  flutter-qa:
+  customer:
     if: github.ref == 'refs/heads/work/alani-10000-master-test-20261125'
     runs-on: ubuntu-latest
-    timeout-minutes: 25
-    strategy:
-      fail-fast: false
-      matrix:
-        directory: ['.', 'merchant_app']
-    defaults:
-      run:
-        working-directory: ${{ matrix.directory }}
+    timeout-minutes: 50
     steps:
       - uses: actions/checkout@v4
       - uses: subosito/flutter-action@v2
@@ -30,6 +23,141 @@ jobs:
           channel: stable
           flutter-version: '3.47.9'
           cache: true
-      - run: flutter pub get
-      - run: flutter analyze --no-fatal-infos lib test
-      - run: flutter test
+      - name: Prepare isolated debug build
+        run: |
+          flutter create --org com.ibrahimalani --project-name shitreed_customer --platforms android .
+          python3 scripts/configure_android_maps.py
+          python3 scripts/configure_alani_icon.py . customer
+          python3 merchant_app/scripts/use_runner_ndk.py
+      - name: Flutter analysis (all warnings/errors block release, style infos are reported)
+        run: |
+          flutter pub get
+          flutter analyze --no-fatal-infos lib test
+          flutter test
+      - name: Build isolated customer Android only
+        run: |
+          flutter build apk --debug \
+            --dart-define="SUPABASE_URL=$TEST_SUPABASE_URL" \
+            --dart-define="SUPABASE_PUBLISHABLE_KEY=$TEST_SUPABASE_PUBLISHABLE_KEY" \
+            --dart-define="ALANI_SOCIAL_ENABLED=true" \
+            --dart-define="ALANI_TEST_CHECKOUT_ENABLED=true" \
+            --dart-define="SHITREED_CAMPAIGNS_ENABLED=true" \
+            --dart-define="ALANI_SUPPORT_CHAT_ENABLED=true" \
+            --dart-define="ALANI_DELIVERY_WORKFLOW_ENABLED=true" \
+            --dart-define="ALANI_STORE_ID=25091ca2-c0da-416c-b634-81b188ee66be" \
+            --dart-define="ALANI_CUSTOMER_EXTRAS_ENABLED=true" \
+            --dart-define="ALANI_BUNDLE_CHECKOUT_TEST_ENABLED=true" \
+            --dart-define="GOOGLE_MAPS_ENABLED=false"
+      - name: Verify target SDK >= 36
+        run: |
+          AAPT=$(find "$ANDROID_HOME/build-tools" -type f -name aapt | sort -V | tail -1)
+          TARGET=$("$AAPT" dump badging build/app/outputs/flutter-apk/app-debug.apk | sed -n "s/.*targetSdkVersion:'\([0-9]*\)'.*/\1/p" | head -1)
+          test -n "$TARGET" && test "$TARGET" -ge 36
+      - uses: actions/upload-artifact@v4
+        with:
+          name: AlAni-Customer-Master-TEST-ONLY-APK
+          path: build/app/outputs/flutter-apk/app-debug.apk
+          retention-days: 14
+          if-no-files-found: error
+  merchant:
+    if: github.ref == 'refs/heads/work/alani-10000-master-test-20261125'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 50
+    defaults:
+      run:
+        working-directory: merchant_app
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: '3.47.9'
+          cache: true
+      - name: Prepare isolated merchant Android
+        run: |
+          flutter create --org com.ibrahimalani --project-name shitreed_merchant --platforms android .
+          ALANI_COURIER_GPS_TEST_BUILD=true ALANI_POS_CAMERA_TEST_BUILD=true python3 scripts/configure_android.py
+          python3 ../scripts/configure_alani_icon.py . merchant
+          python3 scripts/use_runner_ndk.py
+      - name: Flutter analysis and tests (warnings/errors fail release)
+        run: |
+          flutter pub get
+          flutter analyze --no-fatal-infos
+          flutter test
+      - name: Build isolated merchant preview
+        run: |
+          flutter build apk --debug \
+            --dart-define="SUPABASE_URL=$TEST_SUPABASE_URL" \
+            --dart-define="SUPABASE_PUBLISHABLE_KEY=$TEST_SUPABASE_PUBLISHABLE_KEY" \
+            --dart-define="SHITREED_CAMPAIGNS_ENABLED=true" \
+            --dart-define="ALANI_SUPPORT_CHAT_ENABLED=true" \
+            --dart-define="ALANI_DELIVERY_WORKFLOW_ENABLED=true" \
+            --dart-define="ALANI_COURIER_GPS_TEST_ENABLED=true" \
+            --dart-define="ALANI_INVENTORY_TEST_ENABLED=true" \
+            --dart-define="ALANI_BUSINESS_TEST_ENABLED=true" \
+            --dart-define="ALANI_POS_INVOICE_TEST_ENABLED=true"
+      - name: Verify target SDK >= 36
+        run: |
+          AAPT=$(find "$ANDROID_HOME/build-tools" -type f -name aapt | sort -V | tail -1)
+          TARGET=$("$AAPT" dump badging build/app/outputs/flutter-apk/app-debug.apk | sed -n "s/.*targetSdkVersion:'\([0-9]*\)'.*/\1/p" | head -1)
+          test -n "$TARGET" && test "$TARGET" -ge 36
+      - uses: actions/upload-artifact@v4
+        with:
+          name: AlAni-Merchant-Master-TEST-ONLY-APK
+          path: merchant_app/build/app/outputs/flutter-apk/app-debug.apk
+          retention-days: 14
+          if-no-files-found: error
+  admin:
+    if: github.ref == 'refs/heads/work/alani-10000-master-test-20261125'
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    defaults:
+      run:
+        working-directory: admin_app
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: '3.47.9'
+          cache: true
+      - name: Prepare isolated admin Android
+        run: |
+          flutter create --org com.ibrahimalani --project-name shitreed_admin --platforms android .
+          python3 ../scripts/configure_alani_icon.py . admin
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('android/app/src/main/AndroidManifest.xml')
+          s = p.read_text().replace('android:label="shitreed_admin"',
+            'android:label="السيد إبراهيم العاني - إدارة اختبار"')
+          if 'android.permission.INTERNET' not in s:
+              s = s.replace('<application',
+                '<uses-permission android:name="android.permission.INTERNET" />\n    <application', 1)
+          p.write_text(s)
+          PY
+          # Generated template test is not removed here; existing tests must pass.
+      - name: Flutter analysis and tests (warnings/errors fail release)
+        run: |
+          flutter pub get
+          flutter analyze --no-fatal-infos lib test
+          flutter test
+      - name: Build isolated admin preview
+        run: |
+          flutter build apk --debug \
+            --dart-define="SUPABASE_URL=$TEST_SUPABASE_URL" \
+            --dart-define="SUPABASE_PUBLISHABLE_KEY=$TEST_SUPABASE_PUBLISHABLE_KEY" \
+            --dart-define="SHITREED_CAMPAIGNS_ENABLED=true" \
+            --dart-define="ALANI_SUPPORT_CHAT_ENABLED=true" \
+            --dart-define="ALANI_DELIVERY_WORKFLOW_ENABLED=true" \
+            --dart-define="ALANI_BUSINESS_TEST_ENABLED=true"
+      - name: Verify target SDK >= 36
+        run: |
+          AAPT=$(find "$ANDROID_HOME/build-tools" -type f -name aapt | sort -V | tail -1)
+          TARGET=$("$AAPT" dump badging build/app/outputs/flutter-apk/app-debug.apk | sed -n "s/.*targetSdkVersion:'\([0-9]*\)'.*/\1/p" | head -1)
+          test -n "$TARGET" && test "$TARGET" -ge 36
+      - uses: actions/upload-artifact@v4
+        with:
+          name: AlAni-Admin-Master-TEST-ONLY-APK
+          path: admin_app/build/app/outputs/flutter-apk/app-debug.apk
+          retention-days: 14
+          if-no-files-found: error
