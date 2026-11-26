@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'alani_stock_count_page.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class AlAniInventoryPage extends StatefulWidget {
@@ -63,6 +64,7 @@ class _AlAniInventoryPageState extends State<AlAniInventoryPage>{
             leading:Icon(row['low_stock']==true?Icons.warning_amber:Icons.inventory_2_outlined),
             title:Text(row['name'].toString()),
             subtitle:Text('المخزون: ${row['stock_quantity']} • مبيعات 30 يوماً: ${row['sold_30d']}\nأيام متوقعة: ${days??"بيانات غير كافية"}\nالباركود: ${row['barcode']??"غير محدد"}'),
+            onTap:_busy?null:()async{await Navigator.of(context).push<void>(MaterialPageRoute(builder:(_)=>AlAniStockCountPage(product:row)));if(mounted)_reload();},
             trailing:IconButton(onPressed:_busy?null:()=>_edit(row),icon:const Icon(Icons.edit),tooltip:'إعدادات الجرد'),
           ));
         });
