@@ -62,6 +62,8 @@ jobs:
             --dart-define="SUPABASE_PUBLISHABLE_KEY=$PRODUCTION_SUPABASE_PUBLISHABLE_KEY" \
             --dart-define=ALANI_STORE_ID=25091ca2-c0da-416c-b634-81b188ee66be \
             --dart-define=ALANI_CHECKOUT_ENABLED=true \
+            --dart-define=ALANI_SUPPORT_CHAT_ENABLED=true \
+            --dart-define=ALANI_SUPPORT_PRODUCTION_APPROVED=true \
             --dart-define=ALANI_DELIVERY_TOTALS_VERIFIED=true \
             --dart-define=ALANI_DIRECT_PRODUCTION_PILOT=true \
             --dart-define=ALANI_TEST_CHECKOUT_ENABLED=false \
