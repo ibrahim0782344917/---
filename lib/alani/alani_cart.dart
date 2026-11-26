@@ -155,6 +155,8 @@ class _AlAniCartPageState extends State<AlAniCartPage> {
     if(!approved){
       notice('المتجر لا يستقبل طلبات حالياً.');return;
     }
+    final actor=MarketplaceBackend.currentUser?.id;
+    if(actor==null)return;
     final currentItems=_requestItems();
     // When promotional pricing is active, only the server quote authorizes
     // the total shown for confirmation. Its atomic checkout RPC independently
@@ -202,9 +204,15 @@ class _AlAniCartPageState extends State<AlAniCartPage> {
         ],
       ),
     );
-    if(confirmed!=true||!mounted)return;
+    if(confirmed!=true||!mounted||submitting)return;
     setState(()=>submitting=true);
     try {
+      if(MarketplaceBackend.currentUser?.id!=actor ||
+          !await AlAniCheckoutReadiness.checkServer()){
+        notice('توقف الشراء أو تغيّر الحساب. راجع السلة قبل المحاولة.');
+        return;
+      }
+      if(!mounted || MarketplaceBackend.currentUser?.id!=actor)return;
       // The idempotency key stays unchanged across network retries of
       // identical cart, address, phone and notes.
       final id=(await Supabase.instance.client.rpc('place_alani_cash_order',
