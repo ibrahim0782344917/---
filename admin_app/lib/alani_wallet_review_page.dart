@@ -59,7 +59,7 @@ class _AlAniWalletReviewPageState extends State<AlAniWalletReviewPage> {
       if(bytes.isEmpty||bytes.length>5242880)throw StateError('INVALID_PROOF');
       await showDialog<void>(context:context,builder:(context)=>AlertDialog(
         title:const Text('معاينة إثبات خاص'),
-        content:SizedBox(width:360,child:SingleChildScrollView(child:Image.memory(bytes,errorBuilder:(_,_,_)=>const Text('تعذرت معاينة الصورة.')))),
+        content:SizedBox(width:360,child:SingleChildScrollView(child:Image.memory(bytes,errorBuilder:(context,error,stackTrace)=>const Text('تعذرت معاينة الصورة.')))),
         actions:[TextButton(onPressed:()=>Navigator.pop(context),child:const Text('إغلاق'))]));
     }catch(_){if(mounted&&sameActor)ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('المعاينة غير متاحة أو ليست لديك صلاحية قراءة الملف.')));}
     finally{if(mounted)setState(()=>working=false);}
