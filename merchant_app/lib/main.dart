@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'alani_fcm_pilot.dart';
 import 'package:shitreed_merchant/shared/alani_design_system.dart';
 import 'package:shitreed_merchant/backend/marketplace_backend.dart';
 import 'package:shitreed_merchant/navigation/merchant_shell.dart';
@@ -11,6 +12,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await MarketplaceBackend.initialize();
+  await AlAniFcmPilot.initialize();
   runApp(const ShitreedMerchantApp());
 }
 
