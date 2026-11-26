@@ -44,7 +44,7 @@ jobs:
           flutter test
       - name: Build isolated customer Android only
         run: |
-          flutter build apk --debug \
+          bash "$GITHUB_WORKSPACE/scripts/build_flutter_apk_with_network_retry.sh" --debug \
             --dart-define="SUPABASE_URL=$TEST_SUPABASE_URL" \
             --dart-define="SUPABASE_PUBLISHABLE_KEY=$TEST_SUPABASE_PUBLISHABLE_KEY" \
             --dart-define="ALANI_SOCIAL_ENABLED=true" \
@@ -94,7 +94,7 @@ jobs:
           flutter test
       - name: Build isolated merchant preview
         run: |
-          flutter build apk --debug \
+          bash "$GITHUB_WORKSPACE/scripts/build_flutter_apk_with_network_retry.sh" --debug \
             --dart-define="SUPABASE_URL=$TEST_SUPABASE_URL" \
             --dart-define="SUPABASE_PUBLISHABLE_KEY=$TEST_SUPABASE_PUBLISHABLE_KEY" \
             --dart-define="SHITREED_CAMPAIGNS_ENABLED=true" \
@@ -153,7 +153,7 @@ jobs:
           flutter test
       - name: Build isolated admin preview
         run: |
-          flutter build apk --debug \
+          bash "$GITHUB_WORKSPACE/scripts/build_flutter_apk_with_network_retry.sh" --debug \
             --dart-define="SUPABASE_URL=$TEST_SUPABASE_URL" \
             --dart-define="SUPABASE_PUBLISHABLE_KEY=$TEST_SUPABASE_PUBLISHABLE_KEY" \
             --dart-define="SHITREED_CAMPAIGNS_ENABLED=true" \
