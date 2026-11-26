@@ -1,0 +1,33 @@
+name: Shitreed Web Security Checks
+on:
+  push:
+    branches:
+      - feature/shitreed-website-20261114
+    paths:
+      - 'web/**'
+      - '.github/workflows/shitreed-web-ci.yml'
+  pull_request:
+    paths:
+      - 'web/**'
+      - '.github/workflows/shitreed-web-ci.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    defaults:
+      run:
+        working-directory: web
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Install dependencies
+        run: npm install --ignore-scripts --no-audit --no-fund
+      - name: Check server and browser syntax
+        run: npm run check
+      - name: Test API routing and security guards
+        run: npm test
