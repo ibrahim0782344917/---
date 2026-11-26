@@ -144,7 +144,8 @@ class _AlAniLegacyCustomersImportPageState
             !LegacyCustomerCsv.isIraqiMobile(mobile) ||
             orderCount==null||orderCount<0||serial==null||serial<=0||
             sourceRow==null||sourceRow<=0||row[1].trim().length>160||
-            (row[3].isNotEmpty&&!RegExp(r'^07[0-9]{9}
+            (row[3].isNotEmpty&&!RegExp(r'^07[0-9]{9}$').hasMatch(row[3]))||
+            row[5].length>=150||row[6].length>=200||row[7].length>=1500||row[8].length>=1000){
           bad++;continue;
         }
         if(phones.contains(mobile)||serials.contains(serial)||sourceRows.contains(sourceRow)){dups++;continue;}
@@ -245,107 +246,6 @@ class _AlAniLegacyCustomersImportPageState
           label:Text(importing?'جارٍ الحفظ: $processed / ${_readyRows.length}':'حفظ السجلات الخاصة على TEST')),
         if(importing) LinearProgressIndicator(value:_readyRows.isEmpty?0:processed/_readyRows.length),
         if(importStatus!=null) Text(importStatus!),
-      ],
-      const SizedBox(height:13),
-      const Text('خطوات الاستيراد الآمن',
-        style:TextStyle(fontSize:17,fontWeight:FontWeight.w900)),
-      const Text('1. مراجعة قائمة الأخطاء والاتصالات المكررة.\n'
-        '2. أخذ نسخة احتياطية لقاعدة بيانات المتجر.\n'
-        '3. تجربة الاستيراد في قاعدة منفصلة مع اختبار الصلاحيات.\n'
-        '4. تفعيل استيراد آمن بتسجيل كل عملية وإمكانية منع التكرار.\n'
-        '5. ربط حساب الزبون الفعلي فقط بعد إثبات ملكية الرقم وموافقته.',
-        style:TextStyle(height:1.85)),
-    ]),
-  );
-}
-).hasMatch(row[3]))||
-            row[5].length>=150||row[6].length>=200||row[7].length>=1500||row[8].length>=1000){
-          bad++;continue;
-        }
-        if(!phones.add(mobile)){dups++;continue;}
-        sum+=orderCount;
-      }
-      if(!mounted)return;
-      setState((){
-        fileName=picked.name;
-        total=values.length;
-        invalid=bad;
-        duplicates=dups;
-        orders=sum;
-        error=null;
-      });
-    }catch(e){
-      if(mounted)setState((){
-        error=e is FormatException?e.message:'تعذر قراءة CSV. تأكد من صيغة الملف.';
-        total=null;
-        invalid=null;
-        duplicates=null;
-        orders=null;
-      });
-    }finally{
-      if(mounted)setState(()=>selecting=false);
-    }
-  }
-
-  Widget metric(String title,String value,IconData icon)=>Card(
-    child:ListTile(
-      leading:Icon(icon,color:const Color(0xFF0E8E56)),
-      title:Text(title),
-      trailing:Text(value,style:const TextStyle(
-        fontWeight:FontWeight.w900,fontSize:17)),
-    ),
-  );
-
-  @override
-  Widget build(BuildContext context)=>Scaffold(
-    appBar:AppBar(title:const Text('زبائن السيد إبراهيم العاني القدامى')),
-    body:ListView(padding:const EdgeInsets.all(16),children:[
-      const Text('إدارة استيراد الزبائن السابقين',
-        style:TextStyle(fontSize:23,fontWeight:FontWeight.w900,
-          color:Color(0xFF143F2D))),
-      const SizedBox(height:10),
-      const Text('هذه سجلات زبائن سابقين وليست حسابات تسجيل دخول. '
-        'لا تظهر أرقامهم وعناوينهم للمستخدمين، '
-        'ولا ننشئ منها طلبات أو فواتير تلقائياً.',
-        style:TextStyle(height:1.6)),
-      const SizedBox(height:15),
-      Card(color:const Color(0xFFFFF2DC),
-        child:Padding(padding:const EdgeInsets.all(16),child:Column(
-          crossAxisAlignment:CrossAxisAlignment.start,children:[
-            const Text('الاستيراد المباشر مغلق للحماية',
-              style:TextStyle(fontWeight:FontWeight.w900)),
-            const SizedBox(height:8),
-            const Text('يمكن مراجعة ملف CSV على الهاتف الآن. '
-              'حفظ السجلات في الخادم يتطلب جدولاً خاصاً، '
-              'نسخة احتياطية، صلاحيات المالك واختبار عدم التكرار. '
-              'لن ننشئ حسابات للزبائن دون إذنهم.'),
-          ]),
-        )),
-      const SizedBox(height:14),
-      FilledButton.icon(
-        onPressed:selecting?null:choose,
-        icon:const Icon(Icons.upload_file_outlined),
-        label:Text(selecting?'جارٍ قراءة الملف…':'اختيار ملف الزبائن CSV للمعاينة'),
-      ),
-      if(error!=null)Card(child:Padding(padding:const EdgeInsets.all(15),
-        child:Text(error!,style:const TextStyle(color:Colors.red)))),
-      if(total!=null) ...[
-        const SizedBox(height:14),
-        Text(fileName??'',style:const TextStyle(
-          fontWeight:FontWeight.w800,fontSize:14)),
-        metric('سجلات الملف',total.toString(),Icons.people_outline),
-        metric('صالحة مبدئياً', (total!-invalid!-duplicates!).toString(),
-          Icons.check_circle_outline),
-        metric('غير مطابقة أو ناقصة',invalid.toString(),
-          Icons.warning_amber_outlined),
-        metric('أرقام مكررة داخل الملف',duplicates.toString(),
-          Icons.content_copy_outlined),
-        metric('الطلبات التاريخية المذكورة',orders.toString(),
-          Icons.history_outlined),
-        const Padding(padding:EdgeInsets.all(12),
-          child:Text('المعاينة محلية فقط؛ لم يتم إرسال أي معلومات '
-            'شخصية إلى الخادم من هذه الصفحة.',
-            style:TextStyle(fontSize:12,color:Colors.black54))),
       ],
       const SizedBox(height:13),
       const Text('خطوات الاستيراد الآمن',
