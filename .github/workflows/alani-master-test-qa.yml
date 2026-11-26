@@ -2,6 +2,14 @@ name: Al-Ani three Android TEST builds (NO DEPLOY)
 on:
   push:
     branches: [work/alani-10000-master-test-20261125]
+    paths:
+      - 'lib/**'
+      - 'test/**'
+      - 'pubspec.*'
+      - 'merchant_app/**'
+      - 'admin_app/**'
+      - 'scripts/**'
+      - '.github/workflows/alani-master-test-qa.yml'
   workflow_dispatch:
 permissions:
   contents: read
@@ -123,7 +131,9 @@ jobs:
           cache: true
       - name: Prepare isolated admin Android
         run: |
+          if [ -f test/widget_test.dart ]; then HAD_WIDGET_TEST=1; else HAD_WIDGET_TEST=0; fi
           flutter create --org com.ibrahimalani --project-name shitreed_admin --platforms android .
+          if [ "$HAD_WIDGET_TEST" = 0 ]; then rm -f test/widget_test.dart; fi
           python3 ../scripts/configure_alani_icon.py . admin
           python3 - <<'PY'
           from pathlib import Path
@@ -135,7 +145,7 @@ jobs:
                 '<uses-permission android:name="android.permission.INTERNET" />\n    <application', 1)
           p.write_text(s)
           PY
-          # Generated template test is not removed here; existing tests must pass.
+          # Only a newly generated sample test is removed; tracked tests remain.
       - name: Flutter analysis and tests (warnings/errors fail release)
         run: |
           flutter pub get
