@@ -746,6 +746,13 @@ class _MerchantOrdersPageState extends State<MerchantOrdersPage> {
                     Text('الحالة: ' + (o['status'] as String)),
                     Text('المبلغ: ' + priceText(
                         (o['total_iqd'] as num).toInt())),
+                    if (o['delivery_fee_iqd'] is num) ...[
+                      Text('المنتجات: ' + priceText(
+                        (o['total_iqd'] as num).toInt() -
+                        (o['delivery_fee_iqd'] as num).toInt())),
+                      Text('رسوم التوصيل: ' + priceText(
+                        (o['delivery_fee_iqd'] as num).toInt())),
+                    ],
                     Text('الهاتف: ' + (o['phone'] as String)),
                     Text('العنوان: ' + (o['delivery_address'] as String)),
                     if ((o['notes'] as String).isNotEmpty)
