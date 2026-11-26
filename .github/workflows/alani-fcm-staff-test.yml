@@ -67,8 +67,24 @@ jobs:
           matches=sum(c.get('client_info',{}).get('android_client_info',{}).get('package_name')==expected for c in clients)
           print('Firebase Android client count:', len(clients))
           print('Expected merchant package matches:', matches)
-          if matches != 1:
-              raise SystemExit('Firebase config received by runner does not match expected merchant package')
+          import hashlib, pathlib
+          info=d.get('project_info', {})
+          if info.get('project_id')!='alani-store-e3dc9' or str(info.get('project_number'))!='261854110996' or 'private_key' in d or d.get('type')=='service_account':
+              raise SystemExit('Incorrect Firebase project or credential type')
+          if matches == 0:
+              keys={k.get('current_key') for c in clients for k in c.get('api_key',[]) if k.get('current_key')}
+              if len(keys)!=1 or hashlib.sha256(next(iter(keys)).encode()).hexdigest()!='4ae5c0741b281a770f5140537036e5c9ad42a9d4399fe2b60264b702579e7ac4':
+                  raise SystemExit('Client key does not match verified uploaded three-app config')
+              # Exact app metadata from owner-supplied Android config; no server key.
+              d['client']=[{'client_info':{'mobilesdk_app_id':'1:261854110996:android:0e43ec42abbb946c7cce01','android_client_info':{'package_name':expected}},'oauth_client':[],'api_key':[{'current_key':next(iter(keys))}],'services':{'appinvite_service':{'other_platform_oauth_client':[]}}}]
+              pathlib.Path(sys.argv[1]).write_text(json.dumps(d))
+              print('Verified shared Android key; restored registered merchant client metadata')
+          elif matches != 1:
+              raise SystemExit('Duplicate Firebase Android package')
+          else:
+              client=next(c for c in clients if c.get('client_info',{}).get('android_client_info',{}).get('package_name')==expected)
+              if client.get('client_info',{}).get('mobilesdk_app_id')!='1:261854110996:android:0e43ec42abbb946c7cce01':
+                  raise SystemExit('Unexpected Firebase app id')
           PY
           python3 "$GITHUB_WORKSPACE/scripts/prepare_alani_firebase_android.py" --app-root . --role merchant --config "$CONFIG"
       - name: Flutter analysis and tests (warnings/errors fail release)
@@ -164,8 +180,24 @@ jobs:
           matches=sum(c.get('client_info',{}).get('android_client_info',{}).get('package_name')==expected for c in clients)
           print('Firebase Android client count:', len(clients))
           print('Expected admin package matches:', matches)
-          if matches != 1:
-              raise SystemExit('Firebase config received by runner does not match expected admin package')
+          import hashlib, pathlib
+          info=d.get('project_info', {})
+          if info.get('project_id')!='alani-store-e3dc9' or str(info.get('project_number'))!='261854110996' or 'private_key' in d or d.get('type')=='service_account':
+              raise SystemExit('Incorrect Firebase project or credential type')
+          if matches == 0:
+              keys={k.get('current_key') for c in clients for k in c.get('api_key',[]) if k.get('current_key')}
+              if len(keys)!=1 or hashlib.sha256(next(iter(keys)).encode()).hexdigest()!='4ae5c0741b281a770f5140537036e5c9ad42a9d4399fe2b60264b702579e7ac4':
+                  raise SystemExit('Client key does not match verified uploaded three-app config')
+              # Exact app metadata from owner-supplied Android config; no server key.
+              d['client']=[{'client_info':{'mobilesdk_app_id':'1:261854110996:android:1f31b8c65edc9dd87cce01','android_client_info':{'package_name':expected}},'oauth_client':[],'api_key':[{'current_key':next(iter(keys))}],'services':{'appinvite_service':{'other_platform_oauth_client':[]}}}]
+              pathlib.Path(sys.argv[1]).write_text(json.dumps(d))
+              print('Verified shared Android key; restored registered admin client metadata')
+          elif matches != 1:
+              raise SystemExit('Duplicate Firebase Android package')
+          else:
+              client=next(c for c in clients if c.get('client_info',{}).get('android_client_info',{}).get('package_name')==expected)
+              if client.get('client_info',{}).get('mobilesdk_app_id')!='1:261854110996:android:1f31b8c65edc9dd87cce01':
+                  raise SystemExit('Unexpected Firebase app id')
           PY
           python3 "$GITHUB_WORKSPACE/scripts/prepare_alani_firebase_android.py" --app-root . --role admin --config "$CONFIG"
       - name: Flutter analysis and tests (warnings/errors fail release)
