@@ -4,6 +4,7 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart' as ll;
 import 'alani_customer_extras.dart';
 import 'alani_notification_preferences_page.dart';
+import 'alani_support_chat.dart';
 
 class AlAniOrderNotificationsPage extends StatefulWidget {
   const AlAniOrderNotificationsPage({super.key});
@@ -16,16 +17,34 @@ class _AlAniOrderNotificationsPageState extends State<AlAniOrderNotificationsPag
   bool _busy = false;
   late final String? _actor;
   StreamSubscription<dynamic>? _authChanges;
+  Timer? _chatPoll;
+  int? _unreadChat;
+  bool _chatLoading=false;
   bool get _sameActor=>_actor!=null&&_actor==AlAniCustomerExtras.db.auth.currentUser?.id;
   @override
   void initState() {
     super.initState();_actor=AlAniCustomerExtras.db.auth.currentUser?.id;_items=_load();
     _authChanges=AlAniCustomerExtras.db.auth.onAuthStateChange.listen((_){
-      if(mounted&&!_sameActor)setState(()=>_items=Future.value(<dynamic>[[],[]]));
+      if(mounted&&!_sameActor)setState((){_items=Future.value(<dynamic>[[],[]]);_unreadChat=null;});
     });
+    if(AlAniSupportFeature.liveTest){
+      unawaited(_refreshChat());
+      _chatPoll=Timer.periodic(const Duration(seconds:8),(_){unawaited(_refreshChat());});
+    }
+  }
+  Future<void> _refreshChat()async{
+    if(!mounted||!_sameActor||_chatLoading||!AlAniSupportFeature.liveTest||
+       WidgetsBinding.instance.lifecycleState!=AppLifecycleState.resumed)return;
+    _chatLoading=true;
+    try{
+      final data=await AlAniCustomerExtras.db.rpc('alani_support_unread_counts');
+      final count=(data as List).fold<int>(0,(sum,row)=>sum+((row as Map)['unread_count'] as num).toInt());
+      if(mounted&&_sameActor)setState(()=>_unreadChat=count);
+    }catch(_){if(mounted)setState(()=>_unreadChat=null);}
+    finally{_chatLoading=false;}
   }
   @override
-  void dispose(){_authChanges?.cancel();super.dispose();}
+  void dispose(){_chatPoll?.cancel();_authChanges?.cancel();super.dispose();}
   Future<List<dynamic>> _load()async{
     if(!_sameActor)return <dynamic>[[],[]];
     return Future.wait<dynamic>([
@@ -33,7 +52,7 @@ class _AlAniOrderNotificationsPageState extends State<AlAniOrderNotificationsPag
       AlAniCustomerExtras.call('alani_customer_alerts_test'),
     ]);
   }
-  void _refresh() => setState(() => _items = _load());
+  void _refresh(){setState(()=>_items=_load());unawaited(_refreshChat());}
   Future<void> _read(String id) async {
     if (_busy || !_sameActor) return;
     setState(() => _busy = true);
@@ -68,6 +87,16 @@ class _AlAniOrderNotificationsPageState extends State<AlAniOrderNotificationsPag
       final rows=(data[0] as List).map((e)=>Map<String,dynamic>.from(e as Map));
       final alerts=(data[1] as List).map((e)=>Map<String,dynamic>.from(e as Map));
       return ListView(children:[
+        if(AlAniSupportFeature.liveTest)
+          ListTile(
+            leading:Badge(isLabelVisible:(_unreadChat??0)>0,label:Text('${(_unreadChat??0).clamp(0,99)}'),child:const Icon(Icons.support_agent)),
+            title:const Text('رسائل فريق الدعم'),
+            subtitle:Text(_unreadChat==null?'تعذّر التحقق من الرسائل حالياً':_unreadChat==0?'لا توجد رسائل غير مقروءة':'رسائل غير مقروءة: $_unreadChat'),
+            onTap:()async{
+              await Navigator.of(context).push<void>(MaterialPageRoute(builder:(_)=>const AlAniCustomerSupportPage()));
+              if(mounted)unawaited(_refreshChat());
+            },
+          ),
         const ListTile(title:Text('تنبيهات المنتجات والاشتراكات'),subtitle:Text('تُحدّث عند فتح الصفحة أو التحديث؛ لا إشعارات دفع خارجية ولا شراء تلقائي.')),
         if(alerts.isEmpty)const ListTile(title:Text('لا توجد تنبيهات جديدة للعرض.')),
         for(final a in alerts)ListTile(
