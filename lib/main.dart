@@ -1,3 +1,4 @@
+import 'alani_account_center_page.dart';
 import 'alani_fcm_pilot.dart';
 import 'package:flutter/material.dart';
 import 'package:shitreed_customer/alani/alani_design_system.dart';
@@ -608,6 +609,11 @@ class _CustomerHomeState extends State<CustomerHome> {
           MaterialPageRoute<void>(builder: (_) =>
             const MerchantDashboardPage())),
       )),
+      if (AlAniAccountCenterPage.enabled) OutlinedButton.icon(
+        onPressed: () => Navigator.of(context).push<void>(MaterialPageRoute(
+          builder: (_) => const AlAniAccountCenterPage(scope: 'customer'))),
+        icon: const Icon(Icons.account_balance_wallet_outlined),
+        label: const Text('محفظتي — TEST')),
       if (AlAniFcmPilot.configured) OutlinedButton.icon(
         onPressed: () => Navigator.of(context).push<void>(MaterialPageRoute(builder: (_) => const AlAniFcmSettingsPage())),
         icon: const Icon(Icons.notifications_outlined), label: const Text('إشعارات Firebase — TEST')),

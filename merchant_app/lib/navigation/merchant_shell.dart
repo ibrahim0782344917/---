@@ -1,3 +1,4 @@
+import '../alani_account_center_page.dart';
 import '../alani_fcm_pilot.dart';
 // ignore_for_file: curly_braces_in_flow_control_structures
 import 'package:flutter/material.dart';
@@ -150,6 +151,14 @@ class _MerchantOverviewPageState extends State<MerchantOverviewPage> {
               style:TextStyle(color:Colors.white70,fontSize:12)),
           ]),
         ),
+        if (AlAniAccountCenterPage.enabled) ListTile(
+          leading: const Icon(Icons.people_outline),
+          title: const Text('زبائن المتجر والمحفظة — TEST'),
+          onTap: () {
+            Navigator.of(context).pop();
+            Navigator.of(context).push<void>(MaterialPageRoute(
+              builder: (_) => const AlAniAccountCenterPage(scope: 'merchant')));
+          }),
         if (AlAniFcmPilot.configured) ListTile(leading:const Icon(Icons.notifications_outlined), title:const Text('إشعارات Firebase — TEST'), onTap:(){Navigator.of(context).pop();Navigator.of(context).push<void>(MaterialPageRoute(builder:(_)=>const AlAniFcmSettingsPage()));}),
         ListTile(leading:const Icon(Icons.admin_panel_settings_outlined),
           title:const Text('مركز إدارة المتاجر'),

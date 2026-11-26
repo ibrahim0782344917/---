@@ -61,7 +61,6 @@ class _AlAniLegacyCustomersImportPageState
   int? total,invalid,duplicates,orders;
   String? error,fileName;
   bool selecting=false;
-  final sample=<String>[];
 
   Future<void> choose() async {
     if(selecting)return;
@@ -86,7 +85,6 @@ class _AlAniLegacyCustomersImportPageState
         'الحد الأعلى للمعاينة 10,000 سجل.');
       final phones=<String>{};
       var bad=0,dups=0,sum=0;
-      final aliases=<String>[];
       for(final row in values){
         if(row.length!=LegacyCustomerCsv.columns.length){
           bad++;continue;
@@ -100,10 +98,6 @@ class _AlAniLegacyCustomersImportPageState
         }
         if(!phones.add(mobile)){dups++;continue;}
         sum+=orderCount;
-        if(aliases.length<5){
-          final label=row[1].trim();
-          aliases.add(label.length>55?label.substring(0,55):label);
-        }
       }
       if(!mounted)return;
       setState((){
@@ -112,7 +106,6 @@ class _AlAniLegacyCustomersImportPageState
         invalid=bad;
         duplicates=dups;
         orders=sum;
-        sample..clear()..addAll(aliases);
         error=null;
       });
     }catch(e){
@@ -122,7 +115,6 @@ class _AlAniLegacyCustomersImportPageState
         invalid=null;
         duplicates=null;
         orders=null;
-        sample.clear();
       });
     }finally{
       if(mounted)setState(()=>selecting=false);
@@ -176,6 +168,8 @@ class _AlAniLegacyCustomersImportPageState
         Text(fileName??'',style:const TextStyle(
           fontWeight:FontWeight.w800,fontSize:14)),
         metric('سجلات الملف',total.toString(),Icons.people_outline),
+        metric('صالحة مبدئياً', (total!-invalid!-duplicates!).toString(),
+          Icons.check_circle_outline),
         metric('غير مطابقة أو ناقصة',invalid.toString(),
           Icons.warning_amber_outlined),
         metric('أرقام مكررة داخل الملف',duplicates.toString(),

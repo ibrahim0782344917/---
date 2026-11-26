@@ -1,3 +1,4 @@
+import 'alani_account_center_page.dart';
 import 'alani_fcm_pilot.dart';
 import 'dart:async';
 import 'package:flutter/material.dart';
@@ -853,6 +854,15 @@ class _AdminHomeState extends State<AdminHome> {
               ),
             ],
             if(widget.role=='super_admin') ...[
+              if (AlAniAccountCenterPage.enabled) ListTile(
+                leading: const Icon(Icons.account_balance_wallet_outlined, color: Colors.white70),
+                title: const Text('إدارة الزبائن والمحفظة — TEST', style: TextStyle(color: Colors.white)),
+                onTap: () {
+                  Navigator.pop(context);
+                  Navigator.push(context, MaterialPageRoute<void>(
+                    builder: (_) => const AlAniAccountCenterPage(scope: 'admin')));
+                }),
+
               if(AlAniBusinessAdminPage.enabled) ListTile(leading:const Icon(Icons.receipt_long_outlined,color:Colors.white70),title:const Text('التقارير التجارية — TEST',style:TextStyle(color:Colors.white)),onTap:(){Navigator.pop(context);Navigator.push(context,MaterialPageRoute<void>(builder:(_)=>const AlAniBusinessAdminPage()));}),
               ListTile(
                 leading:const Icon(Icons.people_alt_outlined,
