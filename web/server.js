@@ -12,6 +12,7 @@ const filePaths = new Map([
  ['/', 'index.html'], ['/index.html','index.html'], ['/login','login.html'], ['/checkout','checkout.html'], ['/orders','orders.html'], ['/merchant','merchant.html'],
  ['/admin','admin.html'], ['/privacy','privacy.html'], ['/terms','terms.html'],
  ['/about-ibrahim-alani','about-ibrahim-alani.html'],
+ ['/encyclopedia/ibrahim-alani','encyclopedia-ibrahim-alani.html'],
  ['/news','news.html'],
  ['/news/official-profile','news-official-profile.html'],
  ['/news/natural-products','news-natural-products.html'],
