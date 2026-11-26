@@ -1,0 +1,39 @@
+name: Al-Ani Firebase OIDC authentication (NO DEPLOY)
+on:
+  push:
+    branches:
+      - release/alani-production-candidate-20261126
+    paths:
+      - '.github/workflows/alani-fcm-oidc-smoke.yml'
+  workflow_dispatch:
+permissions: {}
+jobs:
+  authenticate:
+    if: github.repository_id == '1449042147' && github.ref == 'refs/heads/release/alani-production-candidate-20261126'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - name: Authenticate without a service account key
+        id: auth
+        uses: google-github-actions/auth@v3
+        with:
+          project_id: alani-store-e3dc9
+          workload_identity_provider: projects/261854110996/locations/global/workloadIdentityPools/alani-fcm-server/providers/github-actions
+          service_account: alani-fcm-sender@alani-store-e3dc9.iam.gserviceaccount.com
+          token_format: access_token
+          access_token_scopes: https://www.googleapis.com/auth/firebase.messaging
+          access_token_lifetime: 300s
+          create_credentials_file: false
+          export_environment_variables: false
+      - name: Assert token issued without displaying it
+        env:
+          FCM_ACCESS_TOKEN: ${{ steps.auth.outputs.access_token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "$FCM_ACCESS_TOKEN"
+          echo "PASS: Firebase-scoped OAuth token issued via GitHub OIDC."
+          echo "No notification sent, no database accessed, no deployment performed."
