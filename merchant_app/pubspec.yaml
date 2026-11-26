@@ -10,6 +10,7 @@ dependencies:
   supabase_flutter: ^2.9.1
   image_picker: ^1.2.1
   geolocator: 14.0.2
+  mobile_scanner: 7.5.0
   url_launcher: ^6.3.2
 dev_dependencies:
   flutter_test:
