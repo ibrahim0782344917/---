@@ -1,0 +1,12 @@
+# ربط Firebase — ملفات التطبيقات الفعلية
+26 نوفمبر 2026. المشروع alani-store-e3dc9؛ Android livepilot فقط.
+- الملفات الثلاثة المرفوعة تطابق customer / merchant / admin؛ مشروع ورقم مشروع موحدان، ثلاثة app IDs مختلفة. الملف الأخير يشمل الثلاثة. لم تُرفع ملفات google-services.json أو المفاتيح إلى GitHub العام، ولا توجد بيانات اعتماد خادم في الملفات المرفوعة.
+- وحدات Flutter alani_fcm_pilot.dart في التطبيقات الثلاثة: initialize محكوم ب ALANI_FCM_CLIENT_ENABLED وبعنوان Supabase للإنتاج، تحقق projectId، معالج خلفية entry-point لا ينفذ أي إجراء على بيانات الحساب أو الطلبات، واجهة إذن اختياري ورمز اختبار جهاز ينسخ فقط بطلب المستخدم، إلغاء التسجيل، حالة استقبال foreground داخل الصفحة. لا سجل رموز مرتبط بالمستخدم أو إرسال آلي. Firebase auto-init وanalytics مغلقان في manifest المُجهز حتى طلب إذن الإشعار.
+- اعتمادات ثابتة firebase_core 4.2.1 وfirebase_messaging 16.0.4؛ توافق الاعتماد من pubspec الرسمي، لم يكتمل تحقق Gradle أو lockfiles لهذه التعديلات. تم ربط main في الثلاثة ومدخل شاشة الإعدادات.
+- scripts/prepare_alani_firebase_android.py (24a5157ecf34328b7e48f935f7c24a8cba3624b1): ملف حقيقي تم اختبار نسخة مطابقة ل Git blob 3a9ab6c8cd9df5e9d4a09c2151619c3cc08f8832. ثلاث ملفات فعلية مع هياكل Android اصطناعية، تشغيل مرتين لكل تطبيق، لا تكرار plugin أو manifest، config يضم العميل المطابق فقط، رفض ملف الزبون للتاجر والإدارة. لا اختبار شبكة أو بناء FCM فعلي.
+- بناء الإدارة 45868429903 بدأ بعد تعديل main؛ ليس بناء Firebase مفعلاً ولا يثبت وصول FCM. تحتاج نسخ التاجر والزبون أيضاً إلى بناء من آخر الكود.
+## الخطوة التالية
+إدخال ملف العميل الأخير بصورة خاصة في runner (مثلاً GitHub Actions secret باسم ALANI_FIREBASE_GOOGLE_SERVICES_JSON)، وليس commit عام. لا أداة متاحة لإضافة secrets أو لتأكيد وصول إلى Firebase Console. تعديل CI الفعلي وإدخال الملف لم يتمّا. بعد إنشاء Android وتثبيت applicationId الصحيح، ينفذ runner:
+`python scripts/prepare_alani_firebase_android.py --app-root . --role customer --config /path/to/private/google-services.json`
+للتاجر --app-root merchant_app --role merchant وللإدارة --app-root admin_app --role admin. استخدم --dart-define=ALANI_FCM_CLIENT_ENABLED=true مع الإعدادات الإنتاجية المعتمدة فقط. لا نشر Play من pilot.
+اختبار إشعار عام من Firebase Console باستخدام رمز الجهاز في الإعدادات، مع app في الخلفية؛ ثم تحقق من الإذن المرفوض وإيقاف الإشعارات. لا ترسل رموز الأجهزة أو مفتاح service account في chat. الإرسال الآلي يحتاج backend خاص، ربط الرموز بالحسابات، إبطال عند تسجيل الخروج، احترام التفضيلات، سجل إرسال وdedup، صلاحية HTTP v1 server-side، اختبار جهازين. لا يوجد إرسال تلقائي أو رصيد أو تعديل طلبات في هذه الدفعة.
