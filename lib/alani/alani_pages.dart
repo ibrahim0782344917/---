@@ -5,6 +5,7 @@ import 'alani_content.dart';
 import 'alani_offers_page.dart';
 import 'alani_support_chat.dart';
 import 'alani_wallet_page.dart';
+import 'alani_production_favorites_page.dart';
 import 'alani_shop.dart';
 import 'package:shitreed_customer/backend/marketplace_backend.dart';
 import 'package:shitreed_customer/auth/customer_auth_page.dart';
@@ -466,6 +467,10 @@ class AlAniStoreDrawer extends StatelessWidget {
       ListTile(leading:const Icon(Icons.account_balance_wallet_outlined),
         title:const Text('محفظتي وإثباتات التحويل'),
         onTap:()=>_go(context,const AlAniWalletPage())),
+      if (const String.fromEnvironment('SUPABASE_URL')=='https://ltwncrewggdrjevakwpb.supabase.co')
+        ListTile(leading:const Icon(Icons.favorite_border),
+          title:const Text('مفضلتي وتنبيهات المنتجات'),
+          onTap:()=>_go(context,const AlAniProductionFavoritesPage())),
       if (AlAniSupportFeature.enabled)
         ListTile(leading:const Icon(Icons.chat_bubble_outline),
           title:const Text('دردشة خاصة مع المتجر'),
