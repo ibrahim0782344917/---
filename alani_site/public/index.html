@@ -62,8 +62,15 @@
       </div>
     </section>
 
+    <section class="wrap service-shortcuts" aria-label="خدمات الطلب والدعم">
+      <a href="/payment-policy"><strong>الدفع والتوصيل</strong><small>اطّلع على الرسوم وشروط الاستلام</small></a>
+      <a href="/return-request"><strong>طلب استرجاع</strong><small>راجع خطوات تقديم الطلب</small></a>
+      <a href="/broken-product"><strong>تعويض التلف</strong><small>تعرف على شروط الضمان</small></a>
+      <a href="/help"><strong>مساعدة الزبون</strong><small>الأسئلة الشائعة وخدمات المتجر</small></a>
+    </section>
+
     <section class="wrap source-promos" aria-label="استكشف أقسام متجرنا">
-      <div class="source-promos-heading"><span>مستوحى من ترتيب عروض StoreKing</span><div class="promo-controls"><button type="button" id="promo-prev" aria-label="العرض السابق">‹</button><button type="button" id="promo-next" aria-label="العرض التالي">›</button></div></div>
+      <div class="source-promos-heading"><span>مختارات من متجر السيد إبراهيم العاني</span><div class="promo-controls"><button type="button" id="promo-prev" aria-label="العرض السابق">‹</button><button type="button" id="promo-next" aria-label="العرض التالي">›</button></div></div>
       <div class="promo-carousel" id="promo-carousel" aria-live="off">
         <article class="promo-slide is-active" data-promo-slide>
           <div class="promo-content"><span class="promo-eyebrow">زيوت وأعشاب طبيعية</span><h2>كل ما تحتاجه من منتجات الطبيعة</h2><p>تعرّف على المنتجات المتاحة وأسعارها المحدثة من متجرنا.</p><a href="#products" class="button primary">تصفح المنتجات</a></div><span class="promo-illustration" aria-hidden="true">🌿</span>
@@ -126,7 +133,7 @@
     </div></section>
 
     <section class="section wrap" id="basket">
-      <div class="section-head"><div><span class="overline">طلباتك</span><h2>سلة التسوق</h2><p>الدفع عند الاستلام بعد تفعيل وتجربة نظام الطلبات.</p></div></div>
+      <div class="section-head"><div><span class="overline">طلباتك</span><h2>سلة التسوق</h2><p>راجع سلتك وتكاليف التوصيل قبل تأكيد الطلب.</p></div></div>
       <div class="basket-layout">
         <div id="basket-items" class="basket-items"></div>
         <form id="checkout-form" class="checkout-panel">
@@ -140,7 +147,7 @@
           <div class="checkout-total"><span>مجموع المنتجات</span><strong id="basket-total">0 د.ع</strong></div>
           <div class="checkout-total"><span>أجور التوصيل</span><strong>٥٬٠٠٠ د.ع</strong></div>
           <div class="checkout-total"><span>الإجمالي المتوقع مع التوصيل</span><strong id="basket-estimate">0 د.ع</strong></div>
-          <p class="small">الدفع نقداً عند الاستلام. هذا تقدير قبل تأكيد الطلب، ونظام الطلب ما زال مغلقاً في النسخة التجريبية.</p>
+          <p class="small">الدفع نقداً عند الاستلام. هذا تقدير، والخادم يتحقق من السعر والمخزون وإتاحة الشراء قبل تأكيد الطلب.</p>
           <button id="checkout-button" class="button primary full" disabled>الشراء غير مفعّل بعد</button>
           <p class="form-message" id="checkout-message" role="status"></p>
         </form>
@@ -173,7 +180,7 @@
       <a href="/settings">الإعدادات</a><a href="/privacy">سياسة الخصوصية</a>
       <a href="/terms">الشروط والأحكام</a><a href="/offers">العروض المحدودة</a><a href="/admin">لوحة الإدارة</a>
     </div>
-    <div class="footer-note">© <span id="year">2026</span> السيد إبراهيم العاني. جميع الحقوق محفوظة.<p>هذه نسخة أولية؛ لا يتم قبول طلبات شراء قبل اكتمال التحقق.</p></div>
+    <div class="footer-note">© <span id="year">2026</span> السيد إبراهيم العاني. جميع الحقوق محفوظة.<p>تخضع الطلبات لتوفر المنتجات وإتاحة الشراء والتحقق من البيانات.</p></div>
   </div></footer>
   <nav class="mobile-shop-nav" aria-label="التنقل السريع للمتجر"><a href="#main-content"><span>⌂</span>الرئيسية</a><a href="#products"><span>▦</span>المتجر</a><a class="mobile-shop-plus" href="#content-hub" aria-label="المزيد: الفيديوهات والمقالات والعروض"><span>＋</span>المزيد</a><a href="#videos"><span>▶</span>الفيديوهات</a><a href="#basket"><span>▤</span>السلة</a></nav>
   <dialog id="details" class="details-dialog"><div id="details-content"></div><form method="dialog"><button class="button ghost">إغلاق</button></form></dialog>
