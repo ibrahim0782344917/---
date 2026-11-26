@@ -1,0 +1,64 @@
+name: Al-Ani FCM HTTP v1 device smoke (NO DEPLOY)
+on:
+  push:
+    branches:
+      - release/alani-production-candidate-20261126
+    paths:
+      - '.github/workflows/alani-fcm-device-smoke.yml'
+  workflow_dispatch:
+permissions: {}
+jobs:
+  fcm:
+    if: github.repository_id == '1449042147' && github.ref == 'refs/heads/release/alani-production-candidate-20261126'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - name: Obtain short-lived Firebase access token
+        id: auth
+        uses: google-github-actions/auth@v3
+        with:
+          project_id: alani-store-e3dc9
+          workload_identity_provider: projects/261854110996/locations/global/workloadIdentityPools/alani-fcm-server/providers/github-actions
+          service_account: alani-fcm-sender@alani-store-e3dc9.iam.gserviceaccount.com
+          token_format: access_token
+          access_token_scopes: https://www.googleapis.com/auth/firebase.messaging
+          access_token_lifetime: 300s
+          create_credentials_file: false
+          export_environment_variables: false
+      - name: Validate API and send only to explicitly configured test device
+        env:
+          FCM_ACCESS_TOKEN: ${{ steps.auth.outputs.access_token }}
+          FCM_TEST_DEVICE_TOKEN: ${{ secrets.ALANI_FCM_TEST_DEVICE_TOKEN }}
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import json, os, urllib.request, urllib.error
+          endpoint = 'https://fcm.googleapis.com/v1/projects/alani-store-e3dc9/messages:send'
+          access = os.environ['FCM_ACCESS_TOKEN']
+          device = os.environ.get('FCM_TEST_DEVICE_TOKEN', '').strip()
+          notification = {'title': 'السيد إبراهيم العاني - اختبار', 'body': 'إشعار تجريبي لهذا الجهاز فقط.'}
+          def request(payload, label):
+              req = urllib.request.Request(endpoint, data=json.dumps(payload).encode(), headers={'Authorization':'Bearer '+access,'Content-Type':'application/json'}, method='POST')
+              try:
+                  with urllib.request.urlopen(req, timeout=25) as response:
+                      value = json.load(response)
+                      if response.status != 200 or not isinstance(value.get('name'), str):
+                          raise SystemExit(label + ': unexpected response')
+                      print(label + ': HTTP 200 accepted')
+              except urllib.error.HTTPError as error:
+                  # Never echo the response, which may include sensitive details.
+                  print(label + ': HTTP ' + str(error.code))
+                  raise SystemExit(1)
+          request({'validate_only': True, 'message': {'topic': 'alani_validation_only_never_deliver', 'notification': notification}}, 'VALIDATION_ONLY')
+          if not device:
+              print('DEVICE_SEND_SKIPPED: private test-device token not configured.')
+          else:
+              if len(device) < 20 or len(device) > 4096 or any(c.isspace() for c in device):
+                  raise SystemExit('Invalid test device token format')
+              # Always use a single registration token, never a topic or condition for actual sending.
+              request({'message': {'token': device, 'notification': notification, 'android': {'ttl':'60s', 'notification': {'visibility':'PRIVATE'}}}}, 'SINGLE_DEVICE_SEND')
+              print('FCM accepted the request; delivery must be confirmed on the phone.')
+          PY
