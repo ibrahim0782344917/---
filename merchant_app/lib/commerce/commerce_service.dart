@@ -289,7 +289,7 @@ class CommerceService {
       String storeId) async {
     if (_myUserId.isEmpty) throw StateError('LOGIN_REQUIRED');
     return _db.from('orders')
-        .select('id,buyer_id,store_id,status,total_iqd,created_at,delivery_address,phone,notes')
+        .select('id,buyer_id,store_id,status,total_iqd,delivery_fee_iqd,created_at,delivery_address,phone,notes')
         .eq('store_id', storeId).order('created_at', ascending: false).limit(60);
   }
 
