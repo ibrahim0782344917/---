@@ -2,6 +2,7 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
+import 'alani_pos_pdf.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 String posRequestKey(){
@@ -131,6 +132,14 @@ class _AlAniPosHistoryPageState extends State<AlAniPosHistoryPage>{
     final text=['إيصال TEST غير ضريبي','فاتورة: ${i['id']}','${i['created_at']}',for(final l in lines)'${l['name']} × ${l['quantity']} @ ${l['unit_price_iqd']} د.ع — مرتجع: ${l['returned_qty']}','إجمالي أصلي: ${i['total_iqd']} د.ع'].join('\n');
     return Card(child:Column(children:[
       ListTile(title:Text('فاتورة ${i['total_iqd']} د.ع'),subtitle:SelectableText(i['id'].toString()),trailing:IconButton(tooltip:'نسخ الإيصال النصي',onPressed:()=>Clipboard.setData(ClipboardData(text:text)),icon:const Icon(Icons.copy))),
+      Wrap(spacing:8,children:[
+        TextButton.icon(icon:const Icon(Icons.print),label:const Text('طباعة PDF'),onPressed:()async{
+          try{await AlAniPosPdf.printReceipt(i);}catch(_){if(mounted)ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('تعذر إعداد الطباعة. تحقق من الخط والاتصال وخدمة الطباعة.')));}
+        }),
+        TextButton.icon(icon:const Icon(Icons.picture_as_pdf),label:const Text('مشاركة PDF'),onPressed:()async{
+          try{await AlAniPosPdf.shareReceipt(i);}catch(_){if(mounted)ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('تعذر إعداد PDF.')));}
+        }),
+      ]),
       for(final l in lines) ListTile(title:Text(l['name'].toString()),subtitle:Text('الكمية: ${l['quantity']} • المرتجع: ${l['returned_qty']}'),
         trailing:TextButton(onPressed:(l['quantity'] as num)>(l['returned_qty'] as num)?()async{
           await Navigator.of(context).push<void>(MaterialPageRoute(builder:(_)=>_PosReturnPage(invoice:i['id'] as String,line:l)));
