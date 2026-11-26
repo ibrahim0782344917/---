@@ -1,0 +1,43 @@
+-- TEST ONLY; full purchase-to-return synthetic fixture, rollback always.
+BEGIN;
+DO $test$
+DECLARE sid uuid:='25091ca2-c0da-416c-b634-81b188ee66be'; ownerid uuid; buyer uuid:=gen_random_uuid(); courier uuid:=gen_random_uuid(); prod uuid:=gen_random_uuid(); oid uuid; rid uuid; pin text; res text;
+BEGIN
+ SELECT owner_id INTO ownerid FROM public.stores WHERE id=sid;
+ IF ownerid IS NULL THEN RAISE EXCEPTION 'MISSING_STORE'; END IF;
+ INSERT INTO auth.users(id,aud,role,email,raw_app_meta_data,raw_user_meta_data) VALUES(buyer,'authenticated','authenticated',buyer::text||'@example.invalid','{}','{}'),(courier,'authenticated','authenticated',courier::text||'@example.invalid','{}','{}');
+ INSERT INTO public.products(id,store_id,name,price_iqd,is_active,stock_quantity) VALUES(prod,sid,'Synthetic lifecycle product',10000,true,4);
+ INSERT INTO private_checkout.alani_fcm_test_allowlist(user_id,app_kind,event_kind) VALUES(buyer,'customer','order_update'),(buyer,'customer','delivery_update'),(buyer,'customer','return_update'),(ownerid,'merchant','order_created'),(ownerid,'merchant','return_update'),(courier,'merchant','delivery_update');
+ PERFORM set_config('request.jwt.claim.sub',buyer::text,true);
+ PERFORM set_config('request.jwt.claims',json_build_object('sub',buyer,'role','authenticated')::text,true);
+ oid:=public.place_alani_cash_order(jsonb_build_array(jsonb_build_object('product_id',prod,'quantity',2)),'Synthetic TEST address','00000000000','Rollback only',gen_random_uuid(),25000);
+ IF NOT EXISTS(SELECT 1 FROM public.orders WHERE id=oid AND status='placed' AND total_iqd=25000 AND delivery_fee_iqd=5000) THEN RAISE EXCEPTION 'CHECKOUT_FAILED'; END IF;
+ IF NOT EXISTS(SELECT 1 FROM private_checkout.alani_fcm_test_events WHERE event_kind='order_created' AND event_id=oid AND recipient_id=ownerid) THEN RAISE EXCEPTION 'ORDER_EVENT_FAILED'; END IF;
+ PERFORM set_config('request.jwt.claim.sub',ownerid::text,true);
+ PERFORM set_config('request.jwt.claims',json_build_object('sub',ownerid,'role','authenticated')::text,true);
+ IF public.change_cash_order_status(oid,'accepted')<>'accepted' OR public.change_cash_order_status(oid,'preparing')<>'preparing' OR public.change_cash_order_status(oid,'ready')<>'ready' THEN RAISE EXCEPTION 'MERCHANT_FAILED'; END IF;
+ PERFORM public.alani_set_delivery_courier(courier,true);
+ IF public.alani_dispatch_delivery(oid,courier)<>'out_for_delivery' THEN RAISE EXCEPTION 'DISPATCH_FAILED'; END IF;
+ IF NOT EXISTS(SELECT 1 FROM private_checkout.alani_fcm_test_events WHERE event_kind='delivery_update' AND event_id=oid AND recipient_id=courier) THEN RAISE EXCEPTION 'COURIER_EVENT_FAILED'; END IF;
+ PERFORM set_config('request.jwt.claim.sub',courier::text,true);
+ PERFORM set_config('request.jwt.claims',json_build_object('sub',courier,'role','authenticated')::text,true);
+ PERFORM public.alani_courier_pickup(oid);
+ PERFORM set_config('request.jwt.claim.sub',buyer::text,true);
+ PERFORM set_config('request.jwt.claims',json_build_object('sub',buyer,'role','authenticated')::text,true);
+ pin:=public.alani_issue_delivery_pin(oid)->>'code';
+ IF pin IS NULL OR length(pin)<>6 THEN RAISE EXCEPTION 'PIN_FAILED'; END IF;
+ PERFORM set_config('request.jwt.claim.sub',courier::text,true);
+ PERFORM set_config('request.jwt.claims',json_build_object('sub',courier,'role','authenticated')::text,true);
+ IF public.alani_courier_complete_delivery(oid,pin,'Synthetic proof')<>'delivered' THEN RAISE EXCEPTION 'DELIVERY_FAILED'; END IF;
+ PERFORM set_config('request.jwt.claim.sub',buyer::text,true);
+ PERFORM set_config('request.jwt.claims',json_build_object('sub',buyer,'role','authenticated')::text,true);
+ rid:=public.alani_request_return(oid,'damaged','Synthetic lifecycle damaged item');
+ IF rid IS NULL THEN RAISE EXCEPTION 'RETURN_FAILED'; END IF;
+ PERFORM set_config('request.jwt.claim.sub',ownerid::text,true);
+ PERFORM set_config('request.jwt.claims',json_build_object('sub',ownerid,'role','authenticated')::text,true);
+ IF public.alani_review_return(rid,'reviewing','Synthetic review note')<>'reviewing' OR public.alani_review_return(rid,'approved','Synthetic approval note')<>'approved' OR public.alani_review_return(rid,'resolved','Synthetic resolution note')<>'resolved' THEN RAISE EXCEPTION 'RETURN_REVIEW_FAILED'; END IF;
+ IF (SELECT stock_quantity FROM public.products WHERE id=prod)<>2 THEN RAISE EXCEPTION 'STOCK_FAILED'; END IF;
+ IF NOT EXISTS(SELECT 1 FROM private_checkout.alani_fcm_test_events e JOIN public.alani_return_status_history h ON h.id=e.event_id WHERE h.return_id=rid AND h.new_status='resolved' AND e.recipient_id=buyer) THEN RAISE EXCEPTION 'RETURN_EVENT_FAILED'; END IF;
+END $test$;
+SELECT 'PASS full checkout to courier to return and event routing' AS result;
+ROLLBACK;
