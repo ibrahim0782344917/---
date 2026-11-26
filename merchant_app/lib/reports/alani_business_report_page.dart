@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'alani_business_entry_page.dart';
+import 'alani_pos_invoice_page.dart';
+import 'alani_bundle_manage_page.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class AlAniBusinessReportPage extends StatefulWidget {
@@ -20,6 +22,7 @@ class _AlAniBusinessReportPageState extends State<AlAniBusinessReportPage>{
     final debt=await Supabase.instance.client.rpc('alani_debt_report_test');
     report['debt']=debt;
     report['trial_balance']=await Supabase.instance.client.rpc('alani_operational_trial_balance_test');
+    if(AlAniPosInvoicePage.enabled) report['pos_margin']=await Supabase.instance.client.rpc('alani_pos_margin_test');
     return report;
   }
   void _refresh()=>setState(()=>_report=_load());
@@ -59,6 +62,23 @@ class _AlAniBusinessReportPageState extends State<AlAniBusinessReportPage>{
           ListTile(title:const Text('إجمالي الدائن'),trailing:Text('${trial['credit_iqd']} د.ع')),
           ListTile(title:Text(trial['balanced']==true?'القيود متوازنة':'القيود غير متوازنة')),
         ])),
+        if(AlAniPosInvoicePage.enabled)...[
+          Card(child:ListTile(title:const Text('كاشير متعدد المنتجات'),leading:const Icon(Icons.qr_code_scanner),onTap:()async{
+            await Navigator.of(context).push<void>(MaterialPageRoute(builder:(_)=>const AlAniPosInvoicePage()));
+            if(mounted)_refresh();
+          })),
+          Card(child:ListTile(title:const Text('الفواتير والمرتجعات'),leading:const Icon(Icons.receipt_long_outlined),onTap:()async{
+            await Navigator.of(context).push<void>(MaterialPageRoute(builder:(_)=>const AlAniPosHistoryPage()));
+            if(mounted)_refresh();
+          })),
+          if(data['pos_margin'] is Map)
+            Card(child:ListTile(title:const Text('هامش الربح الإجمالي المقدر للفواتير الجديدة'),subtitle:const Text('لا يشمل المصاريف أو الطلبات الإلكترونية'),trailing:Text((data['pos_margin'] as Map)['estimated_gross_margin_iqd']?.toString()??'تكلفة غير متاحة'))),
+        ],
+        if(AlAniBundleManagePage.enabled)
+          Card(child:ListTile(title:const Text('إدارة الباقات'),leading:const Icon(Icons.local_offer_outlined),onTap:()async{
+            await Navigator.of(context).push<void>(MaterialPageRoute(builder:(_)=>const AlAniBundleManagePage()));
+            if(mounted)_refresh();
+          })),
         const Text('السداد والمبيعات في TEST سجلات تشغيلية فقط، لا تحويل أموال.'),
       ]);
     }),
