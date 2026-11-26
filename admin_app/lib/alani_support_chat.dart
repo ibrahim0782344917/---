@@ -40,7 +40,7 @@ class _AlAniCustomerSupportPageState
     if (!AlAniSupportFeature.enabled) {
       setState(() {
         _loading = false;
-        _error = 'الدردشة غير متاحة حالياً.';
+        _error = 'الدردشة قيد الاختبار وليست مفعّلة على الإنتاج.';
       });
       return;
     }
@@ -143,7 +143,7 @@ class _AlAniSupportInboxPageState extends State<AlAniSupportInboxPage> {
     if (!AlAniSupportFeature.enabled) {
       setState(() {
         loading = false;
-        error = 'محادثات العملاء غير متاحة حالياً.';
+        error = 'محادثات العملاء غير مفعّلة على الإنتاج.';
       });
       return;
     }
