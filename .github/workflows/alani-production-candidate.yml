@@ -1,0 +1,132 @@
+name: Al-Ani official signed AAB candidate (NO AUTO PUBLISH)
+on:
+  push:
+    branches: [release/alani-production-candidate-20261126]
+    paths:
+      - '.github/workflows/alani-production-candidate.yml'
+      - 'scripts/configure_alani_release_signing.py'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  preflight:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Compile signing configuration script
+        run: python3 -m py_compile scripts/configure_alani_release_signing.py
+      - name: Release gate
+        env:
+          APPROVED: ${{ vars.ALANI_RELEASE_BUILD_APPROVED }}
+        run: |
+          echo "Candidate only; no Play upload or database migration."
+          if [ "$APPROVED" != true ]; then echo "Official signing build disabled until operator configures release approval and signing."; fi
+  signed-aab:
+    needs: preflight
+    if: github.ref == 'refs/heads/release/alani-production-candidate-20261126' && vars.ALANI_RELEASE_BUILD_APPROVED == 'true'
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - role: customer
+            dir: .
+            project: shitreed_customer
+          - role: merchant
+            dir: merchant_app
+            project: shitreed_merchant
+          - role: admin
+            dir: admin_app
+            project: shitreed_admin
+    environment: production-${{ matrix.role }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 50
+    env:
+      APP_DIR: ${{ matrix.dir }}
+      APP_ROLE: ${{ matrix.role }}
+      APP_PROJECT: ${{ matrix.project }}
+      ALANI_KEYSTORE_B64: ${{ secrets.ALANI_UPLOAD_KEYSTORE_B64 }}
+      ALANI_STORE_PASSWORD: ${{ secrets.ALANI_STORE_PASSWORD }}
+      ALANI_KEY_ALIAS: ${{ secrets.ALANI_KEY_ALIAS }}
+      ALANI_KEY_PASSWORD: ${{ secrets.ALANI_KEY_PASSWORD }}
+      PRODUCTION_PUBLIC_KEY: ${{ secrets.ALANI_PRODUCTION_PUBLISHABLE_KEY }}
+      EXPECTED_UPLOAD_SHA256: ${{ vars.ALANI_UPLOAD_CERT_SHA256 }}
+      EXPECTED_PACKAGE: ${{ vars.ALANI_PLAY_PACKAGE }}
+      BUILD_NUMBER: ${{ vars.ALANI_RELEASE_BUILD_NUMBER }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate signing and production settings
+        shell: bash
+        run: |
+          set -euo pipefail
+          for k in ALANI_KEYSTORE_B64 ALANI_STORE_PASSWORD ALANI_KEY_ALIAS ALANI_KEY_PASSWORD PRODUCTION_PUBLIC_KEY EXPECTED_UPLOAD_SHA256 EXPECTED_PACKAGE BUILD_NUMBER; do
+            if [ -z "${!k}" ]; then echo "Missing setting: $k"; exit 1; fi
+          done
+          [[ "$PRODUCTION_PUBLIC_KEY" == sb_publishable_* ]] || { echo "Only a public Supabase publishable key is allowed"; exit 1; }
+          [[ "$BUILD_NUMBER" =~ ^[1-9][0-9]*$ ]] || exit 1
+          [[ "$EXPECTED_PACKAGE" == "com.ibrahimalani.$APP_PROJECT" ]] || { echo "Package differs from existing Play listing; review before building"; exit 1; }
+          umask 077
+          printf '%s' "$ALANI_KEYSTORE_B64" | base64 --decode > "$RUNNER_TEMP/alani-upload.jks"
+          echo "ALANI_KEYSTORE_PATH=$RUNNER_TEMP/alani-upload.jks" >> "$GITHUB_ENV"
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: '3.47.9'
+          cache: true
+      - name: Configure Android and official upload signing
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd "$APP_DIR"
+          if [ -f test/widget_test.dart ]; then HAD_WIDGET_TEST=1; else HAD_WIDGET_TEST=0; fi
+          flutter create --org com.ibrahimalani --project-name "$APP_PROJECT" --platforms android .
+          if [ "$APP_ROLE" = admin ] && [ "$HAD_WIDGET_TEST" = 0 ]; then rm -f test/widget_test.dart; fi
+          case "$APP_ROLE" in
+            customer)
+              python3 scripts/configure_android_maps.py
+              python3 scripts/configure_alani_icon.py . customer
+              python3 merchant_app/scripts/use_runner_ndk.py ;;
+            merchant)
+              python3 scripts/configure_android.py
+              python3 ../scripts/configure_alani_icon.py . merchant
+              python3 scripts/use_runner_ndk.py ;;
+            admin)
+              python3 ../scripts/configure_alani_icon.py . admin
+              python3 -c 'from pathlib import Path; p=Path("android/app/src/main/AndroidManifest.xml"); s=p.read_text().replace("android:label=\"shitreed_admin\"", "android:label=\"السيد إبراهيم العاني - الإدارة\""); p.write_text(s if "android.permission.INTERNET" in s else s.replace("<application", "<uses-permission android:name=\"android.permission.INTERNET\" />\n    <application", 1))' ;;
+          esac
+          python3 "$GITHUB_WORKSPACE/scripts/configure_alani_release_signing.py"
+      - name: Analyze and test
+        run: |
+          cd "$APP_DIR"
+          flutter pub get
+          flutter analyze --no-fatal-infos lib test
+          flutter test
+      - name: Build signed production-data candidate with checkout disabled
+        shell: bash
+        run: |
+          cd "$APP_DIR"
+          flutter build appbundle --release --build-number="$BUILD_NUMBER" \
+            --dart-define=SUPABASE_URL=https://ltwncrewggdrjevakwpb.supabase.co \
+            --dart-define="SUPABASE_PUBLISHABLE_KEY=$PRODUCTION_PUBLIC_KEY" \
+            --dart-define=ALANI_CHECKOUT_ENABLED=false \
+            --dart-define=ALANI_TEST_CHECKOUT_ENABLED=false \
+            --dart-define=ALANI_DELIVERY_TOTALS_VERIFIED=false \
+            --dart-define=GOOGLE_MAPS_ENABLED=false
+      - name: Verify bundle signature and upload certificate
+        shell: bash
+        run: |
+          set -euo pipefail
+          BUNDLE="$APP_DIR/build/app/outputs/bundle/release/app-release.aab"
+          test -s "$BUNDLE"
+          jarsigner -verify "$BUNDLE"
+          ACTUAL=$(keytool -printcert -jarfile "$BUNDLE" | awk '/SHA256:/{print $2;exit}' | tr -d ':' | tr '[:lower:]' '[:upper:]')
+          EXPECTED=$(printf '%s' "$EXPECTED_UPLOAD_SHA256" | tr -d ':' | tr '[:lower:]' '[:upper:]')
+          [[ "$ACTUAL" =~ ^[A-F0-9]{64}$ ]] && [ "$ACTUAL" = "$EXPECTED" ]
+      - uses: actions/upload-artifact@v4
+        with:
+          name: AlAni-${{ matrix.role }}-SIGNED-CANDIDATE-CHECKOUT-OFF
+          path: ${{ matrix.dir }}/build/app/outputs/bundle/release/app-release.aab
+          retention-days: 7
+          if-no-files-found: error
+      - name: Remove temporary signing key
+        if: always()
+        run: rm -f "$RUNNER_TEMP/alani-upload.jks"
