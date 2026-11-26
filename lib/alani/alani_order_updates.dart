@@ -4,6 +4,7 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart' as ll;
 import 'alani_customer_extras.dart';
 import 'alani_notification_preferences_page.dart';
+import 'alani_support_chat.dart';
 
 class AlAniOrderNotificationsPage extends StatefulWidget {
   const AlAniOrderNotificationsPage({super.key});
@@ -16,30 +17,69 @@ class _AlAniOrderNotificationsPageState extends State<AlAniOrderNotificationsPag
   bool _busy = false;
   late final String? _actor;
   StreamSubscription<dynamic>? _authChanges;
-  bool get _sameActor=>_actor!=null&&_actor==AlAniCustomerExtras.db.auth.currentUser?.id;
+  static const _production=String.fromEnvironment('SUPABASE_URL')=='https://ltwncrewggdrjevakwpb.supabase.co';
+  bool _sessionChanged=false;
+  Timer? _poller;
+  bool _refreshing=false;
+  bool get _sameActor=>!_sessionChanged&&_actor!=null&&_actor==AlAniCustomerExtras.db.auth.currentUser?.id;
   @override
   void initState() {
     super.initState();_actor=AlAniCustomerExtras.db.auth.currentUser?.id;_items=_load();
     _authChanges=AlAniCustomerExtras.db.auth.onAuthStateChange.listen((_){
-      if(mounted&&!_sameActor)setState(()=>_items=Future.value(<dynamic>[[],[]]));
+      if(mounted&&!_sameActor){
+        _poller?.cancel();
+        setState((){_sessionChanged=true;_items=Future.value(<dynamic>[[],[],null]);});
+      }
+    });
+    if(_production)_poller=Timer.periodic(const Duration(seconds:15),(_){
+      if(mounted&&_sameActor&&!_busy&&!_refreshing&&WidgetsBinding.instance.lifecycleState==AppLifecycleState.resumed&&ModalRoute.of(context)?.isCurrent==true)_refresh();
     });
   }
   @override
-  void dispose(){_authChanges?.cancel();super.dispose();}
+  void dispose(){_poller?.cancel();_authChanges?.cancel();super.dispose();}
   Future<List<dynamic>> _load()async{
-    if(!_sameActor)return <dynamic>[[],[]];
+    if(!_sameActor)return <dynamic>[[],[],null];
+    if(_production){
+      _refreshing=true;
+      try{
+        final db=AlAniCustomerExtras.db;
+        final rows=await db.rpc('alani_order_notifications');
+        if(!mounted||!_sameActor)return <dynamic>[[],[],null];
+        final raw=await db.rpc('alani_my_favorites');
+        if(!mounted||!_sameActor)return <dynamic>[[],[],null];
+        final alerts=<Map<String,dynamic>>[];
+        for(final x in raw as List){
+          final item=Map<String,dynamic>.from(x as Map);
+          if(item['price_dropped']==true)alerts.add({...item,'kind':'price_drop'});
+          if(item['restocked']==true)alerts.add({...item,'kind':'restocked'});
+        }
+        int? unread;
+        if(AlAniSupportFeature.enabled){
+          try{
+            final counts=await db.rpc('alani_support_unread_counts');
+            if(!mounted||!_sameActor)return <dynamic>[[],[],null];
+            unread=(counts as List).fold<int>(0,(sum,row)=>sum+((row as Map)['unread_count'] as num).toInt());
+          }catch(_){unread=null;}
+        }
+        return <dynamic>[rows,alerts,unread];
+      }finally{_refreshing=false;}
+    }
     return Future.wait<dynamic>([
       AlAniCustomerExtras.call('alani_order_notifications_test'),
       AlAniCustomerExtras.call('alani_customer_alerts_test'),
     ]);
   }
-  void _refresh() => setState(() => _items = _load());
+  void _refresh(){if(mounted&&_sameActor&&!_refreshing)setState(()=>_items=_load());}
   Future<void> _read(String id) async {
     if (_busy || !_sameActor) return;
     setState(() => _busy = true);
     try {
-      await AlAniCustomerExtras.call('alani_read_notification_test', {'p_event_id':id});
-      if (mounted) _refresh();
+      if(_production){
+        await AlAniCustomerExtras.db.rpc('alani_read_notification',params:{'p_event_id':id});
+      }else{
+        await AlAniCustomerExtras.call('alani_read_notification_test', {'p_event_id':id});
+      }
+      if (mounted&&_sameActor) _refresh();
     } catch (_) {
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content:Text('تعذر تسجيل القراءة.')));
@@ -58,16 +98,25 @@ class _AlAniOrderNotificationsPageState extends State<AlAniOrderNotificationsPag
   };
   @override
   Widget build(BuildContext context) => Scaffold(
-    appBar:AppBar(title:const Text('مركز الإشعارات — TEST'),
+    appBar:AppBar(title:Text(_production?'مركز الإشعارات':'مركز الإشعارات — TEST'),
       actions:[IconButton(onPressed:_busy?null:_refresh,icon:const Icon(Icons.refresh)),IconButton(tooltip:'تفضيلات الإشعارات',onPressed:_sameActor?()=>Navigator.of(context).push<void>(MaterialPageRoute(builder:(_)=>const AlAniNotificationPreferencesPage())):null,icon:const Icon(Icons.settings))]),
     body:FutureBuilder<List<dynamic>>(future:_items,builder:(context,snapshot) {
-      if (snapshot.connectionState!=ConnectionState.done) return const Center(child:CircularProgressIndicator());
+      if(!_sameActor)return const Center(child:Text('أغلق الصفحة وأعد فتحها بالحساب الحالي.'));
+      if (snapshot.connectionState!=ConnectionState.done&&!snapshot.hasData) return const Center(child:CircularProgressIndicator());
       if (snapshot.hasError) return Center(child:TextButton(onPressed:_refresh,child:const Text('تعذر التحميل، أعد المحاولة')));
       if(!_sameActor)return const Center(child:Text('أغلق الصفحة وأعد فتحها بالحساب الحالي.'));
       final data=snapshot.data ?? <dynamic>[[],[]];
       final rows=(data[0] as List).map((e)=>Map<String,dynamic>.from(e as Map));
       final alerts=(data[1] as List).map((e)=>Map<String,dynamic>.from(e as Map));
       return ListView(children:[
+        if(_production&&AlAniSupportFeature.enabled)ListTile(
+          leading:const Icon(Icons.support_agent),
+          title:const Text('رسائل فريق الدعم'),
+          subtitle:Text(data.length<3||data[2]==null?'تعذر التحقق من عدد الرسائل': 'غير مقروءة: ${data[2]}'),
+          onTap:()async{
+            await Navigator.of(context).push<void>(MaterialPageRoute(builder:(_)=>const AlAniCustomerSupportPage()));
+            if(mounted&&_sameActor)_refresh();
+          }),
         const ListTile(title:Text('تنبيهات المنتجات والاشتراكات'),subtitle:Text('تُحدّث عند فتح الصفحة أو التحديث؛ لا إشعارات دفع خارجية ولا شراء تلقائي.')),
         if(alerts.isEmpty)const ListTile(title:Text('لا توجد تنبيهات جديدة للعرض.')),
         for(final a in alerts)ListTile(
