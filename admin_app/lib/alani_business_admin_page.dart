@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'alani_period_report_page.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class AlAniBusinessAdminPage extends StatefulWidget {
@@ -31,6 +32,7 @@ class _AlAniBusinessAdminPageState extends State<AlAniBusinessAdminPage>{
         trial=Map<String,dynamic>.from(acct['trial_balance'] as Map),margin=Map<String,dynamic>.from(data['pos_margin'] as Map);
       Widget amount(String title,Object? value)=>ListTile(title:Text(title),trailing:Text(value==null?'غير متاح':'$value د.ع'));
       return ListView(padding:const EdgeInsets.all(16),children:[
+        Card(child:ListTile(title:const Text('التقارير اليومية والشهرية والسنوية'),leading:const Icon(Icons.calendar_month),onTap:()=>Navigator.of(context).push<void>(MaterialPageRoute(builder:(_)=>const AlAniPeriodReportPage())))),
         const Text('تقارير TEST وليست أرصدة حقيقية أو حسابات نهائية.'),
         amount('المشتريات',ops['purchases_iqd']),amount('المصاريف',ops['expenses_iqd']),
         amount('الديون المتبقية',debt['balance_iqd']),
