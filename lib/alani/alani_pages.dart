@@ -5,6 +5,7 @@ import 'alani_content.dart';
 import 'alani_offers_page.dart';
 import 'alani_support_chat.dart';
 import 'alani_wallet_page.dart';
+import 'alani_help_center_page.dart';
 import 'alani_notification_preferences_page.dart';
 import 'alani_production_favorites_page.dart';
 import 'alani_shop.dart';
@@ -125,7 +126,7 @@ class AlAniInfoPage extends StatelessWidget {
           'المتجر أو التوصيل، عبر التعويض أو الاستبدال أو رد المبلغ '
           'وفق الحالة. لا تُخصم أجور إرجاع اختيارية في هذه الحالة.'),
         ('كيفية الطلب', 'احتفظ برقم الطلب وجهّز وصف الحالة وصور الضرر '
-          'إن توفرت، ثم قدّم طلب مراجعة من صفحة الاسترجاع.'),
+          'إن توفرت، ثم تواصل مع المتجر إذا كانت صفحة الاسترجاع غير مفعّلة.'),
         ('حقوقك محفوظة', 'الشروط لا تنتقص من الحقوق الإلزامية '
           'للمستهلك بموجب القانون العراقي.'),
       ],
@@ -162,7 +163,8 @@ class AlAniInfoPage extends StatelessWidget {
           'بالتعويض أو الاستبدال أو رد القيمة بحسب الحالة دون '
           'تحميل الزبون أجور خطأ المتجر.'),
         ('حقوق الزبون', 'لا تلغي الشروط الحقوق الإلزامية في القانون العراقي. '
-          'خدمة تقديم الطلبات الإلكترونية قيد الاختبار.'),
+          'الشراء من تطبيق الزبون متاح في الإصدار الإنتاجي المعتمد؛ '
+          'تحقق من المجموع قبل تأكيد الطلب.'),
       ],
       'help' => const [
         ('كيف أدفع؟', 'نقداً عند الاستلام فقط.'),
@@ -482,7 +484,7 @@ class AlAniStoreDrawer extends StatelessWidget {
           onTap:()=>_go(context,const AlAniCustomerSupportPage())),
       ListTile(leading:const Icon(Icons.help_outline),
         title:const Text('الأسئلة الشائعة'),
-        onTap:()=>_go(context,const AlAniInfoPage(type:'help'))),
+        onTap:()=>_go(context,const AlAniHelpCenterPage())),
       ListTile(leading:const Icon(Icons.settings_outlined),
         title:const Text('الإعدادات'),
         onTap:()=>_go(context,const AlAniSettingsPage())),
