@@ -1,0 +1,196 @@
+name: Al-Ani merchant and admin fresh Firebase TEST builds (NO DEPLOY)
+on:
+  push:
+    branches: [work/alani-fcm-integrated-test-20261126]
+    paths:
+      - '.github/workflows/alani-fcm-staff-test.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: alani-fcm-staff-build-${{ github.ref }}
+  cancel-in-progress: true
+env:
+  TEST_SUPABASE_URL: https://tgvdwotbrnhcoykuxdpr.supabase.co
+  TEST_SUPABASE_PUBLISHABLE_KEY: sb_publishable_LUUtkKZWm3cqIRLQSLM4iQ_puh2ipiY
+jobs:
+  merchant:
+    if: github.ref == 'refs/heads/work/alani-fcm-integrated-test-20261126'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 50
+    defaults:
+      run:
+        working-directory: merchant_app
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: '3.47.9'
+          cache: true
+      - name: Prepare isolated merchant Android
+        run: |
+          flutter create --org com.ibrahimalani --project-name shitreed_merchant --platforms android .
+          ALANI_COURIER_GPS_TEST_BUILD=true ALANI_POS_CAMERA_TEST_BUILD=true python3 scripts/configure_android.py
+          python3 ../scripts/configure_alani_icon.py . merchant
+          python3 scripts/use_runner_ndk.py
+      - name: Prepare Firebase Android client (merchant)
+        env:
+          FIREBASE_CONFIG: ${{ secrets.ALANI_FIREBASE_GOOGLE_SERVICES_JSON }}
+        run: |
+          set -euo pipefail
+          test -n "$FIREBASE_CONFIG"
+          umask 077
+          CONFIG="$RUNNER_TEMP/fcm-merchant.json"
+          printf '%s' "$FIREBASE_CONFIG" > "$CONFIG"
+          trap 'rm -f "$CONFIG"' EXIT
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('android/app/build.gradle.kts')
+          s=p.read_text()
+          old='applicationId = "com.ibrahimalani.shitreed_merchant"'
+          assert s.count(old)==1
+          p.write_text(s.replace(old,'applicationId = "com.ibrahimalani.shitreed_merchant.livepilot"'))
+          p=Path('android/app/src/main/AndroidManifest.xml')
+          import xml.etree.ElementTree as ET
+          ns='{http://schemas.android.com/apk/res/android}'
+          ET.register_namespace('android',ns[1:-1])
+          t=ET.parse(p)
+          t.getroot().find('application').set(ns+'label','العاني - merchant TEST Firebase')
+          t.write(p, encoding='utf-8', xml_declaration=True)
+          PY
+          python3 - "$CONFIG" <<'PY'
+          import json, sys
+          d=json.load(open(sys.argv[1]))
+          expected='com.ibrahimalani.shitreed_merchant.livepilot'
+          clients=d.get('client', [])
+          matches=sum(c.get('client_info',{}).get('android_client_info',{}).get('package_name')==expected for c in clients)
+          print('Firebase Android client count:', len(clients))
+          print('Expected merchant package matches:', matches)
+          if matches != 1:
+              raise SystemExit('Firebase config received by runner does not match expected merchant package')
+          PY
+          python3 "$GITHUB_WORKSPACE/scripts/prepare_alani_firebase_android.py" --app-root . --role merchant --config "$CONFIG"
+      - name: Flutter analysis and tests (warnings/errors fail release)
+        run: |
+          flutter pub get
+          flutter analyze --no-fatal-infos
+          flutter test
+      - name: Build isolated merchant preview
+        run: |
+          bash "$GITHUB_WORKSPACE/scripts/build_flutter_apk_with_network_retry.sh" --debug \
+            --dart-define=ALANI_FCM_CLIENT_ENABLED=true \
+            --dart-define="SUPABASE_URL=$TEST_SUPABASE_URL" \
+            --dart-define="SUPABASE_PUBLISHABLE_KEY=$TEST_SUPABASE_PUBLISHABLE_KEY" \
+            --dart-define="SHITREED_CAMPAIGNS_ENABLED=true" \
+            --dart-define="ALANI_SUPPORT_CHAT_ENABLED=true" \
+            --dart-define="ALANI_DELIVERY_WORKFLOW_ENABLED=true" \
+            --dart-define="ALANI_COURIER_GPS_TEST_ENABLED=true" \
+            --dart-define="ALANI_INVENTORY_TEST_ENABLED=true" \
+            --dart-define="ALANI_BUSINESS_TEST_ENABLED=true" \
+            --dart-define="ALANI_POS_INVOICE_TEST_ENABLED=true"
+      - name: Verify target SDK >= 36
+        run: |
+          AAPT=$(find "$ANDROID_HOME/build-tools" -type f -name aapt | sort -V | tail -1)
+          TARGET=$("$AAPT" dump badging build/app/outputs/flutter-apk/app-debug.apk | sed -n "s/.*targetSdkVersion:'\([0-9]*\)'.*/\1/p" | head -1)
+          test -n "$TARGET" && test "$TARGET" -ge 36
+      - uses: actions/upload-artifact@v4
+        with:
+          name: AlAni-merchant-Firebase-TEST-ONLY-APK
+          path: merchant_app/build/app/outputs/flutter-apk/app-debug.apk
+          retention-days: 14
+          if-no-files-found: error
+  admin:
+    if: github.ref == 'refs/heads/work/alani-fcm-integrated-test-20261126'
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    defaults:
+      run:
+        working-directory: admin_app
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: '3.47.9'
+          cache: true
+      - name: Prepare isolated admin Android
+        run: |
+          if [ -f test/widget_test.dart ]; then HAD_WIDGET_TEST=1; else HAD_WIDGET_TEST=0; fi
+          flutter create --org com.ibrahimalani --project-name shitreed_admin --platforms android .
+          if [ "$HAD_WIDGET_TEST" = 0 ]; then rm -f test/widget_test.dart; fi
+          python3 ../scripts/configure_alani_icon.py . admin
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('android/app/src/main/AndroidManifest.xml')
+          s = p.read_text().replace('android:label="shitreed_admin"',
+            'android:label="السيد إبراهيم العاني - إدارة اختبار"')
+          if 'android.permission.INTERNET' not in s:
+              s = s.replace('<application',
+                '<uses-permission android:name="android.permission.INTERNET" />\n    <application', 1)
+          p.write_text(s)
+          PY
+          # Only a newly generated sample test is removed; tracked tests remain.
+      - name: Prepare Firebase Android client (admin)
+        env:
+          FIREBASE_CONFIG: ${{ secrets.ALANI_FIREBASE_GOOGLE_SERVICES_JSON }}
+        run: |
+          set -euo pipefail
+          test -n "$FIREBASE_CONFIG"
+          umask 077
+          CONFIG="$RUNNER_TEMP/fcm-admin.json"
+          printf '%s' "$FIREBASE_CONFIG" > "$CONFIG"
+          trap 'rm -f "$CONFIG"' EXIT
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('android/app/build.gradle.kts')
+          s=p.read_text()
+          old='applicationId = "com.ibrahimalani.shitreed_admin"'
+          assert s.count(old)==1
+          p.write_text(s.replace(old,'applicationId = "com.ibrahimalani.shitreed_admin.livepilot"'))
+          p=Path('android/app/src/main/AndroidManifest.xml')
+          import xml.etree.ElementTree as ET
+          ns='{http://schemas.android.com/apk/res/android}'
+          ET.register_namespace('android',ns[1:-1])
+          t=ET.parse(p)
+          t.getroot().find('application').set(ns+'label','العاني - admin TEST Firebase')
+          t.write(p, encoding='utf-8', xml_declaration=True)
+          PY
+          python3 - "$CONFIG" <<'PY'
+          import json, sys
+          d=json.load(open(sys.argv[1]))
+          expected='com.ibrahimalani.shitreed_admin.livepilot'
+          clients=d.get('client', [])
+          matches=sum(c.get('client_info',{}).get('android_client_info',{}).get('package_name')==expected for c in clients)
+          print('Firebase Android client count:', len(clients))
+          print('Expected admin package matches:', matches)
+          if matches != 1:
+              raise SystemExit('Firebase config received by runner does not match expected admin package')
+          PY
+          python3 "$GITHUB_WORKSPACE/scripts/prepare_alani_firebase_android.py" --app-root . --role admin --config "$CONFIG"
+      - name: Flutter analysis and tests (warnings/errors fail release)
+        run: |
+          flutter pub get
+          flutter analyze --no-fatal-infos lib test
+          flutter test
+      - name: Build isolated admin preview
+        run: |
+          bash "$GITHUB_WORKSPACE/scripts/build_flutter_apk_with_network_retry.sh" --debug \
+            --dart-define=ALANI_FCM_CLIENT_ENABLED=true \
+            --dart-define="SUPABASE_URL=$TEST_SUPABASE_URL" \
+            --dart-define="SUPABASE_PUBLISHABLE_KEY=$TEST_SUPABASE_PUBLISHABLE_KEY" \
+            --dart-define="SHITREED_CAMPAIGNS_ENABLED=true" \
+            --dart-define="ALANI_SUPPORT_CHAT_ENABLED=true" \
+            --dart-define="ALANI_DELIVERY_WORKFLOW_ENABLED=true" \
+            --dart-define="ALANI_BUSINESS_TEST_ENABLED=true"
+      - name: Verify target SDK >= 36
+        run: |
+          AAPT=$(find "$ANDROID_HOME/build-tools" -type f -name aapt | sort -V | tail -1)
+          TARGET=$("$AAPT" dump badging build/app/outputs/flutter-apk/app-debug.apk | sed -n "s/.*targetSdkVersion:'\([0-9]*\)'.*/\1/p" | head -1)
+          test -n "$TARGET" && test "$TARGET" -ge 36
+      - uses: actions/upload-artifact@v4
+        with:
+          name: AlAni-admin-Firebase-TEST-ONLY-APK
+          path: admin_app/build/app/outputs/flutter-apk/app-debug.apk
+          retention-days: 14
+          if-no-files-found: error
