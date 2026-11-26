@@ -1,0 +1,87 @@
+name: Al-Ani merchant private LIVE order pilot (NO PLAY PUBLISH)
+on:
+  push:
+    branches: [release/alani-production-candidate-20261126]
+    paths:
+      - '.github/workflows/alani-merchant-live-pilot.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  merchant-live-pilot:
+    if: github.ref == 'refs/heads/release/alani-production-candidate-20261126'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 50
+    defaults:
+      run:
+        working-directory: merchant_app
+    env:
+      PRODUCTION_SUPABASE_URL: https://ltwncrewggdrjevakwpb.supabase.co
+      PRODUCTION_SUPABASE_PUBLISHABLE_KEY: sb_publishable_Tao4VcnXR93Ne9KUBJ76tg_o-Pmd75_
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: '3.47.9'
+          cache: true
+      - name: Prepare separate merchant live pilot
+        run: |
+          flutter create --org com.ibrahimalani --project-name shitreed_merchant --platforms android .
+          python3 scripts/configure_android.py
+          python3 ../scripts/configure_alani_icon.py . merchant
+          python3 scripts/use_runner_ndk.py
+          python3 - <<'PY'
+          from pathlib import Path
+          import xml.etree.ElementTree as ET
+          p = Path('android/app/build.gradle.kts')
+          s = p.read_text()
+          old = 'applicationId = "com.ibrahimalani.shitreed_merchant"'
+          if s.count(old) != 1:
+              raise SystemExit('Unexpected applicationId')
+          p.write_text(s.replace(old, 'applicationId = "com.ibrahimalani.shitreed_merchant.livepilot"'))
+          p = Path('android/app/src/main/AndroidManifest.xml')
+          ET.register_namespace('android', 'http://schemas.android.com/apk/res/android')
+          t = ET.parse(p)
+          a = t.getroot().find('application')
+          if a is None:
+              raise SystemExit('Missing application')
+          a.set('{http://schemas.android.com/apk/res/android}label', 'العاني - تاجر إنتاج (خاص)')
+          t.write(p, encoding='utf-8', xml_declaration=True)
+          PY
+      - name: Analyze and test merchant
+        run: |
+          flutter pub get
+          flutter analyze --no-fatal-infos
+          flutter test
+      - name: Verify live checkout readiness (read only)
+        run: |
+          set -euo pipefail
+          result=$(curl --fail --silent --show-error --max-time 15 -H "apikey: $PRODUCTION_SUPABASE_PUBLISHABLE_KEY" "$PRODUCTION_SUPABASE_URL/rest/v1/rpc/shitreed_alani_checkout_schema_ready")
+          test "$result" = true
+      - name: Build private production-connected merchant APK
+        run: |
+          flutter build apk --debug \
+            --dart-define="SUPABASE_URL=$PRODUCTION_SUPABASE_URL" \
+            --dart-define="SUPABASE_PUBLISHABLE_KEY=$PRODUCTION_SUPABASE_PUBLISHABLE_KEY" \
+            --dart-define=ALANI_DELIVERY_WORKFLOW_ENABLED=false \
+            --dart-define=SHITREED_CAMPAIGNS_ENABLED=false \
+            --dart-define=ALANI_SUPPORT_CHAT_ENABLED=false \
+            --dart-define=ALANI_BUSINESS_TEST_ENABLED=false \
+            --dart-define=ALANI_INVENTORY_TEST_ENABLED=false \
+            --dart-define=ALANI_POS_INVOICE_TEST_ENABLED=false \
+            --dart-define=ALANI_COURIER_GPS_TEST_ENABLED=false
+      - name: Verify package and Android target
+        run: |
+          set -euo pipefail
+          AAPT=$(find "$ANDROID_HOME/build-tools" -type f -name aapt | sort -V | tail -1)
+          BADGING=$("$AAPT" dump badging build/app/outputs/flutter-apk/app-debug.apk)
+          printf '%s\n' "$BADGING" | grep -F "package: name='com.ibrahimalani.shitreed_merchant.livepilot'"
+          TARGET=$(printf '%s\n' "$BADGING" | sed -n "s/.*targetSdkVersion:'\([0-9]*\)'.*/\1/p" | head -1)
+          test -n "$TARGET" && test "$TARGET" -ge 36
+      - uses: actions/upload-artifact@v4
+        with:
+          name: AlAni-Merchant-LIVE-ORDERS-PRIVATE-PILOT-APK
+          path: merchant_app/build/app/outputs/flutter-apk/app-debug.apk
+          retention-days: 7
+          if-no-files-found: error
