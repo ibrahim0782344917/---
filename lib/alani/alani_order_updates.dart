@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart' as ll;
 import 'alani_customer_extras.dart';
+import 'alani_notification_preferences_page.dart';
 
 class AlAniOrderNotificationsPage extends StatefulWidget {
   const AlAniOrderNotificationsPage({super.key});
@@ -58,7 +59,7 @@ class _AlAniOrderNotificationsPageState extends State<AlAniOrderNotificationsPag
   @override
   Widget build(BuildContext context) => Scaffold(
     appBar:AppBar(title:const Text('مركز الإشعارات — TEST'),
-      actions:[IconButton(onPressed:_busy?null:_refresh,icon:const Icon(Icons.refresh))]),
+      actions:[IconButton(onPressed:_busy?null:_refresh,icon:const Icon(Icons.refresh)),IconButton(tooltip:'تفضيلات الإشعارات',onPressed:_sameActor?()=>Navigator.of(context).push<void>(MaterialPageRoute(builder:(_)=>const AlAniNotificationPreferencesPage())):null,icon:const Icon(Icons.settings))]),
     body:FutureBuilder<List<dynamic>>(future:_items,builder:(context,snapshot) {
       if (snapshot.connectionState!=ConnectionState.done) return const Center(child:CircularProgressIndicator());
       if (snapshot.hasError) return Center(child:TextButton(onPressed:_refresh,child:const Text('تعذر التحميل، أعد المحاولة')));
