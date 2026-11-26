@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../alani_fcm_pilot.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'alani_content.dart';
@@ -483,6 +484,10 @@ class AlAniStoreDrawer extends StatelessWidget {
         ListTile(leading:const Icon(Icons.notifications_outlined),
           title:const Text('تفضيلات الإشعارات'),
           onTap:()=>_go(context,const AlAniNotificationPreferencesPage())),
+      if (AlAniFcmPilot.configured)
+        ListTile(leading:const Icon(Icons.notifications_outlined),
+          title:const Text('إشعارات Firebase'),
+          onTap:()=>_go(context,const AlAniFcmSettingsPage())),
       if (AlAniSupportFeature.enabled)
         ListTile(leading:const Icon(Icons.chat_bubble_outline),
           title:const Text('دردشة خاصة مع المتجر'),
