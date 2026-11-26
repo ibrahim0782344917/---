@@ -392,3 +392,59 @@ textarea:focus-visible,select:focus-visible,[tabindex]:focus-visible{
 .discount-product-label input{width:20px;height:20px;flex:none}
 .discount-product-row>input{min-height:45px;padding:10px}
 .discount-product-preview{color:#137246;font-weight:700}
+
+
+/* Unified Al-Ani Material 3 responsive refinement — production candidate.
+   Scope visual changes only; no checkout or privileges are changed. */
+:root{
+  --md-surface:#fff;--md-surface-container:#eef4ed;--md-outline:#d8e5da;
+  --md-primary:#17583d;--md-on-primary:#fff;--md-primary-container:#d8eddf;
+  --md-radius-card:24px;--md-radius-control:16px;
+}
+html{scroll-padding-top:96px}
+body{line-height:1.75;text-rendering:optimizeLegibility}
+.hero h1{line-height:1.3;letter-spacing:normal}
+.wrap{max-width:1200px}
+.button,.cart-pill,.menu-trigger,.admin-nav button{min-height:48px;border-radius:var(--md-radius-control)}
+.button.primary{background:var(--md-primary);color:var(--md-on-primary)}
+.button:active,.cart-pill:active{box-shadow:none;transform:translateY(1px)}
+.product-card,.content-card,.basket-items,.checkout-panel,.admin-panel,.premium-hub-card{
+ border-radius:var(--md-radius-card);border-color:var(--md-outline)
+}
+.product-info h3,.content-card h3,.admin-panel h2{overflow-wrap:anywhere}
+.admin-form input,.admin-form select,.admin-form textarea,.checkout-panel input,.checkout-panel textarea,.searchbox input{
+ min-height:48px;border-radius:var(--md-radius-control);color:var(--ink)
+}
+.admin-nav button.active{background:var(--md-primary-container);color:var(--deep);border-color:var(--md-outline)}
+.admin-table button,.qty-controls button{min-height:44px;min-width:44px}
+.admin-table td,.admin-table th{overflow-wrap:anywhere}
+.admin-table th{background:var(--md-surface-container);color:var(--deep)}
+.metric{background:var(--md-surface-container);border-radius:20px}
+.details-dialog{border-radius:28px;color:var(--ink);background:var(--md-surface)}
+.category-strip a,.premium-hub-card,.product-actions button{min-width:0}
+.product-media{aspect-ratio:4/3;height:auto}
+.social-comment{overflow-wrap:anywhere}
+button:disabled{transform:none}
+@media(max-width:750px){
+ .section{padding-block:40px}
+ .wrap{width:calc(100% - 24px)}
+ .header-row{min-height:72px}
+ .header-actions .minor-link{display:none}
+ .hero-grid{gap:16px}
+ .hero-actions .button{flex:1 1 auto}
+ .product-grid,.content-grid{gap:12px}
+ .product-info{padding:12px}
+ .product-actions button{min-height:48px}
+ .checkout-panel,.basket-items,.admin-panel{padding:16px}
+ .basket-row{flex-wrap:wrap}
+ .searchbox input{min-width:0}
+ .admin-login{margin:24px auto;padding:20px}
+ .toast{inset-inline:12px;bottom:82px;max-width:none}
+ .mobile-shop-nav{padding-bottom:env(safe-area-inset-bottom,0px)}
+}
+@media(max-width:340px){.product-grid,.content-grid{grid-template-columns:1fr}.header-row{flex-wrap:wrap}}
+@media(prefers-reduced-motion:reduce){
+ html{scroll-behavior:auto}
+ *,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important}
+ .product-card:hover,.content-card:hover,.button:active,.cart-pill:active{transform:none}
+}
