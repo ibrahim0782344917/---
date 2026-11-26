@@ -1,0 +1,20 @@
+name: Al-Ani FCM worker validation tests (NO SEND)
+on:
+  push:
+    branches: [work/alani-fcm-integrated-test-20261126]
+    paths:
+      - 'alani_site/server/alani-fcm-validation-worker*'
+      - '.github/workflows/alani-fcm-validation-worker-test.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  worker:
+    if: github.ref == 'refs/heads/work/alani-fcm-integrated-test-20261126'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node --test alani_site/server/alani-fcm-validation-worker.test.mjs
