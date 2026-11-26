@@ -22,6 +22,10 @@ if os.environ.get("ALANI_COURIER_GPS_TEST_BUILD") == "true":
     for permission in ("android.permission.ACCESS_COARSE_LOCATION", "android.permission.ACCESS_FINE_LOCATION"):
         if permission not in permissions:
             root.insert(0, ET.Element("uses-permission", {name_attr: permission}))
+if os.environ.get("ALANI_POS_CAMERA_TEST_BUILD") == "true":
+    camera = "android.permission.CAMERA"
+    if camera not in permissions:
+        root.insert(0, ET.Element("uses-permission", {name_attr: camera}))
 app = root.find("application")
 if app is None:
     raise SystemExit("Generated manifest does not contain application.")
