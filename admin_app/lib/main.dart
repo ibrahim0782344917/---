@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'alani_fcm_pilot.dart';
 import 'alani_design_system.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'admin_api.dart';
@@ -20,6 +21,7 @@ const orange = Color(0xFFC49B45);
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await AdminApi.initialize();
+  await AlAniFcmPilot.initialize();
   runApp(const ShitreedAdminApp());
 }
 
@@ -911,6 +913,9 @@ class _AdminHomeState extends State<AdminHome> {
             ],
           ])),
           const Divider(color: Colors.white24),
+          ListTile(leading:const Icon(Icons.notifications_outlined,color:Colors.white70),
+            title:const Text('إشعارات Firebase',style:TextStyle(color:Colors.white)),
+            onTap:(){Navigator.pop(context);Navigator.push(context,MaterialPageRoute<void>(builder:(_)=>const AlAniFcmSettingsPage()));}),
           ListTile(
             leading: const Icon(Icons.logout, color: Colors.white70),
             title: const Text('تسجيل الخروج',
