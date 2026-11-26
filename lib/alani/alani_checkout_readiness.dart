@@ -31,6 +31,12 @@ class AlAniCheckoutReadiness {
 
   // Release builds must explicitly set their approved API URL.
   static const String apiBase = String.fromEnvironment('ALANI_API_BASE');
+
+  // Explicitly approved private live pilot. No automatic fallback from the
+  // website gate; the production database can revoke execution at any time.
+  static const bool directProductionPilot = productionDataConnected &&
+      clientApproved &&
+      bool.fromEnvironment('ALANI_DIRECT_PRODUCTION_PILOT', defaultValue: false);
   // Production requires an explicitly approved endpoint; the Staging
   // Railway site must never authorize live checkout by accident.
   static const String storeId = '25091ca2-c0da-416c-b634-81b188ee66be';
@@ -50,6 +56,20 @@ class AlAniCheckoutReadiness {
         final db = Supabase.instance.client;
         final rows = await db.from('stores').select('id')
             .eq('id', storeId).eq('status', 'approved').limit(1);
+        return rows.isNotEmpty;
+      } catch (_) {
+        return false;
+      }
+    }
+    if (directProductionPilot) {
+      try {
+        final db = Supabase.instance.client;
+        final ready = await db.rpc('shitreed_alani_checkout_schema_ready')
+            .timeout(const Duration(seconds: 8));
+        if (ready != true) return false;
+        final rows = await db.from('stores').select('id')
+            .eq('id', storeId).eq('status', 'approved').limit(1)
+            .timeout(const Duration(seconds: 8));
         return rows.isNotEmpty;
       } catch (_) {
         return false;
