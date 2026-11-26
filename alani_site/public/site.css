@@ -448,3 +448,13 @@ button:disabled{transform:none}
  *,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important}
  .product-card:hover,.content-card:hover,.button:active,.cart-pill:active{transform:none}
 }
+
+/* Commercial service navigation, mobile first. No service activation. */
+.service-shortcuts{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-block:24px}
+.service-shortcuts a{display:flex;flex-direction:column;justify-content:center;min-width:0;min-height:92px;padding:16px;border:1px solid var(--md-outline);border-radius:18px;background:var(--md-surface);box-shadow:0 4px 14px #102b170a}
+.service-shortcuts strong{color:var(--deep);font-size:15px}
+.service-shortcuts small{color:var(--muted);font-size:12px;overflow-wrap:anywhere}
+.service-shortcuts a:hover{border-color:var(--md-primary)}
+.service-shortcuts a:focus-visible{outline:3px solid var(--md-primary);outline-offset:3px}
+@media(max-width:750px){.service-shortcuts{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-block:16px}.service-shortcuts a{padding:12px;min-height:88px}}
+@media(max-width:340px){.service-shortcuts{grid-template-columns:1fr}}
