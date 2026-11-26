@@ -13,13 +13,28 @@ class AlAniOrderNotificationsPage extends StatefulWidget {
 class _AlAniOrderNotificationsPageState extends State<AlAniOrderNotificationsPage> {
   late Future<List<dynamic>> _items;
   bool _busy = false;
+  late final String? _actor;
+  StreamSubscription<dynamic>? _authChanges;
+  bool get _sameActor=>_actor!=null&&_actor==AlAniCustomerExtras.db.auth.currentUser?.id;
   @override
-  void initState() { super.initState(); _items = _load(); }
-  Future<List<dynamic>> _load() async =>
-      (await AlAniCustomerExtras.call('alani_order_notifications_test')) as List;
+  void initState() {
+    super.initState();_actor=AlAniCustomerExtras.db.auth.currentUser?.id;_items=_load();
+    _authChanges=AlAniCustomerExtras.db.auth.onAuthStateChange.listen((_){
+      if(mounted&&!_sameActor)setState(()=>_items=Future.value(<dynamic>[[],[]]));
+    });
+  }
+  @override
+  void dispose(){_authChanges?.cancel();super.dispose();}
+  Future<List<dynamic>> _load()async{
+    if(!_sameActor)return <dynamic>[[],[]];
+    return Future.wait<dynamic>([
+      AlAniCustomerExtras.call('alani_order_notifications_test'),
+      AlAniCustomerExtras.call('alani_customer_alerts_test'),
+    ]);
+  }
   void _refresh() => setState(() => _items = _load());
   Future<void> _read(String id) async {
-    if (_busy) return;
+    if (_busy || !_sameActor) return;
     setState(() => _busy = true);
     try {
       await AlAniCustomerExtras.call('alani_read_notification_test', {'p_event_id':id});
@@ -42,24 +57,31 @@ class _AlAniOrderNotificationsPageState extends State<AlAniOrderNotificationsPag
   };
   @override
   Widget build(BuildContext context) => Scaffold(
-    appBar:AppBar(title:const Text('إشعارات الطلبات — TEST'),
+    appBar:AppBar(title:const Text('مركز الإشعارات — TEST'),
       actions:[IconButton(onPressed:_busy?null:_refresh,icon:const Icon(Icons.refresh))]),
     body:FutureBuilder<List<dynamic>>(future:_items,builder:(context,snapshot) {
       if (snapshot.connectionState!=ConnectionState.done) return const Center(child:CircularProgressIndicator());
       if (snapshot.hasError) return Center(child:TextButton(onPressed:_refresh,child:const Text('تعذر التحميل، أعد المحاولة')));
-      final rows=snapshot.data ?? [];
-      if(rows.isEmpty) return const Center(child:Text('لا توجد إشعارات طلبات.'));
-      return ListView.builder(itemCount:rows.length,itemBuilder:(context,i) {
-        final row=Map<String,dynamic>.from(rows[i] as Map);
-        final read=row['is_read']==true;
-        return ListTile(
-          leading:Icon(read?Icons.notifications_none:Icons.notifications_active),
+      if(!_sameActor)return const Center(child:Text('أغلق الصفحة وأعد فتحها بالحساب الحالي.'));
+      final data=snapshot.data ?? <dynamic>[[],[]];
+      final rows=(data[0] as List).map((e)=>Map<String,dynamic>.from(e as Map));
+      final alerts=(data[1] as List).map((e)=>Map<String,dynamic>.from(e as Map));
+      return ListView(children:[
+        const ListTile(title:Text('تنبيهات المنتجات والاشتراكات'),subtitle:Text('تُحدّث عند فتح الصفحة أو التحديث؛ لا إشعارات دفع خارجية ولا شراء تلقائي.')),
+        if(alerts.isEmpty)const ListTile(title:Text('لا توجد تنبيهات جديدة للعرض.')),
+        for(final a in alerts)ListTile(
+          leading:const Icon(Icons.notifications_outlined),
+          title:Text(switch(a['kind']){'price_drop'=>'انخفاض السعر','restocked'=>'عاد المنتج للمخزون','monthly_review'=>'حان موعد مراجعة الاشتراك',_=>'تنبيه'}),
+          subtitle:Text(a['name'].toString()+(a['price_iqd']!=null?' • ${a['price_iqd']} د.ع':''))),
+        const Divider(),const ListTile(title:Text('إشعارات الطلبات')),
+        if(rows.isEmpty)const ListTile(title:Text('لا توجد إشعارات طلبات.')),
+        for(final row in rows) ListTile(
+          leading:Icon(row['is_read']==true?Icons.notifications_none:Icons.notifications_active),
           title:Text(_label(row['new_status'])),
           subtitle:Text('طلب ${row['order_id']}\n${row['changed_at']}'),
-          trailing:read?const Icon(Icons.done):TextButton(
-            onPressed:_busy?null:()=>_read(row['event_id'] as String),child:const Text('قراءة')),
-        );
-      });
+          trailing:row['is_read']==true?const Icon(Icons.done):TextButton(
+            onPressed:_busy?null:()=>_read(row['event_id'] as String),child:const Text('قراءة'))),
+      ]);
     }),
   );
 }
@@ -72,6 +94,9 @@ class AlAniTrackingPage extends StatefulWidget {
 }
 class _AlAniTrackingPageState extends State<AlAniTrackingPage> with WidgetsBindingObserver {
   Timer? _timer;
+  StreamSubscription<dynamic>? _trackingAuth;
+  late final String? _trackingActor;
+  bool get _trackingSameActor=>_trackingActor!=null&&_trackingActor==AlAniCustomerExtras.db.auth.currentUser?.id;
   Map<String,dynamic>? _location;
   bool _loading=false;
   bool _failed=false;
@@ -84,16 +109,21 @@ class _AlAniTrackingPageState extends State<AlAniTrackingPage> with WidgetsBindi
   void initState(){
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    _trackingActor=AlAniCustomerExtras.db.auth.currentUser?.id;
+    _trackingAuth=AlAniCustomerExtras.db.auth.onAuthStateChange.listen((_){
+      if(mounted&&!_trackingSameActor){_active=false;_generation++;_timer?.cancel();setState((){_location=null;_showMap=false;_loading=false;});}
+    });
     _start();
   }
   void _start(){
+    if(!_trackingSameActor)return;
     _active=true;
     _poll();
     _timer?.cancel();
     _timer=Timer.periodic(const Duration(seconds:15),(_)=>_poll());
   }
   Future<void> _poll() async {
-    if (!_active || _loading || !mounted) return;
+    if (!_active || _loading || !mounted || !_trackingSameActor) return;
     final generation=_generation;
     final actor=AlAniCustomerExtras.db.auth.currentUser?.id;
     setState(()=>_loading=true);
@@ -114,10 +144,10 @@ class _AlAniTrackingPageState extends State<AlAniTrackingPage> with WidgetsBindi
     if(mounted) setState((){_location=null;_loading=false;});
   }
   @override
-  void dispose(){_active=false;_generation++;_timer?.cancel();WidgetsBinding.instance.removeObserver(this);super.dispose();}
+  void dispose(){_trackingAuth?.cancel();_active=false;_generation++;_timer?.cancel();WidgetsBinding.instance.removeObserver(this);super.dispose();}
   @override
   Widget build(BuildContext context){
-    final loc=_location;
+    final loc=_trackingSameActor?_location:null;
     final updated=DateTime.tryParse(loc?['updated_at']?.toString()??'');
     final fresh=updated!=null && DateTime.now().difference(updated).inSeconds<90;
     return Scaffold(appBar:AppBar(title:const Text('موقع المندوب — TEST')),
