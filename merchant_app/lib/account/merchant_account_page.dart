@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../alani_fcm_pilot.dart';
 import 'package:shitreed_merchant/account/merchant_account_service.dart';
 import 'package:shitreed_merchant/account/merchant_legal_pages.dart';
 import 'package:shitreed_merchant/account/merchant_support_pages.dart';
@@ -56,6 +57,9 @@ class MerchantAccountPage extends StatelessWidget {
           'إرسال طلب مراجعة للمحل الموجود بالخريطة',
           ()=>_go(context,const MerchantOsmClaimsPage())),
         const SizedBox(height:14),
+        if(AlAniFcmPilot.configured)
+          _SettingTile(Icons.notifications_outlined,'إشعارات Firebase','إذن الإشعارات واختبار الجهاز',
+            ()=>_go(context,const AlAniFcmSettingsPage())),
         const _Heading('المساعدة'),
         _SettingTile(Icons.support_agent_outlined,
           'مركز الدعم','افتح طلباً وتابعه',
