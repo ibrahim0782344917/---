@@ -21,7 +21,8 @@ class _AlAniBusinessReportPageState extends State<AlAniBusinessReportPage>{
     final report=Map<String,dynamic>.from(data as Map);
     final debt=await Supabase.instance.client.rpc('alani_debt_report_test');
     report['debt']=debt;
-    report['trial_balance']=await Supabase.instance.client.rpc('alani_operational_trial_balance_test');
+    report['accounting']=await Supabase.instance.client.rpc('alani_accounting_overview_test');
+    report['trial_balance']=(report['accounting'] as Map)['trial_balance'];
     if(AlAniPosInvoicePage.enabled) report['pos_margin']=await Supabase.instance.client.rpc('alani_pos_margin_test');
     return report;
   }
@@ -36,6 +37,7 @@ class _AlAniBusinessReportPageState extends State<AlAniBusinessReportPage>{
       final data=snapshot.data!;
       final debt=Map<String,dynamic>.from(data['debt'] as Map);
       final trial=Map<String,dynamic>.from(data['trial_balance'] as Map);
+      final acct=Map<String,dynamic>.from(data['accounting'] as Map);
       final suppliers=(data['suppliers'] as List? ?? []).map((e)=>Map<String,dynamic>.from(e as Map));
       return ListView(padding:const EdgeInsets.all(16),children:[
         const Text('سجلات تشغيلية تجريبية؛ ليست أرباحاً أو تسوية محاسبية أو إثبات تحويل أموال.'),
@@ -57,11 +59,12 @@ class _AlAniBusinessReportPageState extends State<AlAniBusinessReportPage>{
             if(mounted)_refresh();
           })),
         Card(child:Column(children:[
-          const ListTile(title:Text('ميزان المراجعة التشغيلي — TEST'),subtitle:Text('لا يشمل تكلفة المبيعات أو الطلبات الإلكترونية. ليس تقرير أرباح.')),
+          const ListTile(title:Text('ميزان المراجعة الموسع — TEST'),subtitle:Text('يشمل فواتير POS الجديدة وتكاليفها المقدرة؛ لا يشمل تسوية الطلبات الإلكترونية.')),
           ListTile(title:const Text('إجمالي المدين'),trailing:Text('${trial['debit_iqd']} د.ع')),
           ListTile(title:const Text('إجمالي الدائن'),trailing:Text('${trial['credit_iqd']} د.ع')),
           ListTile(title:Text(trial['balanced']==true?'القيود متوازنة':'القيود غير متوازنة')),
         ])),
+        Card(child:ListTile(title:const Text('النتيجة التشغيلية التقديرية المحدودة'),subtitle:const Text('تحجب عند نقص التكلفة أو وجود عمليات غير مقيمة. ليست صافي ربح نهائي.'),trailing:Text(acct['limited_estimated_result_iqd']?.toString()??'غير متاح'))),
         if(AlAniPosInvoicePage.enabled)...[
           Card(child:ListTile(title:const Text('كاشير متعدد المنتجات'),leading:const Icon(Icons.qr_code_scanner),onTap:()async{
             await Navigator.of(context).push<void>(MaterialPageRoute(builder:(_)=>const AlAniPosInvoicePage()));
