@@ -11,6 +11,7 @@ const MIME = {'.html':'text/html; charset=utf-8','.css':'text/css; charset=utf-8
 const filePaths = new Map([
  ['/', 'index.html'], ['/index.html','index.html'], ['/login','login.html'], ['/checkout','checkout.html'], ['/orders','orders.html'], ['/merchant','merchant.html'],
  ['/admin','admin.html'], ['/privacy','privacy.html'], ['/terms','terms.html'],
+ ['/about-ibrahim-alani','about-ibrahim-alani.html'],
  ['/support','support.html'], ['/delete-account','delete-account.html'],
  ['/app.css','app.css'], ['/app.js','app.js'], ['/shop.js','shop.js']
 ]);
