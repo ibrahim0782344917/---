@@ -1,4 +1,6 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:shitreed_merchant/commerce/commerce_service.dart';
 import 'package:shitreed_merchant/shared/merchant_widgets.dart';
 
@@ -39,11 +41,20 @@ class MerchantReport {
 }
 
 Future<MerchantReport> loadMerchantReport() async {
+  final auth=Supabase.instance.client.auth;
+  final actor=auth.currentUser?.id;
+  void assertSameActor(){
+    if(actor==null||auth.currentUser?.id!=actor)throw StateError('SESSION_CHANGED');
+  }
+  assertSameActor();
   final stores = await CommerceService.myStores();
+  assertSameActor();
   final orders = <Map<String, dynamic>>[];
   var limited = false;
   for (final store in stores) {
+    assertSameActor();
     final rows = await CommerceService.merchantOrders(store['id'] as String);
+    assertSameActor();
     limited = limited || rows.length >= 60;
     orders.addAll(rows);
   }
@@ -116,11 +127,22 @@ class MerchantReportsPage extends StatefulWidget {
 
 class _MerchantReportsPageState extends State<MerchantReportsPage> {
   late Future<MerchantReport> _report;
+  late final String? _actor;
+  StreamSubscription<AuthState>? _auth;
+  bool _sessionChanged=false;
+  bool get _sameActor=>!_sessionChanged&&_actor!=null&&Supabase.instance.client.auth.currentUser?.id==_actor;
   @override
   void initState() {
     super.initState();
+    _actor=Supabase.instance.client.auth.currentUser?.id;
+    _auth=Supabase.instance.client.auth.onAuthStateChange.listen((_){
+      if(mounted&&Supabase.instance.client.auth.currentUser?.id!=_actor)setState(()=>_sessionChanged=true);
+    });
     _refresh();
   }
+
+  @override
+  void dispose(){_auth?.cancel();super.dispose();}
 
   void _refresh() {
     setState(() {
@@ -133,17 +155,17 @@ class _MerchantReportsPageState extends State<MerchantReportsPage> {
       padding: const EdgeInsets.all(15),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(17),
-        color: Colors.white,
-        border: Border.all(color: const Color(0xFFF0E6FA)),
+        color: Theme.of(context).colorScheme.surface,
+        border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
       ),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Icon(icon, size: 24, color: merchantPurple),
+        Icon(icon, size: 24, color: Theme.of(context).colorScheme.primary),
         const SizedBox(height: 12),
-        Text(value, style: const TextStyle(
-          fontSize: 22, fontWeight: FontWeight.w900, color: merchantDark)),
+        Text(value, style: TextStyle(
+          fontSize: 22, fontWeight: FontWeight.w900, color: Theme.of(context).colorScheme.onSurface)),
         const SizedBox(height: 5),
-        Text(label, style: const TextStyle(
-          color: Colors.black54, fontSize: 12)),
+        Text(label, style: TextStyle(
+          color: Theme.of(context).colorScheme.onSurfaceVariant, fontSize: 12)),
       ]),
     ),
   );
@@ -151,10 +173,10 @@ class _MerchantReportsPageState extends State<MerchantReportsPage> {
   @override
   Widget build(BuildContext context) => Scaffold(
     appBar: AppBar(title: const Text('إحصائيات متاجري')),
-    body: RefreshIndicator(
+    body: !_sameActor?const Center(child:Text('تغيّرت الجلسة. أعد فتح التقرير بحسابك.')):RefreshIndicator(
       onRefresh: () async {
         _refresh();
-        await _report;
+        try { await _report; } catch (_) { /* Error rendered by FutureBuilder. */ }
       },
       child: ListView(
         padding: const EdgeInsets.all(16),
@@ -169,6 +191,7 @@ class _MerchantReportsPageState extends State<MerchantReportsPage> {
           FutureBuilder<MerchantReport>(
             future: _report,
             builder: (context, snapshot) {
+              if (!_sameActor) return const Text('الجلسة غير متاحة.');
               if (snapshot.connectionState != ConnectionState.done) {
                 return const Center(child: CircularProgressIndicator());
               }
