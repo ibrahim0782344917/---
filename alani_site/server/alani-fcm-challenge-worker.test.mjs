@@ -1,0 +1,10 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {runChallengeWorker} from './alani-fcm-challenge-worker.mjs';
+const now=()=>Date.parse('2026-11-26T20:00:00Z');
+const item={id:'00000000-0000-4000-8000-000000000001',claim_key:'00000000-0000-4000-8000-000000000002',token:'synthetic_token_123456789',nonce:'a'.repeat(64),expires_at:new Date(now()+60000).toISOString()};
+function opts(){const outcomes=[];return {outcomes,projectRef:'tgvdwotbrnhcoykuxdpr',now,adapter:{claim:async()=>item,finish:async(id,key,outcome)=>{assert.equal(id,item.id);assert.equal(key,item.claim_key);outcomes.push(outcome);return true;}},getAccessToken:async()=> 'synthetic_access',fetchImpl:async()=>{throw Error('unexpected network');}};}
+test('default validation is not delivery',async()=>{const o=opts();const r=await runChallengeWorker({...o,fetchImpl:async(url,req)=>{const d=JSON.parse(req.body);assert.equal(d.validate_only,true);assert.equal(d.message.data.nonce,item.nonce);assert.ok(!d.message.notification);return {ok:true};}});assert.equal(r.state,'validated');assert.deepEqual(o.outcomes,['validated']);});
+test('live send denied unless explicit TEST gate; production denied',async()=>{const o=opts();assert.equal((await runChallengeWorker({...o,mode:'send'})).state,'blocked');assert.equal((await runChallengeWorker({...o,projectRef:'ltwncrewggdrjevakwpb',mode:'send',allowLiveTestSend:true})).state,'blocked');assert.equal(o.outcomes.length,0);});
+test('mocked TEST send accepted, no actual network',async()=>{const o=opts();const r=await runChallengeWorker({...o,mode:'send',allowLiveTestSend:true,fetchImpl:async(url,req)=>{assert.equal(JSON.parse(req.body).validate_only,false);return {ok:true};}});assert.equal(r.state,'accepted');assert.deepEqual(o.outcomes,['accepted']);});
+test('retry on network failure, reject stale or invalid data',async()=>{const o=opts();assert.equal((await runChallengeWorker(o)).state,'retry');assert.equal((await runChallengeWorker({...opts(),adapter:{...o.adapter,claim:async()=>({...item,expires_at:new Date(now()).toISOString()})}})).state,'failed');});
