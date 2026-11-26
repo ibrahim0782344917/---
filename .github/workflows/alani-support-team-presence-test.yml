@@ -1,0 +1,40 @@
+name: Al-Ani support team and presence isolated SQL QA
+on:
+  push:
+    branches: [work/alani-10000-master-test-20261125]
+    paths:
+      - '.github/workflows/alani-support-team-presence-test.yml'
+      - 'tests/alani_support_team_presence_local*'
+      - 'docs/ALANI_SUPPORT_TEAM_PRESENCE_REALTIME_TEST_ONLY_20261126.sql'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  isolated-sql:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - name: Start local synthetic PostgreSQL
+        run: |
+          set -euo pipefail
+          docker run -d --name alani-team-pg -e POSTGRES_PASSWORD=synthetic -e POSTGRES_DB=alani_chat_synthetic postgres:17-alpine
+          for i in $(seq 1 60); do
+            if docker exec alani-team-pg psql -X -qAt -U postgres -d alani_chat_synthetic -c 'SELECT 1' 2>/dev/null | grep -qx 1; then break; fi
+            sleep 1
+          done
+          docker exec alani-team-pg psql -X -qAt -U postgres -d alani_chat_synthetic -c 'SELECT 1' | grep -qx 1
+      - name: Verify chat baseline and new support role and presence isolation
+        run: |
+          set -euo pipefail
+          cat tests/alani_support_chat_fixture.sql \
+            docs/ALANI_SUPPORT_CHAT_STAGE_20261124.sql \
+            tests/alani_support_chat_rls_checks.sql \
+            docs/ALANI_SUPPORT_READ_RECEIPTS_TEST_20261125.sql \
+            tests/alani_support_read_receipts_checks.sql \
+            tests/alani_support_team_presence_local_fixture.sql \
+            docs/ALANI_SUPPORT_TEAM_PRESENCE_REALTIME_TEST_ONLY_20261126.sql \
+            tests/alani_support_team_presence_local_checks.sql |
+            docker exec -i alani-team-pg psql -X -v ON_ERROR_STOP=1 -U postgres -d alani_chat_synthetic
+      - if: always()
+        run: docker rm -f alani-team-pg >/dev/null 2>&1 || true
