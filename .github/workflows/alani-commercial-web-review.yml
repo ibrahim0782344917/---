@@ -1,0 +1,39 @@
+name: Al-Ani commercial website review (NO DEPLOY)
+on:
+  push:
+    branches: [work/alani-commercial-unified-20261126]
+    paths:
+      - 'alani_site/**'
+      - '.github/workflows/alani-commercial-web-review.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  web:
+    if: github.ref == 'refs/heads/work/alani-commercial-unified-20261126'
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: alani_site
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm run check
+      - run: NODE_ENV=test npm test
+      - name: Verify Arabic storefront service navigation
+        run: |
+          node --input-type=module - <<'JS'
+          import assert from 'node:assert/strict';
+          import {readFileSync} from 'node:fs';
+          const html=readFileSync('public/index.html','utf8');
+          const css=readFileSync('public/site.css','utf8');
+          assert.match(html, /lang="ar" dir="rtl"/);
+          assert.match(html, /class="wrap service-shortcuts"/);
+          for(const route of ['/payment-policy','/return-request','/broken-product','/help']) assert.ok(html.includes('href="'+route+'"'));
+          assert.match(html, /id="checkout-button"[^>]*disabled/);
+          assert.ok(!html.includes('مستوحى من ترتيب عروض StoreKing'));
+          assert.ok(css.includes('.service-shortcuts a:focus-visible'));
+          console.log('PASS: service shortcuts and fail-closed initial checkout');
+          JS
