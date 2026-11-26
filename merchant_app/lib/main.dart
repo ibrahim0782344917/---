@@ -1,3 +1,4 @@
+import 'alani_fcm_pilot.dart';
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -10,6 +11,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await AlAniFcmPilot.initialize();
   await MarketplaceBackend.initialize();
   runApp(const ShitreedMerchantApp());
 }

@@ -1,3 +1,4 @@
+import 'alani_fcm_pilot.dart';
 import 'package:flutter/material.dart';
 import 'package:shitreed_customer/alani/alani_design_system.dart';
 import 'package:shitreed_customer/alani/alani_pages.dart';
@@ -11,6 +12,7 @@ import 'package:shitreed_customer/merchant/merchant_dashboard.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await AlAniFcmPilot.initialize();
   await MarketplaceBackend.initialize();
   runApp(const ShitreedApp());
 }
@@ -606,6 +608,9 @@ class _CustomerHomeState extends State<CustomerHome> {
           MaterialPageRoute<void>(builder: (_) =>
             const MerchantDashboardPage())),
       )),
+      if (AlAniFcmPilot.configured) OutlinedButton.icon(
+        onPressed: () => Navigator.of(context).push<void>(MaterialPageRoute(builder: (_) => const AlAniFcmSettingsPage())),
+        icon: const Icon(Icons.notifications_outlined), label: const Text('إشعارات Firebase — TEST')),
       Padding(
         padding: const EdgeInsets.fromLTRB(16, 0, 16, 10),
         child: OutlinedButton.icon(

@@ -1,3 +1,4 @@
+import 'alani_fcm_pilot.dart';
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'alani_design_system.dart';
@@ -17,6 +18,7 @@ const orange = Color(0xFFC49B45);
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await AlAniFcmPilot.initialize();
   await AdminApi.initialize();
   runApp(const ShitreedAdminApp());
 }
@@ -933,6 +935,7 @@ class _AdminHomeState extends State<AdminHome> {
                 MaterialPageRoute<void>(builder: (_) =>
                   const AdminRanksAndLevelsPage())),
             ),
+          if (AlAniFcmPilot.configured) IconButton(tooltip: 'إشعارات Firebase — TEST', icon: const Icon(Icons.notifications_outlined), onPressed: () => Navigator.of(context).push<void>(MaterialPageRoute(builder: (_) => const AlAniFcmSettingsPage()))),
           IconButton(onPressed: loading ? null : load,
             tooltip: 'تحديث', icon: const Icon(Icons.refresh)),
           IconButton(onPressed: () => AdminApi.client.auth.signOut(),
