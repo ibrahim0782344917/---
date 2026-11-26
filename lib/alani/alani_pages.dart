@@ -7,6 +7,7 @@ import 'alani_support_chat.dart';
 import 'alani_wallet_page.dart';
 import 'alani_help_center_page.dart';
 import 'alani_notification_preferences_page.dart';
+import 'alani_order_updates.dart';
 import 'alani_production_favorites_page.dart';
 import 'alani_shop.dart';
 import 'package:shitreed_customer/backend/marketplace_backend.dart';
@@ -474,6 +475,10 @@ class AlAniStoreDrawer extends StatelessWidget {
         ListTile(leading:const Icon(Icons.favorite_border),
           title:const Text('مفضلتي وتنبيهات المنتجات'),
           onTap:()=>_go(context,const AlAniProductionFavoritesPage())),
+      if (const String.fromEnvironment('SUPABASE_URL')=='https://ltwncrewggdrjevakwpb.supabase.co')
+        ListTile(leading:const Icon(Icons.notifications_active_outlined),
+          title:const Text('مركز الإشعارات'),
+          onTap:()=>_go(context,const AlAniOrderNotificationsPage())),
       if (const String.fromEnvironment('SUPABASE_URL')=='https://ltwncrewggdrjevakwpb.supabase.co')
         ListTile(leading:const Icon(Icons.notifications_outlined),
           title:const Text('تفضيلات الإشعارات'),
