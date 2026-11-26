@@ -11,6 +11,13 @@ class MerchantReport {
   final int readyOrders;
   final int cancelledOrRejected;
   final int totalOrderValueIqd;
+  final int openGoodsIqd;
+  final int openDeliveryIqd;
+  final int openOrderTotalIqd;
+  final int deliveredOrderTotalIqd;
+  final int deliveredOrders;
+  final int outForDeliveryOrders;
+  final bool limitedSample;
 
   const MerchantReport({
     required this.stores,
@@ -21,49 +28,82 @@ class MerchantReport {
     required this.readyOrders,
     required this.cancelledOrRejected,
     required this.totalOrderValueIqd,
+    this.openGoodsIqd = 0,
+    this.openDeliveryIqd = 0,
+    this.openOrderTotalIqd = 0,
+    this.deliveredOrderTotalIqd = 0,
+    this.deliveredOrders = 0,
+    this.outForDeliveryOrders = 0,
+    this.limitedSample = false,
   });
 }
 
 Future<MerchantReport> loadMerchantReport() async {
   final stores = await CommerceService.myStores();
-  var placed = 0;
-  var accepted = 0;
-  var preparing = 0;
-  var ready = 0;
-  var cancelled = 0;
-  var grossOrderValue = 0;
+  final orders = <Map<String, dynamic>>[];
+  var limited = false;
   for (final store in stores) {
-    final orders = await CommerceService.merchantOrders(store['id'] as String);
-    for (final order in orders) {
-      final status = order['status'] as String? ?? '';
-      switch (status) {
-        case 'placed':
-          placed++;
-        case 'accepted':
-          accepted++;
-        case 'preparing':
-          preparing++;
-        case 'ready':
-          ready++;
-        case 'rejected':
-        case 'cancelled':
-          cancelled++;
+    final rows = await CommerceService.merchantOrders(store['id'] as String);
+    limited = limited || rows.length >= 60;
+    orders.addAll(rows);
+  }
+  return summarizeMerchantOrders(stores, orders, limitedSample: limited);
+}
+
+/// Order commitments only. Neither delivered status nor a COD order proves
+/// cash collection. Unknown or inconsistent financial amounts fail closed.
+MerchantReport summarizeMerchantOrders(
+    List<Map<String, dynamic>> stores, List<Map<String, dynamic>> orders,
+    {bool limitedSample = false}) {
+  var placed = 0, accepted = 0, preparing = 0, ready = 0;
+  var cancelled = 0, delivered = 0, inTransit = 0;
+  var openGoods = 0, openDelivery = 0, openTotal = 0, deliveredTotal = 0;
+  const open = {'placed','accepted','preparing','ready','out_for_delivery'};
+  final seen = <String>{};
+  for (final order in orders) {
+    final id = order['id'];
+    if (id is! String || id.isEmpty || !seen.add(id)) {
+      throw StateError('INVALID_OR_DUPLICATE_ORDER');
+    }
+    final status = order['status'];
+    switch (status) {
+      case 'placed': placed++;
+      case 'accepted': accepted++;
+      case 'preparing': preparing++;
+      case 'ready': ready++;
+      case 'out_for_delivery': inTransit++;
+      case 'delivered': delivered++;
+      case 'rejected':
+      case 'cancelled': cancelled++;
+      default: throw StateError('UNKNOWN_ORDER_STATUS');
+    }
+    if (open.contains(status) || status == 'delivered') {
+      final total = order['total_iqd'];
+      final fee = order['delivery_fee_iqd'];
+      if (total is! num || fee is! num || !total.isFinite || !fee.isFinite ||
+          total != total.toInt() || fee != fee.toInt() ||
+          fee < 0 || total < fee) {
+        throw StateError('INVALID_ORDER_AMOUNTS');
       }
-      if (status != 'cancelled' && status != 'rejected') {
-        grossOrderValue += (order['total_iqd'] as num).toInt();
+      if (open.contains(status)) {
+        openTotal += total.toInt();
+        openDelivery += fee.toInt();
+        openGoods += total.toInt() - fee.toInt();
+      } else {
+        deliveredTotal += total.toInt();
       }
     }
   }
   return MerchantReport(
     stores: stores.length,
-    pendingApprovalStores: stores.where((s) =>
-      s['status'] == 'pending').length,
-    placedOrders: placed,
-    acceptedOrders: accepted,
-    preparingOrders: preparing,
-    readyOrders: ready,
-    cancelledOrRejected: cancelled,
-    totalOrderValueIqd: grossOrderValue,
+    pendingApprovalStores: stores.where((s) => s['status'] == 'pending').length,
+    placedOrders: placed, acceptedOrders: accepted, preparingOrders: preparing,
+    readyOrders: ready, cancelledOrRejected: cancelled,
+    totalOrderValueIqd: openTotal + deliveredTotal,
+    openGoodsIqd: openGoods, openDeliveryIqd: openDelivery,
+    openOrderTotalIqd: openTotal, deliveredOrderTotalIqd: deliveredTotal,
+    deliveredOrders: delivered, outForDeliveryOrders: inTransit,
+    limitedSample: limitedSample,
   );
 }
 
@@ -167,15 +207,31 @@ class _MerchantReportsPageState extends State<MerchantReportsPage> {
                     report.cancelledOrRejected.toString(),
                     Icons.cancel_outlined),
                   const SizedBox(width: 12),
-                  _stat('قيمة الطلبات النشطة',
-                    priceText(report.totalOrderValueIqd),
+                  _stat('إجمالي الطلبات المفتوحة',
+                    priceText(report.openOrderTotalIqd),
                     Icons.receipt_long),
                 ]),
+                const SizedBox(height: 12),
+                Card(child: Column(children: [
+                  ListTile(title: const Text('قيمة بضائع الطلبات المفتوحة'),
+                    trailing: Text(priceText(report.openGoodsIqd))),
+                  ListTile(title: const Text('رسوم توصيل الطلبات المفتوحة'),
+                    trailing: Text(priceText(report.openDeliveryIqd))),
+                  ListTile(title: const Text('خرج للتوصيل'),
+                    trailing: Text(report.outForDeliveryOrders.toString())),
+                  ListTile(title: const Text('طلبات مسلّمة (لا تثبت التحصيل)'),
+                    trailing: Text(report.deliveredOrders.toString())),
+                  ListTile(title: const Text('إجمالي الطلبات المسلّمة'),
+                    trailing: Text(priceText(report.deliveredOrderTotalIqd))),
+                  const ListTile(title: Text('النقد المحصّل وصافي الربح'),
+                    subtitle: Text('غير متاح حتى تفعيل تسوية التحصيل والتكاليف')),
+                ])),
+                if (report.limitedSample)
+                  const Text('تنبيه: وصل التقرير إلى حد 60 طلباً لكل متجر؛ الأرقام جزئية.'),
                 const SizedBox(height: 25),
                 const Text(
-                  'مهم: لا تُعتبر قيمة الطلبات مبيعات مدفوعة. '
-                  'الدفع عند الاستلام ولا يوجد تسجيل للتحصيل أو رسوم '
-                  'التوصيل بعد. آخر 60 طلباً لكل متجر فقط تدخل بالحساب.',
+                  'آخر 60 طلباً لكل متجر فقط. الملغاة والمرفوضة لا تدخل في الإجمالي. '
+                  'قيمة الطلبات ليست مبيعات مدفوعة، ولا تمثل الربح الصافي.',
                   textAlign: TextAlign.center,
                   style: TextStyle(color: Colors.black54, fontSize: 12),
                 ),
