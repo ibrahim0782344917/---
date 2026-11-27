@@ -88,3 +88,5 @@ jobs:
           path: admin_app/build/app/outputs/flutter-apk/app-debug.apk
           retention-days: 7
           if-no-files-found: error
+
+# 2026-11-27: Owner requested transition to production-connected builds; no automatic publish.
