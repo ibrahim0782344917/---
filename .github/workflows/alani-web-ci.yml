@@ -4,6 +4,7 @@ on:
     branches:
       - feature/alani-herbal-store-app-20261118
       - feature/alani-final-release-content-20261122
+      - release/alani-production-candidate-20261126
     paths:
       - 'alani_site/**'
       - '.github/workflows/alani-web-ci.yml'

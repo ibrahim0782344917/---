@@ -419,97 +419,87 @@ class AlAniSettingsPage extends StatelessWidget {
 }
 
 class AlAniStoreDrawer extends StatelessWidget {
-  const AlAniStoreDrawer({super.key});
+  const AlAniStoreDrawer({super.key, this.onProfile, this.onOrders,
+    this.onWallet, this.onNotifications, this.onExplore});
+  final VoidCallback? onProfile,onOrders,onWallet,onNotifications,onExplore;
+  static const _production=String.fromEnvironment('SUPABASE_URL')=='https://ltwncrewggdrjevakwpb.supabase.co';
+
   void _go(BuildContext context,Widget page) {
     final navigator=Navigator.of(context);
     navigator.pop();
     navigator.push<void>(MaterialPageRoute(builder:(_)=>page));
   }
+  void _action(BuildContext context,VoidCallback callback) {
+    Navigator.of(context).pop();
+    callback();
+  }
+
+  Widget _heading(BuildContext context,String text)=>Padding(
+    padding:const EdgeInsets.fromLTRB(18,14,18,4),
+    child:Text(text,style:Theme.of(context).textTheme.labelLarge?.copyWith(
+      color:Theme.of(context).colorScheme.primary,fontWeight:FontWeight.w800)));
+  Widget _item(BuildContext context,String title,IconData icon,VoidCallback onTap,
+    {String? subtitle})=>ListTile(
+      contentPadding:const EdgeInsets.symmetric(horizontal:16,vertical:1),
+      leading:Icon(icon),title:Text(title,style:const TextStyle(fontWeight:FontWeight.w600)),
+      subtitle:subtitle==null?null:Text(subtitle,maxLines:2),
+      trailing:const Icon(Icons.chevron_left,size:18),onTap:onTap);
+
   @override
-  Widget build(BuildContext context)=>Drawer(
-    child:SafeArea(child:ListView(children:[
-      const DrawerHeader(
-        decoration:BoxDecoration(color:Color(0xFFE5F9EB)),
-        child:Row(children:[
-          Icon(Icons.eco,color:_green,size:38),
-          SizedBox(width:12),
-          Expanded(child:Column(
-            mainAxisAlignment:MainAxisAlignment.center,
-            crossAxisAlignment:CrossAxisAlignment.start,
-            children:[
-              Text('السيد إبراهيم العاني',maxLines:2,
-                style:TextStyle(fontWeight:FontWeight.w900,
-                  fontSize:17,color:_ink)),
-              SizedBox(height:5),
-              Text('الزيوت والأعشاب الطبيعية — بغداد',
-                maxLines:2,overflow:TextOverflow.ellipsis,
-                style:TextStyle(color:_ink,fontSize:11)),
+  Widget build(BuildContext context){
+    final scheme=Theme.of(context).colorScheme;
+    return Drawer(
+      backgroundColor:scheme.surface,
+      shape:const RoundedRectangleBorder(borderRadius:BorderRadiusDirectional.horizontal(end:Radius.circular(24))),
+      child:SafeArea(child:ListView(padding:const EdgeInsets.fromLTRB(10,8,10,20),children:[
+        Container(
+          padding:const EdgeInsets.all(18),
+          decoration:BoxDecoration(
+            gradient:const LinearGradient(colors:[Color(0xFF17372B),Color(0xFF17583D)]),
+            borderRadius:BorderRadius.circular(22)),
+          child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
+            const CircleAvatar(backgroundColor:Color(0xFFEBD6A0),radius:24,
+              child:Icon(Icons.eco_outlined,color:Color(0xFF17583D),size:27)),
+            const SizedBox(height:12),
+            const Text('السيد إبراهيم العاني',style:TextStyle(color:Colors.white,fontSize:19,fontWeight:FontWeight.w900)),
+            const Text('عسل • زيوت • أعشاب',style:TextStyle(color:Colors.white70)),
+            if(onProfile!=null) ...[
+              const SizedBox(height:12),
+              OutlinedButton.icon(
+                style:OutlinedButton.styleFrom(foregroundColor:Colors.white,side:const BorderSide(color:Colors.white54)),
+                onPressed:()=>_action(context,onProfile!),
+                icon:const Icon(Icons.person_outline),
+                label:const Text('حسابي وتسجيل الدخول')),
             ],
-          )),
-        ]),
-      ),
-      ListTile(leading:const Icon(Icons.home_outlined),
-        title:const Text('صفحة الترحيب'),
-        onTap:()=>_go(context,const AlAniWelcomePage())),
-      ListTile(leading:const Icon(Icons.local_offer_outlined),
-        title:const Text('عروض لفترة محدودة'),
-        onTap:()=>_go(context,const AlAniOffersPage())),
-      ListTile(leading:const Icon(Icons.info_outline),
-        title:const Text('من نحن'),
-        onTap:()=>_go(context,const AlAniInfoPage(type:'about'))),
-      ListTile(leading:const Icon(Icons.payments_outlined),
-        title:const Text('الدفع عند الاستلام والتوصيل'),
-        onTap:()=>_go(context,const AlAniInfoPage(type:'payments'))),
-      ListTile(leading:const Icon(Icons.assignment_return_outlined),
-        title:const Text('سياسة الاسترجاع'),
-        onTap:()=>_go(context,const AlAniInfoPage(type:'returns'))),
-      ListTile(leading:const Icon(Icons.add_box_outlined),
-        title:const Text('التعويض عن الكسر'),
-        onTap:()=>_go(context,const AlAniInfoPage(type:'damaged'))),
-      ListTile(leading:const Icon(Icons.receipt_long_outlined),
-        title:const Text('طلب استرجاع'),
-        onTap:()=>_go(context,const AlAniReturnPage())),
-      ListTile(leading:const Icon(Icons.account_balance_wallet_outlined),
-        title:const Text('محفظتي وإثباتات التحويل'),
-        onTap:()=>_go(context,const AlAniWalletPage())),
-      if (const String.fromEnvironment('SUPABASE_URL')=='https://ltwncrewggdrjevakwpb.supabase.co')
-        ListTile(leading:const Icon(Icons.favorite_border),
-          title:const Text('مفضلتي وتنبيهات المنتجات'),
-          onTap:()=>_go(context,const AlAniProductionFavoritesPage())),
-      if (const String.fromEnvironment('SUPABASE_URL')=='https://ltwncrewggdrjevakwpb.supabase.co')
-        ListTile(leading:const Icon(Icons.notifications_active_outlined),
-          title:const Text('مركز الإشعارات'),
-          onTap:()=>_go(context,const AlAniOrderNotificationsPage())),
-      if (const String.fromEnvironment('SUPABASE_URL')=='https://ltwncrewggdrjevakwpb.supabase.co')
-        ListTile(leading:const Icon(Icons.notifications_outlined),
-          title:const Text('تفضيلات الإشعارات'),
-          onTap:()=>_go(context,const AlAniNotificationPreferencesPage())),
-      if (AlAniFcmPilot.configured)
-        ListTile(leading:const Icon(Icons.notifications_outlined),
-          title:const Text('إشعارات Firebase'),
-          onTap:()=>_go(context,const AlAniFcmSettingsPage())),
-      if (AlAniSupportFeature.enabled)
-        ListTile(leading:const Icon(Icons.chat_bubble_outline),
-          title:const Text('دردشة خاصة مع المتجر'),
-          onTap:()=>_go(context,const AlAniCustomerSupportPage())),
-      ListTile(leading:const Icon(Icons.help_outline),
-        title:const Text('الأسئلة الشائعة'),
-        onTap:()=>_go(context,const AlAniHelpCenterPage())),
-      ListTile(leading:const Icon(Icons.settings_outlined),
-        title:const Text('الإعدادات'),
-        onTap:()=>_go(context,const AlAniSettingsPage())),
-      ListTile(leading:const Icon(Icons.privacy_tip_outlined),
-        title:const Text('سياسة الخصوصية'),
-        onTap:()=>_go(context,const AlAniInfoPage(type:'privacy'))),
-      ListTile(leading:const Icon(Icons.gavel_outlined),
-        title:const Text('الشروط والأحكام'),
-        onTap:()=>_go(context,const AlAniInfoPage(type:'terms'))),
-      const Divider(),
-      const Padding(padding:EdgeInsets.all(14),
-        child:Text('حقوق المستهلك في العراق محفوظة. '
-          'لا يعتبر المحتوى العشبي نصيحة طبية.',
-          textAlign:TextAlign.center,
-          style:TextStyle(color:Colors.black54,fontSize:11))),
-    ])),
-  );
+          ]),
+        ),
+        _heading(context,'التسوق والحساب'),
+        if(onOrders!=null)_item(context,'طلباتي',Icons.receipt_long_outlined,()=>_action(context,onOrders!)),
+        _item(context,'عروض لفترة محدودة',Icons.local_offer_outlined,()=>_go(context,const AlAniOffersPage())),
+        if(_production)_item(context,'المفضلة وتنبيهات المنتجات',Icons.favorite_border,()=>_go(context,const AlAniProductionFavoritesPage())),
+        if(onWallet!=null)_item(context,'محفظتي',Icons.account_balance_wallet_outlined,()=>_action(context,onWallet!)),
+        if(_production&&onNotifications!=null)_item(context,'مركز الإشعارات',Icons.notifications_none_rounded,()=>_action(context,onNotifications!)),
+        if(onExplore!=null)_item(context,'استكشف المحتوى والفرع',Icons.explore_outlined,()=>_action(context,onExplore!)),
+        const Divider(),
+        _heading(context,'خدمة الزبائن'),
+        if(AlAniSupportFeature.enabled)_item(context,'دردشة مع المتجر',Icons.chat_bubble_outline,()=>_go(context,const AlAniCustomerSupportPage())),
+        _item(context,'طلب استرجاع أو تعويض',Icons.assignment_return_outlined,()=>_go(context,const AlAniReturnPage())),
+        _item(context,'الدفع والتوصيل',Icons.local_shipping_outlined,()=>_go(context,const AlAniInfoPage(type:'payments'))),
+        _item(context,'سياسة الاسترجاع',Icons.policy_outlined,()=>_go(context,const AlAniInfoPage(type:'returns'))),
+        _item(context,'التعويض عن الكسر',Icons.inventory_2_outlined,()=>_go(context,const AlAniInfoPage(type:'damaged'))),
+        _item(context,'الأسئلة الشائعة',Icons.help_outline,()=>_go(context,const AlAniHelpCenterPage())),
+        const Divider(),
+        _heading(context,'الإعدادات والخصوصية'),
+        _item(context,'الإعدادات',Icons.settings_outlined,()=>_go(context,const AlAniSettingsPage())),
+        if(_production)_item(context,'تفضيلات الإشعارات',Icons.tune_rounded,()=>_go(context,const AlAniNotificationPreferencesPage())),
+        if(AlAniFcmPilot.configured)_item(context,'إشعارات Firebase',Icons.notifications_active_outlined,()=>_go(context,const AlAniFcmSettingsPage())),
+        _item(context,'سياسة الخصوصية',Icons.privacy_tip_outlined,()=>_go(context,const AlAniInfoPage(type:'privacy'))),
+        _item(context,'الشروط والأحكام',Icons.gavel_outlined,()=>_go(context,const AlAniInfoPage(type:'terms'))),
+        _item(context,'من نحن',Icons.info_outline,()=>_go(context,const AlAniInfoPage(type:'about'))),
+        const SizedBox(height:8),
+        Padding(padding:const EdgeInsets.all(12),child:Text('السيد إبراهيم العاني • بغداد\nلا يعتبر المحتوى العشبي نصيحة طبية.',
+          textAlign:TextAlign.center,style:TextStyle(color:scheme.onSurfaceVariant,fontSize:11))),
+      ])),
+    );
+  }
 }

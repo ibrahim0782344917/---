@@ -8,7 +8,7 @@
   },
   "scripts": {
     "start": "node server.js",
-    "check": "node --check server.js && node --check public/site.js && node --check public/admin.js && node --check public/info.js && node --check public/menu.js && node --check public/offers.js",
+    "check": "node --check server.js && node --check public/site.js && node --check public/admin.js && node --check public/info.js && node --check public/menu.js && node --check public/offers.js && node --check public/delete-account.js",
     "test": "node --test"
   }
 }

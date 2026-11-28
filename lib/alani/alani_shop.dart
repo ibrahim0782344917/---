@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'alani_customer_extras.dart';
 import 'alani_order_updates.dart';
+import 'alani_wallet_page.dart';
+import 'alani_production_favorites_page.dart';
 import 'package:shitreed_customer/alani/alani_social.dart';
 import 'package:shitreed_customer/alani/alani_content.dart';
 import 'package:shitreed_customer/alani/alani_editor.dart';
@@ -35,6 +37,14 @@ class _ProfileAppBar extends StatelessWidget implements PreferredSizeWidget {
   Widget build(BuildContext context) => AppBar(
     title: const Text('حسابي وبروفايلي'),
   );
+}
+
+/// Persistent tabs plus a cart action that does not change the active tab.
+abstract final class AlAniShopNavigation {
+  static int selectedIndex(int tab) => tab >= 3 ? 3 : tab;
+  static int? tabFor(int destination) => switch (destination) {
+    0 => 0, 1 => 1, 2 => 2, 3 => 4, _ => null,
+  };
 }
 
 class AlAniShopHome extends StatefulWidget {
@@ -101,8 +111,16 @@ class _AlAniShopHomeState extends State<AlAniShopHome> {
     if (mounted) setState(() => _canEdit = AlAniEditorService.isOwner());
   }
 
-  Future<void> _openAccountFeature(Widget page) async {
-    if (!AlAniCustomerExtras.enabled) return;
+  static const _production = String.fromEnvironment('SUPABASE_URL') ==
+      'https://ltwncrewggdrjevakwpb.supabase.co';
+
+  Future<void> _openAccountFeature(Widget page, {bool production = false}) async {
+    if (!MarketplaceBackend.configured ||
+        (production ? !_production : !AlAniCustomerExtras.enabled)) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+        content: Text('هذه الخدمة غير متاحة في هذا الإصدار.')));
+      return;
+    }
     if (MarketplaceBackend.currentUser == null) {
       await Navigator.of(context).push<bool>(MaterialPageRoute(
         builder: (_) => const CustomerAuthPage(),
@@ -110,6 +128,7 @@ class _AlAniShopHomeState extends State<AlAniShopHome> {
     }
     if (!mounted || MarketplaceBackend.currentUser == null) return;
     await Navigator.of(context).push<void>(MaterialPageRoute(builder: (_) => page));
+    if (mounted) setState(() => _canEdit = AlAniEditorService.isOwner());
   }
 
   Widget _quickAction(String label, IconData icon, VoidCallback onTap) =>
@@ -146,12 +165,22 @@ class _AlAniShopHomeState extends State<AlAniShopHome> {
 
   void _selectNavigation(int value) {
     ScaffoldMessenger.of(context).hideCurrentSnackBar();
-    if (value == 2) {
-      _openContentHub();
-    } else {
-      setState(() => _tab = value == 3 ? 2 : value == 4 ? 4 : value);
+    if (value == 4) {
+      _openCart();
+      return;
     }
+    final next = AlAniShopNavigation.tabFor(value);
+    if (next != null) setState(() => _tab = next);
   }
+
+  Widget _cartIcon({bool selected = false}) => AnimatedBuilder(
+    animation: CommerceCart.instance,
+    builder: (_, __) {
+      final count = CommerceCart.instance.count;
+      final icon = Icon(selected ? Icons.shopping_bag : Icons.shopping_bag_outlined);
+      return count > 0 ? Badge.count(count: count, child: icon) : icon;
+    },
+  );
 
   Future<void> _openContentHub() async {
     await showModalBottomSheet<void>(
@@ -234,100 +263,71 @@ class _AlAniShopHomeState extends State<AlAniShopHome> {
   @override
   Widget build(BuildContext context) {
     final wide = MediaQuery.sizeOf(context).width >= 900;
-    final compact = MediaQuery.sizeOf(context).width < 480;
+    final scheme = Theme.of(context).colorScheme;
     return Theme(
       data: Theme.of(context),
       child: Scaffold(
         backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-        drawer: const AlAniStoreDrawer(),
+        drawer: AlAniStoreDrawer(
+          onProfile: _openProfile,
+          onOrders: _showOrders,
+          onWallet: () => _openAccountFeature(const AlAniWalletPage(), production: true),
+          onNotifications: () => _openAccountFeature(const AlAniOrderNotificationsPage(), production: true),
+          onExplore: _openContentHub,
+        ),
         appBar: AppBar(
-          titleSpacing: 12,
-          title: const Column(
+          toolbarHeight: 74,
+          titleSpacing: 0,
+          leading: Builder(builder: (ctx) => IconButton(
+            tooltip: 'القائمة الجانبية',
+            icon: const Icon(Icons.menu_rounded),
+            onPressed: () => Scaffold.of(ctx).openDrawer(),
+          )),
+          title: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Text(AlAniSettings.title, style: TextStyle(
-                fontSize: 18, fontWeight: FontWeight.w900,
-              )),
-              Text('متجر المنتجات الطبيعية', style: TextStyle(fontSize: 11)),
+              Text(AlAniSettings.title, maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(fontSize: 17, fontWeight: FontWeight.w900, color: scheme.onSurface)),
+              Text('متجر المنتجات الطبيعية', maxLines: 1, overflow: TextOverflow.ellipsis,
+                style: TextStyle(fontSize: 11, color: scheme.onSurfaceVariant)),
             ],
           ),
           actions: [
-            if (!compact) FutureBuilder<bool>(
-              future: _canEdit,
-              builder: (context, snapshot) => snapshot.data == true
-                ? IconButton(
-                    tooltip: 'إدارة الفيديوهات والمدونة',
-                    icon: const Icon(Icons.edit_note_outlined),
-                    onPressed: () async {
-                      await Navigator.of(context).push<void>(MaterialPageRoute(
-                        builder: (_) => const AlAniEditorPage(),
-                      ));
-                      if (mounted) await _refresh();
-                    },
-                  )
-                : const SizedBox.shrink(),
-            ),
-            if (!compact) IconButton(
-              tooltip: 'خرائط Google',
-              onPressed: () => Navigator.of(context).push<void>(
-                MaterialPageRoute(builder: (_) => const AlAniBranchPage()),
-              ),
-              icon: const Icon(Icons.map_outlined),
-            ),
-            if (!compact) IconButton(
-              tooltip: 'طلباتي',
-              onPressed: _showOrders,
-              icon: const Icon(Icons.receipt_long_outlined),
+            IconButton(
+              tooltip: 'محفظتي',
+              onPressed: () => _openAccountFeature(const AlAniWalletPage(), production: true),
+              icon: const Icon(Icons.account_balance_wallet_outlined),
             ),
             IconButton(
-              tooltip: 'حسابي والأعضاء',
-              onPressed: _openProfile,
-              icon: const CircleAvatar(radius: 17,
-                child: Icon(Icons.person_outline, size: 21)),
+              tooltip: 'الإشعارات',
+              onPressed: () => _openAccountFeature(const AlAniOrderNotificationsPage(), production: true),
+              icon: const Icon(Icons.notifications_none_rounded),
             ),
-            IconButton(
-              tooltip: 'سلة مشترياتي',
-              onPressed: _openCart,
-              icon: AnimatedBuilder(
-                animation: CommerceCart.instance,
-                builder: (_, __) {
-                  final count = CommerceCart.instance.count;
-                  return count > 0
-                    ? Badge.count(count: count,
-                        child: const Icon(Icons.shopping_cart_outlined))
-                    : const Icon(Icons.shopping_cart_outlined);
-                },
-              ),
-            ),
+            const SizedBox(width: 4),
           ],
+          bottom: PreferredSize(
+            preferredSize: const Size.fromHeight(1),
+            child: Divider(height: 1, color: scheme.outlineVariant),
+          ),
         ),
         body: SafeArea(
           child: Row(children: [
             if (wide) NavigationRail(
-              selectedIndex: _tab == 2 ? 3 : _tab >= 3 ? 4 : _tab,
+              selectedIndex: AlAniShopNavigation.selectedIndex(_tab),
               labelType: NavigationRailLabelType.all,
               onDestinationSelected: _selectNavigation,
-              destinations: const [
-                NavigationRailDestination(
-                  icon: Icon(Icons.home_outlined),
-                  selectedIcon: Icon(Icons.home),
-                  label: Text('الرئيسية')),
-                NavigationRailDestination(
-                  icon: Icon(Icons.storefront_outlined),
-                  selectedIcon: Icon(Icons.storefront),
-                  label: Text('المتجر')),
-                NavigationRailDestination(
-                  icon: Icon(Icons.add_circle_outline),
-                  selectedIcon: Icon(Icons.add_circle),
-                  label: Text('المزيد +')),
-                NavigationRailDestination(
-                  icon: Icon(Icons.play_circle_outline),
-                  selectedIcon: Icon(Icons.play_circle),
-                  label: Text('الفيديوهات')),
-                NavigationRailDestination(
-                  icon: Icon(Icons.article_outlined),
-                  selectedIcon: Icon(Icons.article),
-                  label: Text('المنشورات')),
+              destinations: [
+                const NavigationRailDestination(
+                  icon: Icon(Icons.home_outlined), selectedIcon: Icon(Icons.home_rounded), label: Text('الرئيسية')),
+                const NavigationRailDestination(
+                  icon: Icon(Icons.storefront_outlined), selectedIcon: Icon(Icons.storefront), label: Text('المتجر')),
+                const NavigationRailDestination(
+                  icon: Icon(Icons.play_circle_outline), selectedIcon: Icon(Icons.play_circle_filled), label: Text('الفيديوهات')),
+                const NavigationRailDestination(
+                  icon: Icon(Icons.article_outlined), selectedIcon: Icon(Icons.article), label: Text('المنشورات')),
+                NavigationRailDestination(icon: _cartIcon(), label: const Text('السلة')),
               ],
             ),
             Expanded(child: Align(
@@ -349,26 +349,29 @@ class _AlAniShopHomeState extends State<AlAniShopHome> {
             )),
           ]),
         ),
-        bottomNavigationBar: wide ? null : NavigationBar(
-          selectedIndex: _tab == 2 ? 3 : _tab >= 3 ? 4 : _tab,
-          onDestinationSelected: _selectNavigation,
-          destinations: const [
-            NavigationDestination(
-              icon: Icon(Icons.home_outlined),
-              selectedIcon: Icon(Icons.home), label: 'الرئيسية'),
-            NavigationDestination(
-              icon: Icon(Icons.storefront_outlined),
-              selectedIcon: Icon(Icons.storefront), label: 'المتجر'),
-            NavigationDestination(
-              icon: Icon(Icons.add_circle_rounded, size: 32),
-              label: 'المزيد +'),
-            NavigationDestination(
-              icon: Icon(Icons.play_circle_outline),
-              selectedIcon: Icon(Icons.play_circle), label: 'الفيديوهات'),
-            NavigationDestination(
-              icon: Icon(Icons.article_outlined),
-              selectedIcon: Icon(Icons.article), label: 'المنشورات'),
-          ],
+        bottomNavigationBar: wide ? null : DecoratedBox(
+          decoration: BoxDecoration(
+            color: scheme.surface,
+            border: Border(top: BorderSide(color: scheme.outlineVariant)),
+          ),
+          child: NavigationBar(
+            height: 72,
+            backgroundColor: scheme.surface,
+            indicatorColor: scheme.primaryContainer,
+            selectedIndex: AlAniShopNavigation.selectedIndex(_tab),
+            onDestinationSelected: _selectNavigation,
+            destinations: [
+              const NavigationDestination(icon: Icon(Icons.home_outlined),
+                selectedIcon: Icon(Icons.home_rounded), label: 'الرئيسية'),
+              const NavigationDestination(icon: Icon(Icons.storefront_outlined),
+                selectedIcon: Icon(Icons.storefront), label: 'المتجر'),
+              const NavigationDestination(icon: Icon(Icons.play_circle_outline),
+                selectedIcon: Icon(Icons.play_circle_filled), label: 'فيديوهات'),
+              const NavigationDestination(icon: Icon(Icons.article_outlined),
+                selectedIcon: Icon(Icons.article), label: 'منشورات'),
+              NavigationDestination(icon: _cartIcon(), selectedIcon: _cartIcon(selected: true), label: 'السلة'),
+            ],
+          ),
         ),
       ),
     );
@@ -391,7 +394,7 @@ class _AlAniShopHomeState extends State<AlAniShopHome> {
             children: [
               const Icon(Icons.eco_outlined, color: _gold, size: 38),
               const SizedBox(height: 12),
-              const Text('من الطبيعة إلى بيتك',
+              const Text('اختيارات طبيعية لكل بيت',
                 style: TextStyle(fontWeight: FontWeight.w900,
                     color: Colors.white, fontSize: 26)),
               const SizedBox(height: 7),
@@ -409,12 +412,23 @@ class _AlAniShopHomeState extends State<AlAniShopHome> {
             ],
           ),
         ),
-        const SizedBox(height: 20),
-        _heading('اختصارات التسوق'),
+        const SizedBox(height: 12),
+        Card(child: ListTile(
+          leading: const Icon(Icons.search_rounded),
+          title: const Text('ابحث عن زيت، عسل، أعشاب...'),
+          trailing: const Icon(Icons.chevron_left),
+          onTap: () => setState(() => _tab = 1),
+        )),
+        const SizedBox(height: 12),
+        _heading('وصول سريع'),
         const SizedBox(height: 8),
         Wrap(spacing: 8, runSpacing: 8, children: [
           _quickAction('طلباتي', Icons.receipt_long_outlined, _showOrders),
-          _quickAction('السلة', Icons.shopping_cart_outlined, _openCart),
+          _quickAction('حسابي', Icons.person_outline, _openProfile),
+          _quickAction('استكشف', Icons.explore_outlined, _openContentHub),
+          if (_production)
+            _quickAction('المفضلة', Icons.favorite_border,
+              () => _openAccountFeature(const AlAniProductionFavoritesPage(), production: true)),
           if (AlAniCustomerExtras.enabled) ...[
             _quickAction('المفضلة والمكافآت', Icons.favorite_border,
               () => _openAccountFeature(const AlAniCustomerExtrasPage())),

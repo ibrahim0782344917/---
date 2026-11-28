@@ -4,6 +4,9 @@ on:
     branches: [release/alani-production-candidate-20261126]
     paths:
       - '.github/workflows/alani-customer-live-pilot.yml'
+      - 'lib/alani/alani_shop.dart'
+      - 'lib/alani/alani_pages.dart'
+      - 'test/alani_shop_navigation_test.dart'
   workflow_dispatch:
 permissions:
   contents: read
