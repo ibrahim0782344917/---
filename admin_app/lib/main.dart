@@ -5,6 +5,7 @@ import 'alani_design_system.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'admin_api.dart';
 import 'admin_mfa_page.dart';
+import 'admin_deletion_review_page.dart';
 import 'admin_pro_features.dart';
 import 'admin_ranks_levels_page.dart';
 import 'alani_store_admin_page.dart';
@@ -882,6 +883,16 @@ class _AdminHomeState extends State<AdminHome> {
               ),
             ],
             if(widget.role=='super_admin') ...[
+              if (AdminApi.url == AdminMfaPolicy.productionUrl)
+                ListTile(
+                  leading:const Icon(Icons.person_remove_outlined,color:Colors.white70),
+                  title:const Text('طلبات حذف الحساب',style:TextStyle(color:Colors.white)),
+                  onTap:(){
+                    Navigator.pop(context);
+                    Navigator.push(context,MaterialPageRoute<void>(
+                      builder:(_)=>const AdminDeletionReviewPage()));
+                  },
+                ),
               ListTile(
                 leading:const Icon(Icons.fact_check_outlined,color:Colors.white70),
                 title:const Text('جاهزية أنظمة الإنتاج',style:TextStyle(color:Colors.white)),
@@ -940,6 +951,9 @@ class _AdminHomeState extends State<AdminHome> {
       appBar: AppBar(
         title: const Text('السيد إبراهيم العاني | الإدارة', maxLines: 1, overflow: TextOverflow.ellipsis),
         actions: [
+          if (!narrow && widget.role=='super_admin' && AdminApi.url == AdminMfaPolicy.productionUrl)
+            IconButton(tooltip:'طلبات حذف الحساب',icon:const Icon(Icons.person_remove_outlined),
+              onPressed:()=>Navigator.of(context).push<void>(MaterialPageRoute(builder:(_)=>const AdminDeletionReviewPage()))),
           if (!narrow && widget.role=='super_admin' && AlAniBusinessAdminPage.enabled)
             IconButton(tooltip:'التقارير التجارية — TEST',icon:const Icon(Icons.receipt_long_outlined),onPressed:()=>Navigator.of(context).push<void>(MaterialPageRoute(builder:(_)=>const AlAniBusinessAdminPage()))),
           if (!narrow && widget.role=='super_admin' &&
