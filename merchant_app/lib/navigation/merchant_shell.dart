@@ -13,25 +13,32 @@ import 'package:shitreed_merchant/delivery/alani_delivery_page.dart';
 import 'package:shitreed_merchant/shared/merchant_widgets.dart';
 
 class MerchantShellPage extends StatefulWidget {
-  const MerchantShellPage({super.key});
+  const MerchantShellPage({super.key, this.pageBuilder});
+  final Widget Function(int index, ValueChanged<int> navigate)? pageBuilder;
   @override
   State<MerchantShellPage> createState()=>_MerchantShellPageState();
 }
 
 class _MerchantShellPageState extends State<MerchantShellPage> {
   int _tab=0;
-  void _navigate(int index) => setState(() => _tab = index);
+  void _navigate(int index) {
+    if (!mounted || index == _tab || index < 0 || index > 4) return;
+    setState(() { _tab = index; });
+  }
 
   @override
   Widget build(BuildContext context) {
     final wide = MediaQuery.sizeOf(context).width >= 900;
-    final content = IndexedStack(index: _tab, children: [
-      MerchantOverviewPage(onNavigate: _navigate),
-      const MerchantDashboardPage(),
-      const MerchantResourceIndexPage(products: true),
-      const MerchantResourceIndexPage(products: false),
-      const MerchantAccountPage(),
-    ]);
+    // Mount only the active tab: hidden Scaffolds and drawers must not
+    // participate in route transitions or keep stale account loaders alive.
+    final page = widget.pageBuilder?.call(_tab, _navigate) ?? switch (_tab) {
+      0 => MerchantOverviewPage(onNavigate: _navigate),
+      1 => const MerchantDashboardPage(),
+      2 => const MerchantResourceIndexPage(products: true),
+      3 => const MerchantResourceIndexPage(products: false),
+      _ => const MerchantAccountPage(),
+    };
+    final content = KeyedSubtree(key: ValueKey(_tab), child: page);
     return Scaffold(
       body: SafeArea(
         child: Row(children: [
@@ -90,6 +97,20 @@ class MerchantOverviewPage extends StatefulWidget {
 
 class _MerchantOverviewPageState extends State<MerchantOverviewPage> {
   late Future<MerchantReport> _report;
+  final _scaffoldKey = GlobalKey<ScaffoldState>();
+  VoidCallback? _afterDrawer;
+  void _closeDrawerThen(VoidCallback action) {
+    _afterDrawer = action;
+    _scaffoldKey.currentState?.closeDrawer();
+  }
+  void _drawerChanged(bool opened) {
+    if (opened) return;
+    final action = _afterDrawer;
+    _afterDrawer = null;
+    if (action != null) WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) action();
+    });
+  }
   @override
   void initState(){super.initState();_report=loadMerchantReport();}
   Future<void> _refresh() async {
@@ -135,6 +156,8 @@ class _MerchantOverviewPageState extends State<MerchantOverviewPage> {
 
   @override
   Widget build(BuildContext context)=>Scaffold(
+    key: _scaffoldKey,
+    onDrawerChanged: _drawerChanged,
     drawer:Drawer(
       child:SafeArea(child:ListView(children:[
         const DrawerHeader(
@@ -152,29 +175,27 @@ class _MerchantOverviewPageState extends State<MerchantOverviewPage> {
         ListTile(leading:const Icon(Icons.admin_panel_settings_outlined),
           title:const Text('مركز إدارة المتاجر'),
           onTap:(){
-            Navigator.of(context).pop();
-            Navigator.of(context).push(MaterialPageRoute<void>(
-              builder:(_)=>const MerchantControlCenter()));
+            _closeDrawerThen(() => Navigator.of(context).push(MaterialPageRoute<void>(
+              builder:(_)=>const MerchantControlCenter())));
           }),
         ListTile(leading:const Icon(Icons.storefront_outlined),
           title:const Text('متاجري'),
-          onTap:(){Navigator.of(context).pop();widget.onNavigate(1);}),
+          onTap:()=>_closeDrawerThen(()=>widget.onNavigate(1))),
         ListTile(leading:const Icon(Icons.inventory_2_outlined),
           title:const Text('المنتجات والمخزون'),
-          onTap:(){Navigator.of(context).pop();widget.onNavigate(2);}),
+          onTap:()=>_closeDrawerThen(()=>widget.onNavigate(2))),
         ListTile(leading:const Icon(Icons.receipt_long_outlined),
           title:const Text('الطلبات'),
-          onTap:(){Navigator.of(context).pop();widget.onNavigate(3);}),
+          onTap:()=>_closeDrawerThen(()=>widget.onNavigate(3))),
         ListTile(leading:const Icon(Icons.assessment_outlined),
           title:const Text('تقارير المبيعات'),
           onTap:(){
-            Navigator.of(context).pop();
-            Navigator.of(context).push(MaterialPageRoute<void>(
-              builder:(_)=>const MerchantReportsPage()));
+            _closeDrawerThen(() => Navigator.of(context).push(MaterialPageRoute<void>(
+              builder:(_)=>const MerchantReportsPage())));
           }),
         ListTile(leading:const Icon(Icons.person_outline),
           title:const Text('حسابي والبروفايل والدعم'),
-          onTap:(){Navigator.of(context).pop();widget.onNavigate(4);}),
+          onTap:()=>_closeDrawerThen(()=>widget.onNavigate(4))),
       ])),
     ),
     appBar:AppBar(title:const Text('الرئيسية • العاني')),

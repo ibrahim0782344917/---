@@ -44,7 +44,7 @@ class MerchantAuthGate extends StatefulWidget {
 
 class _MerchantAuthGateState extends State<MerchantAuthGate> {
   StreamSubscription<AuthState>? _authSubscription;
-  bool _signedIn = MarketplaceBackend.currentUser != null;
+  String? _actor = MarketplaceBackend.currentUser?.id;
 
   @override
   void initState() {
@@ -52,11 +52,16 @@ class _MerchantAuthGateState extends State<MerchantAuthGate> {
     if (MarketplaceBackend.configured) {
       _authSubscription = Supabase.instance.client.auth.onAuthStateChange
           .listen((event) {
-        if (!mounted) return;
-        setState(() => _signedIn =
-          Supabase.instance.client.auth.currentUser != null);
+        _syncActor();
       });
     }
+  }
+
+  void _syncActor() {
+    if (!mounted) return;
+    final next = MarketplaceBackend.currentUser?.id;
+    if (next == _actor) return;
+    setState(() { _actor = next; });
   }
 
   @override
@@ -79,11 +84,10 @@ class _MerchantAuthGateState extends State<MerchantAuthGate> {
         )),
       ));
     }
-    return _signedIn
-        ? const MerchantShellPage()
-        : MerchantLoginPage(onSuccess: () {
-            if (mounted) setState(() => _signedIn = true);
-          });
+    final actor = _actor;
+    return actor != null
+        ? MerchantShellPage(key: ValueKey(actor))
+        : MerchantLoginPage(onSuccess: _syncActor);
   }
 }
 

@@ -99,7 +99,7 @@ class _MerchantDashboardPageState extends State<MerchantDashboardPage> {
       onPressed: () async {
         final added = await Navigator.of(context).push<bool>(
           MaterialPageRoute(builder: (_) => const MerchantRegistrationPage()));
-        if (added == true) _refresh();
+        if (added == true && mounted) _refresh();
       },
       label: const Text('إضافة متجري'),
       icon: const Icon(Icons.add_business),
@@ -574,7 +574,11 @@ class _MerchantNewProductPageState extends State<MerchantNewProductPage> {
 
 class MerchantOrdersPage extends StatefulWidget {
   final String storeId;
-  const MerchantOrdersPage({super.key, required this.storeId});
+  const MerchantOrdersPage({super.key, required this.storeId,
+    this.loadOrders, this.changeStatus, this.merchantUserId});
+  final Future<List<Map<String, dynamic>>> Function(String storeId)? loadOrders;
+  final Future<String> Function(String id, String status)? changeStatus;
+  final String? merchantUserId;
   @override
   State<MerchantOrdersPage> createState() => _MerchantOrdersPageState();
 }
@@ -587,7 +591,7 @@ class _MerchantOrdersPageState extends State<MerchantOrdersPage> {
     _refresh();
   }
   void _refresh() => setState(() {
-    _orders = CommerceService.merchantOrders(widget.storeId);
+    _orders = (widget.loadOrders ?? CommerceService.merchantOrders)(widget.storeId);
   });
 
   String? _changingOrderId;
@@ -597,7 +601,7 @@ class _MerchantOrdersPageState extends State<MerchantOrdersPage> {
     if (_changingOrderId != null) return;
     setState(() => _changingOrderId = id);
     try {
-      await CommerceService.changeOrderStatus(id, status);
+      await (widget.changeStatus ?? CommerceService.changeOrderStatus)(id, status);
       if (mounted) _refresh();
     } catch (error) {
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(
@@ -613,7 +617,7 @@ class _MerchantOrdersPageState extends State<MerchantOrdersPage> {
     final currentStatus = order['status'] as String;
     if (MerchantOrderRules.isSelfPurchase(
       buyerId: order['buyer_id'] as String?,
-      merchantUserId: MarketplaceBackend.currentUser?.id,
+      merchantUserId: widget.merchantUserId ?? MarketplaceBackend.currentUser?.id,
     )) {
       return Padding(
         padding: const EdgeInsets.symmetric(vertical: 9),

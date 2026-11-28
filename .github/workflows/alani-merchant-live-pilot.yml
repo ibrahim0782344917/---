@@ -5,6 +5,10 @@ on:
     paths:
       - '.github/workflows/alani-merchant-live-pilot.yml'
       - 'merchant_app/lib/reports/merchant_reports.dart'
+      - 'merchant_app/lib/main.dart'
+      - 'merchant_app/lib/navigation/merchant_shell.dart'
+      - 'merchant_app/lib/merchant/merchant_dashboard.dart'
+      - 'merchant_app/test/merchant_navigation_order_regression_test.dart'
       - 'merchant_app/lib/profile/shitreed_profile_page.dart'
       - 'merchant_app/test/live_order_report_test.dart'
   workflow_dispatch:
