@@ -33,15 +33,18 @@ class _AlAniDeliveryAdminPageState extends State<AlAniDeliveryAdminPage> {
 
   Future<_DeliverySnapshot> _read() async {
     if (!AlAniDeliveryAdminFeature.enabled) {
-      throw StateError('TEST_ONLY');
+      throw StateError('DELIVERY_DISABLED');
     }
     final db = AdminApi.client;
     final couriers = await db.rpc('alani_list_delivery_couriers') as List;
     final jobs = await db.rpc('alani_owner_delivery_jobs') as List;
-    final ready = await db.from('orders')
-        .select('id,total_iqd,delivery_fee_iqd,status')
-        .eq('store_id', AlAniDeliveryAdminFeature.storeId)
-        .eq('status', 'ready').limit(50);
+    final response = await db.rpc('shitreed_admin_search', params: {
+      'p_section': 'orders', 'p_search': '', 'p_filter': 'ready',
+      'p_limit': 50, 'p_offset': 0,
+    }) as Map;
+    final ready = (response['items'] as List)
+        .map((e) => Map<String, dynamic>.from(e as Map))
+        .where((e) => e['store_id'] == AlAniDeliveryAdminFeature.storeId).toList();
     return _DeliverySnapshot(
       couriers.map((e) => Map<String, dynamic>.from(e)).toList(),
       jobs.map((e) => Map<String, dynamic>.from(e)).toList(),
@@ -171,7 +174,7 @@ class _AlAniDeliveryAdminPageState extends State<AlAniDeliveryAdminPage> {
             future: _current,
             builder: (context,snapshot) {
               if (snapshot.hasError) return const Center(
-                child: Text('صلاحية الإدارة غير كافية أو قاعدة TEST غير متاحة.'));
+                child: Text('صلاحية الإدارة غير كافية أو تعذّر الاتصال بالخادم.'));
               if (!snapshot.hasData) return const Center(
                 child: CircularProgressIndicator());
               final data = snapshot.data!;
@@ -183,7 +186,7 @@ class _AlAniDeliveryAdminPageState extends State<AlAniDeliveryAdminPage> {
                     const Text('توصيل ٥٬٠٠٠ دينار — دفع عند الاستلام',
                       style: TextStyle(fontSize: 18,
                         fontWeight: FontWeight.w900)),
-                    const Text('هذه الصفحة للتجارب، ولا تمثّل إيصالاً '
+                    const Text('هذه الصفحة لإدارة التوصيل، ولا تمثّل إيصالاً '
                       'مالياً أو إثبات تحصيل. بيانات المندوبين محمية.'),
                     const SizedBox(height: 12),
                     FilledButton.icon(onPressed: _busy ? null : _addCourier,

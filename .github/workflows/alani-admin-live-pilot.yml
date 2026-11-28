@@ -69,7 +69,8 @@ jobs:
           flutter build apk --debug \
             --dart-define="SUPABASE_URL=$PRODUCTION_SUPABASE_URL" \
             --dart-define="SUPABASE_PUBLISHABLE_KEY=$PRODUCTION_SUPABASE_PUBLISHABLE_KEY" \
-            --dart-define=ALANI_DELIVERY_WORKFLOW_ENABLED=false \
+            --dart-define=ALANI_DELIVERY_WORKFLOW_ENABLED=true \
+            --dart-define=ALANI_DELIVERY_PRODUCTION_APPROVED=true \
             --dart-define=ALANI_SUPPORT_CHAT_ENABLED=true \
             --dart-define=ALANI_SUPPORT_PRODUCTION_APPROVED=true \
             --dart-define=SHITREED_CAMPAIGNS_ENABLED=false \

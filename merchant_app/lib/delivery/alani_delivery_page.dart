@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 /// Courier permissions and database changes are always enforced by SQL RPCs.
-/// This feature is deliberately disabled in production release builds.
+/// Production requires explicit approval and the server independently verifies each action.
 abstract final class AlAniDeliveryFeature {
   static const storeId = '25091ca2-c0da-416c-b634-81b188ee66be';
   static const enabled =
@@ -93,7 +93,7 @@ class _AlAniDeliveryManagerPageState extends State<AlAniDeliveryManagerPage> {
 
   Future<_DeliveryOverview> _fetch() async {
     if (!AlAniDeliveryFeature.enabled) {
-      throw StateError('DELIVERY_TEST_ONLY');
+      throw StateError('DELIVERY_DISABLED');
     }
     // Each RPC verifies store ownership or the authorized admin role.
     final couriers = await AlAniDeliveryService.approvedCouriers();
@@ -232,7 +232,7 @@ class _AlAniDeliveryManagerPageState extends State<AlAniDeliveryManagerPage> {
         tooltip: 'تحديث', icon: const Icon(Icons.refresh))]),
     body: !AlAniDeliveryFeature.enabled
         ? const Center(child: Text(
-            'إدارة المندوبين قيد الاختبار ولم تُفعّل بالإنتاج.'))
+            'إدارة المندوبين غير مفعّلة في هذا الإصدار.'))
         : FutureBuilder<_DeliveryOverview>(
             future: _overview,
             builder: (context, snapshot) {

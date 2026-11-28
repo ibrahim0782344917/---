@@ -6,6 +6,7 @@ import 'package:shitreed_merchant/reports/merchant_reports.dart';
 import 'package:shitreed_merchant/marketing/merchant_campaigns_page.dart';
 import 'package:shitreed_merchant/support/alani_support_chat.dart';
 import 'package:shitreed_merchant/delivery/alani_delivery_page.dart';
+import 'package:shitreed_merchant/delivery/alani_returns_review_page.dart';
 import 'package:shitreed_merchant/shared/merchant_widgets.dart';
 
 /// Only owner-owned stores are loaded through CommerceService.myStores().
@@ -101,6 +102,9 @@ class _MerchantControlCenterState extends State<MerchantControlCenter> {
             if(isAlAni && AlAniDeliveryFeature.enabled)
               _action('إدارة التوصيل والمندوبين',Icons.delivery_dining,
                 ()=>_open(const AlAniDeliveryManagerPage())),
+            if(isAlAni && AlAniDeliveryFeature.enabled)
+              _action('الاسترجاع والتعويض',Icons.assignment_return_outlined,
+                ()=>_open(const AlAniReturnsReviewPage())),
             if(isAlAni && AlAniSupportFeature.enabled)
               _action('رسائل العملاء',Icons.chat_bubble_outline,
                 ()=>_open(const AlAniSupportInboxPage())),

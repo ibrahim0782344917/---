@@ -12,6 +12,7 @@ import 'alani_support_chat.dart';
 import 'alani_wallet_review_page.dart';
 import 'alani_release_readiness_page.dart';
 import 'alani_delivery_admin_page.dart';
+import 'alani_returns_review_page.dart';
 import 'alani_business_admin_page.dart';
 import 'alani_legacy_customers_import_page.dart';
 
@@ -841,7 +842,7 @@ class _AdminHomeState extends State<AdminHome> {
                 onTap:(){
                   Navigator.pop(context);
                   Navigator.push(context,MaterialPageRoute<void>(
-                    builder:(_)=>const AlAniStoreAdminPage(initialTab:2)));
+                    builder:(_)=>const AlAniReturnsReviewPage()));
                 },
               ),
               if(AlAniSupportFeature.enabled)

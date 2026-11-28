@@ -59,6 +59,8 @@ class _OrderTimelinePageState extends State<OrderTimelinePage> {
   late Future<List<Map<String, dynamic>>> _items;
   late Future<List<Map<String, dynamic>>> _events;
   late Future<Map<String, dynamic>> _statusFuture;
+  late Future<List<Map<String, dynamic>>> _returns;
+  static const _productionDelivery = bool.fromEnvironment('ALANI_DELIVERY_PRODUCTION_APPROVED');
 
   @override
   void initState() {
@@ -68,6 +70,10 @@ class _OrderTimelinePageState extends State<OrderTimelinePage> {
 
   void _load() {
     _items = CommerceService.orderItems(widget.orderId);
+    _returns = _productionDelivery ? Supabase.instance.client.from('alani_return_requests')
+      .select('status,reason,resolution_note,resolution_kind,planned_amount_iqd,planned_outbound_fee_iqd,planned_return_fee_iqd')
+      .eq('order_id',widget.orderId).order('created_at',ascending:false).limit(10)
+      : Future.value(<Map<String,dynamic>>[]);
     _events = CommerceService.orderStatusEvents(widget.orderId);
     _statusFuture = Supabase.instance.client.from('orders')
       .select('status,delivery_fee_iqd,delivered_at,store_id')
@@ -78,7 +84,7 @@ class _OrderTimelinePageState extends State<OrderTimelinePage> {
     setState(() {
       _load();
     });
-    await Future.wait<dynamic>([_items, _events, _statusFuture]);
+    await Future.wait<dynamic>([_items, _events, _statusFuture, _returns]);
   }
 
   @override
@@ -204,11 +210,36 @@ class _OrderTimelinePageState extends State<OrderTimelinePage> {
               ]);
             },
           ),
+          if (_productionDelivery) ...[
+            const SizedBox(height: 16),
+            const Text('طلبات الاسترجاع والتعويض', style: TextStyle(fontWeight:FontWeight.bold)),
+            FutureBuilder<List<Map<String,dynamic>>>(
+              future:_returns,
+              builder:(context,snapshot){
+                if(snapshot.hasError) return const Text('تعذر تحميل طلبات الاسترجاع.');
+                if(!snapshot.hasData) return const LinearProgressIndicator();
+                final rows=snapshot.data!;
+                const labels={'submitted':'تم تقديم الطلب','reviewing':'قيد المراجعة','approved':'مقبول','declined':'مرفوض','resolved':'مغلق'};
+                return Column(children:[
+                  if(rows.isEmpty) const Text('لا توجد طلبات استرجاع لهذا الطلب.'),
+                  for(final row in rows) ListTile(
+                    title:Text(labels[row['status']]??'قيد المتابعة'),
+                    subtitle:Text([
+                      if((row['resolution_note']??'').toString().isNotEmpty) row['resolution_note'].toString(),
+                      if(row['planned_amount_iqd']!=null) 'المبلغ المخطط: ${_iqd(row['planned_amount_iqd'])}',
+                      if(row['planned_return_fee_iqd']!=null) 'رسوم الرجوع المخططة: ${_iqd(row['planned_return_fee_iqd'])}',
+                      'الخطة لا تثبت تنفيذ الدفع.',
+                    ].join('\n')),
+                  ),
+                ]);
+              },
+            ),
+          ],
           const SizedBox(height: 16),
           const Text(
             'الحالات المعروضة تُحدّث من الخادم. إثبات التسليم برمز '
             'الزبون لا يثبت تحصيل المال النقدي. '
-            'اختبار التوصيل الجديد مفعّل فقط في بيئة TEST.',
+            'تُراجع أي تسوية مالية بصورة منفصلة.',
             textAlign: TextAlign.center,
             style: TextStyle(color: Colors.black54, fontSize: 12)),
         ],
