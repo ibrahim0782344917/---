@@ -4,6 +4,7 @@ import 'alani_fcm_pilot.dart';
 import 'alani_design_system.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'admin_api.dart';
+import 'admin_mfa_page.dart';
 import 'admin_pro_features.dart';
 import 'admin_ranks_levels_page.dart';
 import 'alani_store_admin_page.dart';
@@ -60,7 +61,12 @@ class _AdminGateState extends State<AdminGate> {
   void initState() {
     super.initState();
     if (AdminApi.configured) {
-      _subscription = AdminApi.client.auth.onAuthStateChange.listen((_) {
+      _subscription = AdminApi.client.auth.onAuthStateChange.listen((state) {
+        // Keep the one-time enrollment key in memory during normal token refresh.
+        if (state.event == AuthChangeEvent.tokenRefreshed &&
+            role == 'super_admin' && AdminMfaPolicy.requiresSetupOrChallenge) {
+          return;
+        }
         unawaited(checkAccess());
       });
       unawaited(checkAccess());
@@ -139,6 +145,12 @@ class _AdminGateState extends State<AdminGate> {
               child: const Text('تسجيل الخروج')),
           ],
         )),
+      );
+    }
+    if (role == 'super_admin' && AdminMfaPolicy.requiresSetupOrChallenge) {
+      return AdminMfaPage(
+        key: ValueKey(AdminApi.client.auth.currentUser!.id),
+        onVerified: checkAccess,
       );
     }
     return AdminHome(key: ValueKey('${AdminApi.client.auth.currentUser?.id}:$role'), role: role!);
