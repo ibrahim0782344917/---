@@ -1,5 +1,6 @@
 import 'alani_cod_page.dart';
 import 'alani_courier_location_page.dart';
+import 'alani_evidence_page.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -313,6 +314,7 @@ class _AlAniDeliveryManagerPageState extends State<AlAniDeliveryManagerPage> {
                                 : 'استلمه المندوب وهو قيد التوصيل'),
                         trailing: Text('مندوب ${job['courier_id']
                             .toString().substring(0, 8)}'),
+                        onTap: AlAniEvidence.enabled ? ()=>Navigator.of(context).push<void>(MaterialPageRoute(builder:(_)=>AlAniEvidencePage(kind:'delivery',id:job['order_id'].toString()))) : null,
                       )),
                   ],
                 ),
@@ -496,6 +498,8 @@ class _AlAniCourierTasksPageState extends State<AlAniCourierTasksPage> {
                                 icon: const Icon(Icons.location_on_outlined),
                                 label: const Text('مشاركة موقع التوصيل'),
                               ),
+                            if (AlAniEvidence.enabled && task['picked_up_at'] != null)
+                              OutlinedButton.icon(onPressed:_busy?null:()=>Navigator.of(context).push<void>(MaterialPageRoute(builder:(_)=>AlAniEvidencePage(kind:'delivery',id:task['order_id'].toString(),allowUpload:true))),icon:const Icon(Icons.camera_alt_outlined),label:const Text('صورة التسليم الخاصة')),
                             task['picked_up_at'] == null
                                 ? FilledButton.icon(
                                     onPressed: _busy ? null :

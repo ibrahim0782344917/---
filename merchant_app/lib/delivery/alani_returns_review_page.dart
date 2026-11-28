@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'alani_evidence_page.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 /// The server validates the signed-in actor, store ownership and status.
@@ -86,6 +87,7 @@ class _AlAniReturnsReviewPageState extends State<AlAniReturnsReviewPage> {
           Text('طلب: ${row['order_id']}',style:const TextStyle(fontWeight:FontWeight.bold)),
           Text(labels[row['status']]??'غير معروف'),
           Text(row['details']?.toString()??''),
+          if(AlAniEvidence.enabled)TextButton.icon(onPressed:()=>Navigator.of(context).push<void>(MaterialPageRoute(builder:(_)=>AlAniEvidencePage(kind:'return',id:row['id'].toString()))),icon:const Icon(Icons.photo_outlined),label:const Text('عرض صورة الإثبات الخاصة')),
           if(row['resolution_kind']!=null)Text('الخطة: ${kinds[row['resolution_kind']]??''} • ${row['planned_amount_iqd']} د.ع'),
           Wrap(spacing:8,children:[
             if(row['status']=='submitted')OutlinedButton(onPressed:busy?null:()=>review(row,'reviewing'),child:const Text('بدء المراجعة')),

@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:shitreed_customer/alani/alani_customer_extras.dart';
 import 'package:shitreed_customer/alani/alani_order_updates.dart';
+import 'package:shitreed_customer/alani/alani_evidence_page.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:shitreed_customer/commerce/commerce_service.dart';
 
@@ -71,7 +72,7 @@ class _OrderTimelinePageState extends State<OrderTimelinePage> {
   void _load() {
     _items = CommerceService.orderItems(widget.orderId);
     _returns = _productionDelivery ? Supabase.instance.client.from('alani_return_requests')
-      .select('status,reason,resolution_note,resolution_kind,planned_amount_iqd,planned_outbound_fee_iqd,planned_return_fee_iqd')
+      .select('id,status,reason,resolution_note,resolution_kind,planned_amount_iqd,planned_outbound_fee_iqd,planned_return_fee_iqd')
       .eq('order_id',widget.orderId).order('created_at',ascending:false).limit(10)
       : Future.value(<Map<String,dynamic>>[]);
     _events = CommerceService.orderStatusEvents(widget.orderId);
@@ -120,8 +121,10 @@ class _OrderTimelinePageState extends State<OrderTimelinePage> {
                       'الزبون يحصل على رمز التسليم من «طلباتي» '
                       'بعد أن يستلمه المندوب من المتجر.',
                       style: TextStyle(color: _purple, fontSize: 12)),
-                  if (AlAniCustomerExtras.enabled && snap.data?['store_id']==AlAniCustomerExtras.storeId && liveStatus=='out_for_delivery')
+                  if ((AlAniCustomerExtras.enabled || (bool.fromEnvironment('ALANI_COURIER_GPS_PRODUCTION_ENABLED') && String.fromEnvironment('SUPABASE_URL')=='https://ltwncrewggdrjevakwpb.supabase.co')) && snap.data?['store_id']=='25091ca2-c0da-416c-b634-81b188ee66be' && liveStatus=='out_for_delivery')
                     TextButton.icon(onPressed:()=>Navigator.of(context).push<void>(MaterialPageRoute(builder:(_)=>AlAniTrackingPage(orderId:widget.orderId))),icon:const Icon(Icons.location_on_outlined),label:const Text('موقع المندوب')),
+                  if (AlAniEvidence.enabled && snap.data?['store_id']=='25091ca2-c0da-416c-b634-81b188ee66be' && liveStatus=='delivered')
+                    TextButton.icon(onPressed:()=>Navigator.of(context).push<void>(MaterialPageRoute(builder:(_)=>AlAniEvidencePage(kind:'delivery',id:widget.orderId))),icon:const Icon(Icons.photo_outlined),label:const Text('صورة التسليم')),
                   if (liveStatus == 'delivered' && deliveredAt != null)
                     Text('وقت التسليم المسجل: ' + deliveredAt,
                       style: const TextStyle(fontSize: 12)),
@@ -224,6 +227,7 @@ class _OrderTimelinePageState extends State<OrderTimelinePage> {
                   if(rows.isEmpty) const Text('لا توجد طلبات استرجاع لهذا الطلب.'),
                   for(final row in rows) ListTile(
                     title:Text(labels[row['status']]??'قيد المتابعة'),
+                    trailing: AlAniEvidence.enabled && row['id']!=null ? IconButton(tooltip:'صورة إثبات الاسترجاع',icon:const Icon(Icons.photo_camera_outlined),onPressed:()=>Navigator.of(context).push<void>(MaterialPageRoute(builder:(_)=>AlAniEvidencePage(kind:'return',id:row['id'].toString(),allowUpload: const ['submitted','reviewing'].contains(row['status']) && const ['damaged','wrong_item','defective','delivery_issue'].contains(row['reason']))))) : null,
                     subtitle:Text([
                       if((row['resolution_note']??'').toString().isNotEmpty) row['resolution_note'].toString(),
                       if(row['planned_amount_iqd']!=null) 'المبلغ المخطط: ${_iqd(row['planned_amount_iqd'])}',

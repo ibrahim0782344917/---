@@ -153,7 +153,9 @@ class _AlAniTrackingPageState extends State<AlAniTrackingPage> with WidgetsBindi
   bool _active=true;
   int _generation=0;
   bool _showMap=false;
-  static const _trackingTileUrl=String.fromEnvironment('ALANI_TRACKING_TEST_TILE_URL');
+  static const productionTracking = String.fromEnvironment('SUPABASE_URL')=='https://ltwncrewggdrjevakwpb.supabase.co' &&
+    bool.fromEnvironment('ALANI_COURIER_GPS_PRODUCTION_ENABLED');
+  static const _trackingTileUrl=productionTracking ? String.fromEnvironment('ALANI_TRACKING_PRODUCTION_TILE_URL') : String.fromEnvironment('ALANI_TRACKING_TEST_TILE_URL');
   bool get _tilesConfigured => _trackingTileUrl.startsWith('https://') && _trackingTileUrl.contains('{z}') && _trackingTileUrl.contains('{x}') && _trackingTileUrl.contains('{y}');
   @override
   void initState(){
@@ -178,7 +180,9 @@ class _AlAniTrackingPageState extends State<AlAniTrackingPage> with WidgetsBindi
     final actor=AlAniCustomerExtras.db.auth.currentUser?.id;
     setState(()=>_loading=true);
     try {
-      final result=await AlAniCustomerExtras.call('alani_read_location_test',{'p_order_id':widget.orderId}).timeout(const Duration(seconds:10));
+      final result=await (productionTracking
+        ? AlAniCustomerExtras.db.rpc('alani_read_location',params:{'p_order_id':widget.orderId})
+        : AlAniCustomerExtras.call('alani_read_location_test',{'p_order_id':widget.orderId})).timeout(const Duration(seconds:10));
       if (!mounted || !_active || generation!=_generation || actor!=AlAniCustomerExtras.db.auth.currentUser?.id) return;
       setState((){_location=result==null?null:Map<String,dynamic>.from(result as Map);_failed=false;});
     } catch (_) {
@@ -200,7 +204,7 @@ class _AlAniTrackingPageState extends State<AlAniTrackingPage> with WidgetsBindi
     final loc=_trackingSameActor?_location:null;
     final updated=DateTime.tryParse(loc?['updated_at']?.toString()??'');
     final fresh=updated!=null && DateTime.now().difference(updated).inSeconds<90;
-    return Scaffold(appBar:AppBar(title:const Text('موقع المندوب — TEST')),
+    return Scaffold(appBar:AppBar(title:const Text('موقع المندوب أثناء التوصيل')),
       body:ListView(padding:const EdgeInsets.all(16),children:[
         const Text('الموقع متاح لصاحب الطلب أثناء التوصيل فقط، عند موافقة المندوب. تحديث كل 15 ثانية.'),
         if(_loading) const LinearProgressIndicator(),
@@ -229,7 +233,7 @@ class _AlAniTrackingPageState extends State<AlAniTrackingPage> with WidgetsBindi
                   RichAttributionWidget(attributions:[TextSourceAttribution('© OpenStreetMap contributors')]),
                 ],
               )),
-          ] else const Text('الخريطة تحتاج مزود صور خرائط معتمداً في TEST.'),
+          ] else const Text('الخريطة تحتاج مزود خرائط معتمداً. الموقع المعروض تقريبي.'),
           const Text('وقت الوصول غير متاح دون خدمة مسارات معتمدة.'),
 
         ],

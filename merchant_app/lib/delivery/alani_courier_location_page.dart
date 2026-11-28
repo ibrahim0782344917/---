@@ -7,9 +7,12 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 class AlAniCourierLocationPage extends StatefulWidget {
   const AlAniCourierLocationPage({super.key,required this.orderId});
   final String orderId;
+  static const production = String.fromEnvironment('SUPABASE_URL')=='https://ltwncrewggdrjevakwpb.supabase.co';
   static const enabled =
-      bool.fromEnvironment('ALANI_COURIER_GPS_TEST_ENABLED',defaultValue:false) &&
-      String.fromEnvironment('SUPABASE_URL')=='https://tgvdwotbrnhcoykuxdpr.supabase.co';
+      (production && bool.fromEnvironment('ALANI_COURIER_GPS_PRODUCTION_ENABLED')) ||
+      (bool.fromEnvironment('ALANI_COURIER_GPS_TEST_ENABLED') &&
+      String.fromEnvironment('SUPABASE_URL')=='https://tgvdwotbrnhcoykuxdpr.supabase.co');
+  static const rpcName = production ? 'alani_publish_location' : 'alani_publish_location_test';
   @override
   State<AlAniCourierLocationPage> createState()=>_AlAniCourierLocationPageState();
 }
@@ -31,7 +34,7 @@ class _AlAniCourierLocationPageState extends State<AlAniCourierLocationPage> wit
     try{
       final consent=await showDialog<bool>(context:context,builder:(ctx)=>AlertDialog(
         title:const Text('مشاركة موقع التوصيل'),
-        content:const Text('سيُرسل موقعك الحالي لصاحب هذا الطلب فقط أثناء التوصيل، كل 15 ثانية ما دامت هذه الشاشة مفتوحة. تستطيع إيقاف المشاركة في أي وقت. لا تعمل في الخلفية.'),
+        content:const Text('سيُرسل موقعك التقريبي لصاحب هذا الطلب فقط أثناء التوصيل، كل 15 ثانية ما دامت هذه الشاشة مفتوحة. لا تشارك إلا طلباً واحداً في كل مرة. تستطيع إيقاف المشاركة في أي وقت. لا تعمل في الخلفية.'),
         actions:[
           TextButton(onPressed:()=>Navigator.pop(ctx,false),child:const Text('رفض')),
           FilledButton(onPressed:()=>Navigator.pop(ctx,true),child:const Text('أوافق')),
@@ -60,7 +63,7 @@ class _AlAniCourierLocationPageState extends State<AlAniCourierLocationPage> wit
       final pos=await Geolocator.getCurrentPosition(locationSettings:const LocationSettings(
         accuracy:LocationAccuracy.high,timeLimit:Duration(seconds:12)));
       if(!_sharing || !_foreground || !mounted || _db.auth.currentUser?.id!=_actor)return;
-      final result=await _db.rpc('alani_publish_location_test',params:{
+      final result=await _db.rpc(AlAniCourierLocationPage.rpcName,params:{
         'p_order_id':widget.orderId,'p_lat':pos.latitude,'p_lon':pos.longitude,
         'p_accuracy_m':pos.accuracy,'p_consent':true,
       });
@@ -76,7 +79,7 @@ class _AlAniCourierLocationPageState extends State<AlAniCourierLocationPage> wit
     try{
       await _pending;
       if(_actor!=null && _db.auth.currentUser?.id==_actor){
-        await _db.rpc('alani_publish_location_test',params:{
+        await _db.rpc(AlAniCourierLocationPage.rpcName,params:{
           'p_order_id':widget.orderId,'p_lat':null,'p_lon':null,'p_accuracy_m':null,'p_consent':false,
         });
       }
@@ -97,7 +100,7 @@ class _AlAniCourierLocationPageState extends State<AlAniCourierLocationPage> wit
   }
   @override
   Widget build(BuildContext context)=>Scaffold(
-    appBar:AppBar(title:const Text('مشاركة موقع التوصيل — TEST')),
+    appBar:AppBar(title:const Text('مشاركة موقع التوصيل')),
     body:ListView(padding:const EdgeInsets.all(20),children:[
       const Text('مشاركة اختيارية لصاحب الطلب فقط. لا يتم حفظ سجل مسار، ويُحجب الموقع بعد انتهاء التوصيل.'),
       const SizedBox(height:16),Text(_message),

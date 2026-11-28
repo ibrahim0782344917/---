@@ -67,6 +67,8 @@ jobs:
             --dart-define=ALANI_DELIVERY_TOTALS_VERIFIED=true \
             --dart-define=ALANI_DELIVERY_WORKFLOW_ENABLED=true \
             --dart-define=ALANI_DELIVERY_PRODUCTION_APPROVED=true \
+            --dart-define=ALANI_DELIVERY_EVIDENCE_ENABLED=true \
+            --dart-define=ALANI_COURIER_GPS_PRODUCTION_ENABLED=true \
             --dart-define=ALANI_DIRECT_PRODUCTION_PILOT=true \
             --dart-define=ALANI_TEST_CHECKOUT_ENABLED=false \
             --dart-define=SHITREED_CAMPAIGNS_ENABLED=false \

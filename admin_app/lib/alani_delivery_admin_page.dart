@@ -1,4 +1,5 @@
 import 'alani_cod_page.dart';
+import 'alani_evidence_page.dart';
 import 'package:flutter/material.dart';
 import 'package:shitreed_admin/admin_api.dart';
 
@@ -245,6 +246,7 @@ class _AlAniDeliveryAdminPageState extends State<AlAniDeliveryAdminPage> {
                             ? 'بانتظار استلام المندوب'
                             : 'قيد التوصيل'),
                         trailing: const Icon(Icons.chevron_left),
+                        onTap: AlAniEvidence.enabled ? ()=>Navigator.of(context).push<void>(MaterialPageRoute(builder:(_)=>AlAniEvidencePage(kind:'delivery',id:j['order_id'].toString()))) : null,
                       ),
                   ],
                 ),
