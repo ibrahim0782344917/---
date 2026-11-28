@@ -1,5 +1,6 @@
 // ignore_for_file: curly_braces_in_flow_control_structures, prefer_interpolation_to_compose_strings
 import 'package:flutter/material.dart';
+import 'package:shitreed_customer/alani/alani_premium_widgets.dart';
 import 'package:shitreed_customer/alani/alani_customer_extras.dart';
 import 'package:shitreed_customer/account/customer_delete_account_page.dart';
 import 'package:image_picker/image_picker.dart';
@@ -295,8 +296,6 @@ class _ShitreedProfilePageState extends State<ShitreedProfilePage> {
   }
 
   Widget box(Widget child) => Card(
-    color: Colors.white,
-    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
     child: Padding(padding: const EdgeInsets.all(17), child: child),
   );
 
@@ -358,12 +357,13 @@ class _ShitreedProfilePageState extends State<ShitreedProfilePage> {
           ]),
         ),
         const SizedBox(height: 12),
+        const AlAniSectionTitle('مستواي ومكافآتي',icon:Icons.stars_outlined),
         box(Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Row(children: [
             const Icon(Icons.auto_awesome, color: _green),
             const SizedBox(width: 8),
-            Text('Level ' + level.toString() + ' • ' + rank,
-              style: const TextStyle(fontSize: 19, fontWeight: FontWeight.w900)),
+            Expanded(child:Text('المستوى ' + level.toString() + ' • ' + rank,
+              style: const TextStyle(fontSize: 19, fontWeight: FontWeight.w900))),
           ]),
           const SizedBox(height: 10),
           LinearProgressIndicator(value: progress, color: _green,
@@ -375,8 +375,7 @@ class _ShitreedProfilePageState extends State<ShitreedProfilePage> {
         ])),
         const SizedBox(height: 10),
         box(Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          const Text('معلومات البروفايل',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900)),
+          const AlAniSectionTitle('معلومات البروفايل',icon:Icons.person_outline),
           const SizedBox(height: 8),
           Text('المدينة: ' + (profile?['city'] ?? 'غير محددة').toString()),
           Text('النبذة: ' + (profile?['bio'] ?? 'أضف نبذة عن نفسك').toString()),
@@ -404,8 +403,7 @@ class _ShitreedProfilePageState extends State<ShitreedProfilePage> {
         ])),
         const SizedBox(height: 10),
         box(Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          const Text('نشاطي ونقاط XP',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900)),
+          const AlAniSectionTitle('نشاطي ونقاط XP',icon:Icons.timeline_outlined),
           if (events.isEmpty) const Text('ما كسبت نقاط بعد.'),
           for (final event in events.take(8)) ListTile(
             dense: true, contentPadding: EdgeInsets.zero,

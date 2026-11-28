@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:math';
 import 'package:flutter/material.dart';
+import 'package:shitreed_customer/alani/alani_premium_widgets.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:shitreed_customer/commerce/commerce_service.dart';
 import 'package:shitreed_customer/commerce/customer_commerce_pages.dart';
@@ -12,8 +13,6 @@ import 'package:shitreed_customer/alani/alani_checkout_readiness.dart';
 import 'package:shitreed_customer/alani/alani_offers_page.dart';
 import 'alani_pages.dart';
 
-const _green = Color(0xFF01BE5F);
-const _ink = Color(0xFF173E2A);
 
 /// This app never accepts COD orders until BOTH the client feature flags and
 /// the verified server-side fee migration are approved. Release AAB defaults
@@ -264,12 +263,9 @@ class _AlAniCartPageState extends State<AlAniCartPage> {
       final offerSubtotal=(_quote?['subtotal_iqd'] as num?)?.toInt();
       final offerTotal=(_quote?['total_iqd'] as num?)?.toInt();
       return ListView(padding:const EdgeInsets.all(17),children:[
-        const Text('سلة السيد إبراهيم العاني',
-          style:TextStyle(fontSize:23,fontWeight:FontWeight.w900,color:_ink)),
-        const SizedBox(height:7),
-        const Text('الدفع نقداً عند الاستلام. '
-          'التوصيل ٥٬٠٠٠ دينار عراقي.',
-          style:TextStyle(fontSize:13)),
+        AlAniSectionBanner(icon:Icons.shopping_bag_outlined,title:'سلة السيد إبراهيم العاني',
+          subtitle:'الدفع نقداً عند الاستلام. التوصيل ٥٬٠٠٠ دينار عراقي.',
+          detail:items.isEmpty?null:priceText(offerTotal??cart.totalIqd+deliveryFee)),
         const SizedBox(height:15),
         if (AlAniCheckoutReadiness.testMode) const Card(
           color: Color(0xFFFFF3D6),
@@ -282,10 +278,10 @@ class _AlAniCartPageState extends State<AlAniCartPage> {
             ),
           ),
         ),
-        if(items.isEmpty)const Padding(
-          padding:EdgeInsets.all(33),
-          child:Center(child:Text('السلة فارغة. اختر من منتجات متجرنا.'))),
-        for(final item in items)Card(color:Colors.white,child:ListTile(
+        if(items.isEmpty)const AlAniEmptyState(icon:Icons.shopping_bag_outlined,
+          message:'السلة فارغة. اختر من منتجات متجرنا.'),
+        if(items.isNotEmpty)const AlAniSectionTitle('المنتجات المختارة',icon:Icons.inventory_2_outlined),
+        for(final item in items)Card(child:ListTile(
           title:Text(item.product.name),
           subtitle:quotedLines[item.product.id] == null
             ? Text(priceText(item.product.priceIqd))
@@ -298,7 +294,7 @@ class _AlAniCartPageState extends State<AlAniCartPage> {
                 Text(priceText(quotedLines[item.product.id]!.unitPrice),
                   style:TextStyle(fontWeight:FontWeight.w700,
                     color:quotedLines[item.product.id]!.discounted
-                      ?const Color(0xFF0E8246):_ink)),
+                      ?Theme.of(context).colorScheme.primary:Theme.of(context).colorScheme.onSurface)),
               ]),
           trailing:Wrap(crossAxisAlignment:WrapCrossAlignment.center,children:[
             IconButton(tooltip:'تقليل الكمية',
@@ -315,6 +311,7 @@ class _AlAniCartPageState extends State<AlAniCartPage> {
             icon:const Icon(Icons.remove_shopping_cart_outlined),
             label:const Text('إفراغ السلة')),
           const SizedBox(height:15),
+          const AlAniSectionTitle('ملخص المبلغ المتوقع',icon:Icons.receipt_long_outlined),
           ListTile(title:const Text('مجموع المنتجات'),
             trailing:Text(priceText(offerSubtotal??cart.totalIqd))),
           const ListTile(title:Text('أجور التوصيل'),
@@ -323,7 +320,7 @@ class _AlAniCartPageState extends State<AlAniCartPage> {
             title:const Text('الإجمالي المتوقع مع التوصيل',
               style:TextStyle(fontWeight:FontWeight.bold)),
             trailing:Text(priceText(offerTotal??cart.totalIqd+deliveryFee),
-              style:const TextStyle(fontWeight:FontWeight.w900,color:_green)),
+              style:TextStyle(fontWeight:FontWeight.w900,color:Theme.of(context).colorScheme.primary)),
           ),
           if(AlAniOffersGate.enabled && _quoteLoading)
             const LinearProgressIndicator(),
@@ -351,6 +348,7 @@ class _AlAniCartPageState extends State<AlAniCartPage> {
                 ),
               ]))),
           if(canSubmit)...[
+            const AlAniSectionTitle('معلومات الاستلام',icon:Icons.location_on_outlined),
             if(savedAddresses.isNotEmpty)DropdownButtonFormField<String>(
               decoration:const InputDecoration(
                 labelText:'عناويني المحفوظة',border:OutlineInputBorder()),

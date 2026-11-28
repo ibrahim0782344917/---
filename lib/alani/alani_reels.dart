@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:shitreed_customer/alani/alani_premium_widgets.dart';
 import 'package:shitreed_customer/alani/alani_social.dart';
 import 'package:shitreed_customer/alani/alani_content.dart';
 import 'package:shitreed_customer/alani/alani_video.dart';
@@ -53,23 +54,16 @@ class _AlAniReelsPanelState extends State<AlAniReelsPanel> {
           .where((item) => item.kind == 'video' &&
             (item.videoUrl ?? '').isNotEmpty).toList();
       if (videos.isEmpty) {
-        return Center(child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(Icons.video_library_outlined, size: 48),
-            const SizedBox(height: 12),
-            const Text('لا توجد ريلز منشورة حتى الآن.'),
-            TextButton(onPressed: widget.onRefresh,
-              child: const Text('تحديث')),
-          ],
-        ));
+        return Center(child: Padding(padding:const EdgeInsets.all(20),
+          child:AlAniEmptyState(icon:Icons.video_library_outlined,
+            message:'لا توجد ريلز منشورة حتى الآن.',
+            action:TextButton(onPressed:widget.onRefresh,child:const Text('تحديث')))));
       }
       return Column(children: [
         Padding(
           padding: const EdgeInsetsDirectional.fromSTEB(12, 6, 12, 6),
           child: Row(children: [
-            const Expanded(child: Text('ريلز السيد إبراهيم العاني',
-              style: TextStyle(fontWeight: FontWeight.bold))),
+            const Expanded(child: AlAniSectionTitle('ريلز السيد إبراهيم العاني',icon:Icons.play_circle_outline)),
             IconButton(
               tooltip: 'تحديث الريلز',
               onPressed: widget.onRefresh,
@@ -271,8 +265,8 @@ class _AlAniReelTileState extends State<AlAniReelTile>
             constraints: const BoxConstraints(maxWidth: 300),
             child: DecoratedBox(
               decoration: BoxDecoration(
-                color: Colors.black54,
-                borderRadius: BorderRadius.circular(12)),
+                color: const Color(0xB317372B),
+                borderRadius: BorderRadius.circular(22)),
               child: AlAniSocialActions(
                 publicationId: widget.publication.id, dark: true,
                 vertical: true),
@@ -305,7 +299,7 @@ class _AlAniReelTileState extends State<AlAniReelTile>
               player!,
               allowScrubbing: true,
               colors: const VideoProgressColors(
-                playedColor: Colors.greenAccent),
+                playedColor: Color(0xFFDFCA92)),
             ),
           ),
       ]),

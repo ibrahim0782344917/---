@@ -1,5 +1,6 @@
 // ignore_for_file: prefer_interpolation_to_compose_strings, curly_braces_in_flow_control_structures
 import 'package:flutter/material.dart';
+import 'package:shitreed_customer/alani/alani_premium_widgets.dart';
 import 'package:shitreed_customer/alani/alani_customer_extras.dart';
 import 'package:shitreed_customer/alani/alani_order_updates.dart';
 import 'package:shitreed_customer/alani/alani_cart.dart';
@@ -103,7 +104,6 @@ class _LiveStorePageState extends State<LiveStorePage> {
           }
           return Column(children: [
             for (final product in items) Card(
-              color: Colors.white,
               margin: const EdgeInsets.only(bottom: 10),
               child: Padding(
                 padding: const EdgeInsets.all(12),
@@ -261,7 +261,6 @@ class _LiveCartPageState extends State<LiveCartPage> {
           padding: EdgeInsets.all(36),
           child: Center(child: Text('السلة فارغة. اختار منتجات من متجر معتمد.'))),
         for (final line in cart.items) Card(
-          color: Colors.white,
           child: ListTile(
             title: Text(line.product.name),
             subtitle: Text(priceText(line.product.priceIqd)),
@@ -606,8 +605,10 @@ class _OrderHistoryPageState extends State<OrderHistoryPage> {
         await _orders;
       },
       child: ListView(padding: const EdgeInsets.all(16), children: [
+        const AlAniSectionBanner(icon:Icons.receipt_long_outlined,title:'طلباتي',
+          subtitle:'تابع مشترياتك من التأكيد حتى التسليم والاسترجاع.'),
         Row(children:[
-          const Expanded(child:Text('طلباتي',style:TextStyle(fontSize:23,color:_dark,fontWeight:FontWeight.w900))),
+          const Expanded(child:AlAniSectionTitle('تصفية الطلبات',icon:Icons.filter_list)),
           if(AlAniCustomerExtras.enabled) IconButton(tooltip:'إشعارات الطلبات',icon:const Icon(Icons.notifications_outlined),onPressed:()=>Navigator.of(context).push<void>(MaterialPageRoute(builder:(_)=>const AlAniOrderNotificationsPage()))),
         ]),
         const SizedBox(height: 10),
@@ -638,14 +639,12 @@ class _OrderHistoryPageState extends State<OrderHistoryPage> {
             final orders = allOrders.where((row) =>
               _statusFilter == 'all' || row['status'] == _statusFilter).toList();
             if (orders.isEmpty) {
-              return const Padding(padding: EdgeInsets.all(30),
-                child: Text('ما عندك طلبات حقيقية حالياً.',
-                  textAlign: TextAlign.center));
+              return const AlAniEmptyState(icon:Icons.receipt_long_outlined,
+                message:'ما عندك طلبات حقيقية حالياً.');
             }
             return Column(children: [
               for (final order in orders) Card(
-                color: Colors.white,
-                child: ListTile(
+                  child: ListTile(
                   onTap: () async {
                     await Navigator.of(context).push<void>(
                       MaterialPageRoute(builder: (_) => OrderTimelinePage(
@@ -656,6 +655,7 @@ class _OrderHistoryPageState extends State<OrderHistoryPage> {
                     );
                     if (mounted) _refresh();
                   },
+                  leading: const CircleAvatar(child:Icon(Icons.receipt_long_outlined)),
                   title: Text('طلب رقم ' +
                     (order['id'] as String).substring(0, 8)),
                   subtitle: Column(mainAxisSize:MainAxisSize.min,crossAxisAlignment:CrossAxisAlignment.start, children:[

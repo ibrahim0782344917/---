@@ -481,7 +481,7 @@ class AlAniStoreDrawer extends StatelessWidget {
         const Divider(),
         _heading(context,'خدمة الزبائن'),
         if(AlAniSupportFeature.enabled)_item(context,'دردشة مع المتجر',Icons.chat_bubble_outline,()=>_go(context,const AlAniCustomerSupportPage())),
-        _item(context,'طلب استرجاع أو تعويض',Icons.assignment_return_outlined,()=>_go(context,const AlAniReturnPage())),
+        _item(context,'طلب استرجاع',Icons.assignment_return_outlined,()=>_go(context,const AlAniReturnPage())),
         _item(context,'الدفع والتوصيل',Icons.local_shipping_outlined,()=>_go(context,const AlAniInfoPage(type:'payments'))),
         _item(context,'سياسة الاسترجاع',Icons.policy_outlined,()=>_go(context,const AlAniInfoPage(type:'returns'))),
         _item(context,'التعويض عن الكسر',Icons.inventory_2_outlined,()=>_go(context,const AlAniInfoPage(type:'damaged'))),

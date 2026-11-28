@@ -1,13 +1,14 @@
 // ignore_for_file: prefer_interpolation_to_compose_strings
 import 'package:flutter/material.dart';
+import 'package:shitreed_customer/alani/alani_premium_widgets.dart';
 import 'package:shitreed_customer/alani/alani_customer_extras.dart';
 import 'package:shitreed_customer/alani/alani_order_updates.dart';
 import 'package:shitreed_customer/alani/alani_evidence_page.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:shitreed_customer/commerce/commerce_service.dart';
 
-const _purple = Color(0xFF51159B);
-const _dark = Color(0xFF280B53);
+const _purple = Color(0xFF12845A);
+const _dark = Color(0xFF17583D);
 
 String _statusLabel(String status) {
   switch (status) {
@@ -97,10 +98,10 @@ class _OrderTimelinePageState extends State<OrderTimelinePage> {
         physics: const AlwaysScrollableScrollPhysics(),
         padding: const EdgeInsets.all(16),
         children: [
-          Text(
-            'طلب رقم ' + widget.orderId.substring(0, 8),
-            style: const TextStyle(
-              color: _dark, fontWeight: FontWeight.w900, fontSize: 22)),
+          AlAniSectionBanner(icon:Icons.local_shipping_outlined,
+            title:'طلب رقم '+widget.orderId.substring(0,8),
+            subtitle:'الدفع عند الاستلام • تفاصيل الشراء',
+            detail:_iqd(widget.totalIqd)),
           const SizedBox(height: 7),
           FutureBuilder<Map<String, dynamic>>(
             future: _statusFuture,
@@ -140,8 +141,7 @@ class _OrderTimelinePageState extends State<OrderTimelinePage> {
             'طريقة الدفع: عند الاستلام. هذا ليس إثبات دفع.',
             style: TextStyle(color: Colors.black54, fontSize: 12)),
           const SizedBox(height: 22),
-          const Text('المنتجات والكميات', style: TextStyle(
-            fontSize: 18, fontWeight: FontWeight.w900, color: _dark)),
+          const AlAniSectionTitle('المنتجات والكميات',icon:Icons.inventory_2_outlined),
           const SizedBox(height: 8),
           FutureBuilder<List<Map<String, dynamic>>>(
             future: _items,
@@ -161,7 +161,6 @@ class _OrderTimelinePageState extends State<OrderTimelinePage> {
                 children: [
                   for (final line in lines)
                     Card(
-                      color: Colors.white,
                       child: ListTile(
                         title: Text(line['product_name'] as String? ?? ''),
                         subtitle: Text(
@@ -180,8 +179,7 @@ class _OrderTimelinePageState extends State<OrderTimelinePage> {
             },
           ),
           const SizedBox(height: 19),
-          const Text('مراحل الطلب', style: TextStyle(
-            fontSize: 18, fontWeight: FontWeight.w900, color: _dark)),
+          const AlAniSectionTitle('مراحل الطلب',icon:Icons.timeline),
           const SizedBox(height: 7),
           FutureBuilder<List<Map<String, dynamic>>>(
             future: _events,
@@ -200,7 +198,7 @@ class _OrderTimelinePageState extends State<OrderTimelinePage> {
               }
               return Column(children: [
                 for (final event in events)
-                  ListTile(
+                  Card(child:ListTile(
                     leading: const Icon(Icons.check_circle_outline,
                       color: _purple),
                     title: Text(_statusLabel(
@@ -209,7 +207,7 @@ class _OrderTimelinePageState extends State<OrderTimelinePage> {
                       event['changed_at']?.toString() ?? '',
                       style: const TextStyle(fontSize: 11),
                     ),
-                  ),
+                  )),
               ]);
             },
           ),

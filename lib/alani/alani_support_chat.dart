@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:shitreed_customer/alani/alani_premium_widgets.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 /// Production chat is explicitly gated and uses the production project only.
@@ -412,11 +413,11 @@ class _AlAniConversationState extends State<AlAniConversation> {
     final seen=DateTime.tryParse(_peer['last_seen_at']?.toString()??'')?.toLocal();
     final peerRead=DateTime.tryParse(_peer['peer_read_at']?.toString()??'');
     return Column(children: [
-      const Padding(
-        padding: EdgeInsets.all(10),
-        child: Text('مراسلة خاصة مع فريق المتجر؛ الإشعارات خارج التطبيق قيد التجهيز.',
-          textAlign: TextAlign.center, style: TextStyle(fontSize: 12)),
-      ),
+      const Padding(padding:EdgeInsets.fromLTRB(12,8,12,4),
+        child:AlAniSectionTitle('مراسلة خاصة مع فريق المتجر',icon:Icons.lock_outline)),
+      const Padding(padding:EdgeInsets.symmetric(horizontal:12),
+        child:Text('الإشعارات خارج التطبيق قيد التجهيز.',textAlign:TextAlign.center,
+          style:TextStyle(fontSize:12))),
       if (AlAniSupportFeature.liveProduction) ...[
         ListTile(dense:true,leading:Icon(_peer['online']==true?Icons.circle:Icons.circle_outlined,color:_peer['online']==true?Colors.green:null),
           title:Text(_peer['typing']==true?'الطرف الآخر يكتب الآن…':_peer['online']==true?'نشط في المحادثة الآن':seen==null?'حالة الاتصال غير معروفة':'آخر نشاط في المحادثة: ${seen.toString().substring(0,16)}')),
@@ -432,7 +433,8 @@ class _AlAniConversationState extends State<AlAniConversation> {
         ),
       Expanded(
         child: messages.isEmpty
-            ? const Center(child: Text('ابدأ المحادثة برسالتك الأولى.'))
+            ? const Center(child:Padding(padding:EdgeInsets.all(16),
+                child:AlAniEmptyState(icon:Icons.chat_bubble_outline,message:'ابدأ المحادثة برسالتك الأولى.')))
             : ListView.builder(
                 controller: scroller,
                 padding: const EdgeInsets.all(12),
@@ -451,7 +453,7 @@ class _AlAniConversationState extends State<AlAniConversation> {
                         color: mine
                             ? Theme.of(context).colorScheme.primaryContainer
                             : Theme.of(context).colorScheme.surfaceContainerHigh,
-                        borderRadius: BorderRadius.circular(16),
+                        borderRadius: BorderRadiusDirectional.only(topStart:const Radius.circular(20),topEnd:const Radius.circular(20),bottomStart:Radius.circular(mine?5:20),bottomEnd:Radius.circular(mine?20:5)),
                       ),
                       child: Column(crossAxisAlignment:CrossAxisAlignment.end,mainAxisSize:MainAxisSize.min,children:[
                         Text(msg['body']?.toString() ?? '',textDirection:TextDirection.rtl),
@@ -476,7 +478,8 @@ class _AlAniConversationState extends State<AlAniConversation> {
             decoration: const InputDecoration(
               hintText: 'اكتب رسالتك...',
               counterText: '',
-              border: OutlineInputBorder(),
+              prefixIcon: Icon(Icons.chat_bubble_outline),
+              border: OutlineInputBorder(borderRadius:BorderRadius.all(Radius.circular(20))),
             ),
           )),
           const SizedBox(width: 7),

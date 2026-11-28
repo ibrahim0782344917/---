@@ -295,6 +295,9 @@ class _AlAniShopHomeState extends State<AlAniShopHome> {
             ],
           ),
           actions: [
+            if (MediaQuery.sizeOf(context).width >= 600)
+              IconButton(tooltip:'خرائط Google',icon:const Icon(Icons.map_outlined),
+                onPressed:()=>Navigator.of(context).push<void>(MaterialPageRoute(builder:(_)=>const AlAniBranchPage()))),
             IconButton(
               tooltip: 'محفظتي',
               onPressed: () => _openAccountFeature(const AlAniWalletPage(), production: true),
@@ -394,7 +397,7 @@ class _AlAniShopHomeState extends State<AlAniShopHome> {
             children: [
               const Icon(Icons.eco_outlined, color: _gold, size: 38),
               const SizedBox(height: 12),
-              const Text('اختيارات طبيعية لكل بيت',
+              const Text('من الطبيعة إلى بيتك',
                 style: TextStyle(fontWeight: FontWeight.w900,
                     color: Colors.white, fontSize: 26)),
               const SizedBox(height: 7),

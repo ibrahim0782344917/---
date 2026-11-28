@@ -7,6 +7,15 @@ on:
       - 'lib/alani/alani_shop.dart'
       - 'lib/alani/alani_pages.dart'
       - 'test/alani_shop_navigation_test.dart'
+      - 'lib/alani/alani_premium_widgets.dart'
+      - 'lib/alani/alani_product.dart'
+      - 'lib/alani/alani_cart.dart'
+      - 'lib/alani/alani_wallet_page.dart'
+      - 'lib/alani/alani_order_updates.dart'
+      - 'lib/profile/shitreed_profile_page.dart'
+      - 'lib/commerce/**'
+      - 'lib/alani/alani_reels.dart'
+      - 'lib/alani/alani_support_chat.dart'
   workflow_dispatch:
 permissions:
   contents: read

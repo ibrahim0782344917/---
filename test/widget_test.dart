@@ -13,9 +13,14 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('من الطبيعة إلى بيتك'), findsOneWidget);
     expect(find.byType(NavigationBar), findsOneWidget);
-    await tester.tap(find.byIcon(Icons.menu));
+    expect(find.byTooltip('محفظتي'), findsOneWidget);
+    expect(find.byTooltip('الإشعارات'), findsOneWidget);
+    await tester.tap(find.byTooltip('القائمة الجانبية'));
     await tester.pumpAndSettle();
-    expect(find.text('سياسة الاسترجاع'), findsOneWidget);
+    final drawerList=find.descendant(of:find.byType(Drawer),matching:find.byType(Scrollable));
+    await tester.scrollUntilVisible(find.text('طلب استرجاع'),180,scrollable:drawerList);
     expect(find.text('طلب استرجاع'), findsOneWidget);
+    await tester.scrollUntilVisible(find.text('سياسة الاسترجاع'),120,scrollable:drawerList);
+    expect(find.text('سياسة الاسترجاع'), findsOneWidget);
   });
 }

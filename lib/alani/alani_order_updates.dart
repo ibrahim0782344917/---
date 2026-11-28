@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:shitreed_customer/alani/alani_premium_widgets.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart' as ll;
 import 'alani_customer_extras.dart';
@@ -108,7 +109,9 @@ class _AlAniOrderNotificationsPageState extends State<AlAniOrderNotificationsPag
       final data=snapshot.data ?? <dynamic>[[],[]];
       final rows=(data[0] as List).map((e)=>Map<String,dynamic>.from(e as Map));
       final alerts=(data[1] as List).map((e)=>Map<String,dynamic>.from(e as Map));
-      return ListView(children:[
+      return ListView(padding:const EdgeInsets.all(16),children:[
+        AlAniSectionBanner(icon:Icons.notifications_none_rounded,title:'تحديثات حسابك',subtitle:'تنبيهات الطلبات والمنتجات ورسائل الدعم',detail:'غير المقروءة: '+rows.where((r)=>r['is_read']!=true).length.toString()),
+        const SizedBox(height:12),
         if(_production&&AlAniSupportFeature.enabled)ListTile(
           leading:const Icon(Icons.support_agent),
           title:const Text('رسائل فريق الدعم'),
@@ -123,14 +126,14 @@ class _AlAniOrderNotificationsPageState extends State<AlAniOrderNotificationsPag
           leading:const Icon(Icons.notifications_outlined),
           title:Text(switch(a['kind']){'price_drop'=>'انخفاض السعر','restocked'=>'عاد المنتج للمخزون','monthly_review'=>'حان موعد مراجعة الاشتراك',_=>'تنبيه'}),
           subtitle:Text(a['name'].toString()+(a['price_iqd']!=null?' • ${a['price_iqd']} د.ع':''))),
-        const Divider(),const ListTile(title:Text('إشعارات الطلبات')),
-        if(rows.isEmpty)const ListTile(title:Text('لا توجد إشعارات طلبات.')),
-        for(final row in rows) ListTile(
+        const AlAniSectionTitle('إشعارات الطلبات',icon:Icons.local_shipping_outlined),
+        if(rows.isEmpty)const AlAniEmptyState(icon:Icons.notifications_off_outlined,message:'لا توجد إشعارات طلبات.'),
+        for(final row in rows) Card(child:ListTile(
           leading:Icon(row['is_read']==true?Icons.notifications_none:Icons.notifications_active),
           title:Text(_label(row['new_status'])),
           subtitle:Text('طلب ${row['order_id']}\n${row['changed_at']}'),
           trailing:row['is_read']==true?const Icon(Icons.done):TextButton(
-            onPressed:_busy?null:()=>_read(row['event_id'] as String),child:const Text('قراءة'))),
+            onPressed:_busy?null:()=>_read(row['event_id'] as String),child:const Text('قراءة')))),
       ]);
     }),
   );

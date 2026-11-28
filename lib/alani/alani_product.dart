@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:shitreed_customer/alani/alani_premium_widgets.dart';
 import 'package:shitreed_customer/alani/alani_customer_extras.dart';
 import 'package:shitreed_customer/backend/marketplace_backend.dart';
 import 'package:shitreed_customer/commerce/commerce_service.dart';
 import 'package:shitreed_customer/commerce/customer_commerce_pages.dart';
 
 const _green = Color(0xFF1C503B);
-const _soft = Color(0xFFF8F5ED);
 
 /// Customer product details use the same stock and server-side checkout
 /// procedures as Shitreed. No client-supplied price reaches an order.
@@ -24,7 +24,7 @@ class AlAniProductDetailsPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Scaffold(
-    backgroundColor: _soft,
+    backgroundColor: Theme.of(context).scaffoldBackgroundColor,
     appBar: AppBar(title: const Text('تفاصيل المنتج'), actions: [
       if (AlAniCustomerExtras.enabled && MarketplaceBackend.currentUser != null)
         IconButton(icon: const Icon(Icons.favorite_border), tooltip: 'حفظ في المفضلة', onPressed: () async {
@@ -42,7 +42,7 @@ class AlAniProductDetailsPage extends StatelessWidget {
         ClipRRect(
           borderRadius: BorderRadius.circular(22),
           child: SizedBox(
-            height: 260,
+            height: 280,
             child: product.imageUrl != null &&
                     product.imageUrl!.startsWith('https://')
                 ? Image.network(product.imageUrl!, fit: BoxFit.cover,
@@ -54,30 +54,21 @@ class AlAniProductDetailsPage extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 22),
-        Text(product.name, style: const TextStyle(
-          color: _green, fontSize: 26, fontWeight: FontWeight.w900,
-        )),
-        const SizedBox(height: 10),
-        Text(priceText(product.priceIqd), style: const TextStyle(
-          color: _green, fontSize: 21, fontWeight: FontWeight.w700,
-        )),
-        const SizedBox(height: 10),
-        Text(product.stockQuantity > 0
-          ? 'متوفر في المخزون: ${product.stockQuantity}'
-          : 'غير متوفر حالياً'),
+        AlAniSectionBanner(icon:Icons.eco_outlined,title:product.name,
+          subtitle:product.stockQuantity > 0
+            ? 'متوفر في المخزون: ${product.stockQuantity}' : 'غير متوفر حالياً',
+          detail:priceText(product.priceIqd)),
         const SizedBox(height: 18),
-        const Text('وصف المنتج', style: TextStyle(
-          fontSize: 18, fontWeight: FontWeight.w800)),
+        const AlAniSectionTitle('وصف المنتج',icon:Icons.description_outlined),
         const SizedBox(height: 8),
-        SelectableText(product.description.isEmpty
-          ? 'لم يُضف صاحب المتجر وصفاً لهذا المنتج بعد.'
-          : product.description,
-          style: const TextStyle(height: 1.6, fontSize: 15),
-        ),
+        Card(child:Padding(padding:const EdgeInsets.all(16),
+          child:SelectableText(product.description.isEmpty
+            ? 'لم يُضف صاحب المتجر وصفاً لهذا المنتج بعد.' : product.description,
+            style:const TextStyle(height:1.6,fontSize:15)))),
         const SizedBox(height: 22),
-        const Text('السعر النهائي ورسوم التوصيل يتم تأكيدهما '
+        Text('السعر النهائي ورسوم التوصيل يتم تأكيدهما '
           'عند إتمام الطلب. معلومات المنتجات لا تمثل نصيحة طبية.',
-          style: TextStyle(fontSize: 12, color: Colors.black54)),
+          style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant)),
         if (AlAniCustomerExtras.enabled && MarketplaceBackend.currentUser != null)
           OutlinedButton.icon(icon:const Icon(Icons.calendar_month_outlined),
             label:const Text('تفضيل شراء شهري'),

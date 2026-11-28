@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:math';
 import 'package:flutter/material.dart';
+import 'package:shitreed_customer/alani/alani_premium_widgets.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -133,19 +134,14 @@ class _AlAniWalletPageState extends State<AlAniWalletPage> {
     'needs_information'=>'تحتاج معلومات','rejected'=>'مرفوض','externally_verified'=>'تم التحقق من التحويل (ليس رصيداً)',_=>'غير معروف'};
   @override
   Widget build(BuildContext context){
-    final colors=Theme.of(context).colorScheme;
     final options=((status?['providers'] as List?)??[]).map((x)=>Map<String,dynamic>.from(x as Map)).toList();
     final selected=options.any((x)=>x['code']==provider)?provider:null;
     return Scaffold(appBar:AppBar(title:const Text('محفظتي وإثباتات التحويل'),
       actions:[IconButton(onPressed:busy?null:load,tooltip:'تحديث',icon:const Icon(Icons.refresh))]),
       body:!sameActor?const Center(child:Text('سجّل الدخول ثم أعد فتح المحفظة.')):ListView(padding:const EdgeInsets.all(16),children:[
-        Card(color:colors.primaryContainer,child:Padding(padding:const EdgeInsets.all(20),child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
-          Icon(Icons.account_balance_wallet_outlined,color:colors.onPrimaryContainer,size:32),
-          const SizedBox(height:12),
-          Text('الرصيد المالي',style:TextStyle(color:colors.onPrimaryContainer,fontWeight:FontWeight.w700)),
-          Text('غير متاح حالياً',style:TextStyle(color:colors.onPrimaryContainer,fontSize:25,fontWeight:FontWeight.w800)),
-          Text('لا يُضاف رصيد من صورة إيصال أو مبلغ معلن.',style:TextStyle(color:colors.onPrimaryContainer)),
-        ]))),
+        const AlAniSectionBanner(icon:Icons.account_balance_wallet_outlined,title:'الرصيد المالي',
+          subtitle:'لا يُضاف رصيد من صورة إيصال أو مبلغ معلن.',detail:'غير متاح حالياً'),
+        const SizedBox(height:12),
         if(loading)const LinearProgressIndicator(),
         if(notice!=null)ListTile(leading:const Icon(Icons.info_outline),title:Text(notice!)),
         if(!intake)const Card(child:ListTile(leading:Icon(Icons.lock_outline),title:Text('استقبال إثباتات التحويل مغلق حالياً'),subtitle:Text('لا تحول أي مبلغ للشحن حتى إعلان طريقة دفع معتمدة.'))),
@@ -162,8 +158,8 @@ class _AlAniWalletPageState extends State<AlAniWalletPage> {
           FilledButton(onPressed:busy?null:submit,child:Text(busy?'جارٍ الإرسال…':attemptKey==null?'إرسال للمراجعة':'إعادة المحاولة بنفس البيانات')),
         ],
         const SizedBox(height:16),
-        Text('آخر طلبات الشحن',style:Theme.of(context).textTheme.titleLarge),
-        if(!loading&&requests.isEmpty)const ListTile(title:Text('لا توجد طلبات شحن مسجلة.')),
+        const AlAniSectionTitle('آخر طلبات الشحن',icon:Icons.history),
+        if(!loading&&requests.isEmpty)const AlAniEmptyState(icon:Icons.receipt_long_outlined,message:'لا توجد طلبات شحن مسجلة.'),
         for(final r in requests)Card(child:ListTile(leading:const Icon(Icons.receipt_long_outlined),title:Text('${r['amount_iqd']} د.ع'),subtitle:Text(label(r['status'])))),
       ]));
   }
