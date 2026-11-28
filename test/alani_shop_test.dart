@@ -113,7 +113,9 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('الزيوت والأعشاب والمنتجات'), findsOneWidget);
 
-    await tester.tap(find.text('المنشورات').last);
+    final postsDestination = find.widgetWithText(NavigationDestination,'منشورات');
+    expect(postsDestination, findsOneWidget);
+    await tester.tap(postsDestination);
     await tester.pumpAndSettle();
     expect(find.text('كل المنشورات'), findsOneWidget);
   });
