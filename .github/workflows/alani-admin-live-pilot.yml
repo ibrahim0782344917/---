@@ -5,6 +5,7 @@ on:
     paths:
       - '.github/workflows/alani-admin-live-pilot.yml'
       - 'admin_app/lib/main.dart'
+      - 'admin_app/lib/alani_evidence_page.dart'
   workflow_dispatch:
 permissions:
   contents: read
