@@ -5,6 +5,7 @@ on:
     paths:
       - '.github/workflows/alani-merchant-live-pilot.yml'
       - 'merchant_app/lib/reports/merchant_reports.dart'
+      - 'merchant_app/lib/profile/shitreed_profile_page.dart'
       - 'merchant_app/test/live_order_report_test.dart'
   workflow_dispatch:
 permissions:

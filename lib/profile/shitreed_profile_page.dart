@@ -1,10 +1,22 @@
 // ignore_for_file: curly_braces_in_flow_control_structures, prefer_interpolation_to_compose_strings
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:shitreed_customer/alani/alani_premium_widgets.dart';
 import 'package:shitreed_customer/alani/alani_customer_extras.dart';
 import 'package:shitreed_customer/account/customer_delete_account_page.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+
+/// Resolve only a locator belonging to the currently signed-in account.
+abstract final class AlAniAvatarPath {
+  static String? ownPath(String locator,String actor,{required String projectUrl}){
+    for(final ext in const ['jpg','png','webp']){
+      final path='$actor/avatar.$ext';
+      if(locator==path || locator=='$projectUrl/storage/v1/object/public/shitreed-avatars/$path')return path;
+    }
+    return null;
+  }
+}
 
 const _green = Color(0xFF0C946B);
 const _dark = Color(0xFF163E32);
@@ -15,9 +27,10 @@ const _dark = Color(0xFF163E32);
 /// Scaffold. Keep the InkWell inside its own Material, even in a ListView.
 class ShitreedAvatarButton extends StatelessWidget {
   const ShitreedAvatarButton({
-    super.key, required this.imageUrl, required this.onTap,
+    super.key, required this.imageUrl, required this.onTap, this.imageBytes,
   });
   final String imageUrl;
+  final Uint8List? imageBytes;
   final VoidCallback? onTap;
 
   @override
@@ -29,9 +42,8 @@ class ShitreedAvatarButton extends StatelessWidget {
       borderRadius: BorderRadius.circular(45),
       child: CircleAvatar(
         radius: 43, backgroundColor: Colors.white,
-        backgroundImage: imageUrl.startsWith('https://')
-            ? NetworkImage(imageUrl) : null,
-        child: imageUrl.startsWith('https://') ? null
+        backgroundImage: imageBytes==null?null:MemoryImage(imageBytes!),
+        child: imageBytes!=null ? null
             : const Icon(Icons.person, size: 46, color: _green),
       ),
     ),
@@ -51,6 +63,15 @@ class _ShitreedProfilePageState extends State<ShitreedProfilePage> {
   SupabaseClient get db => Supabase.instance.client;
   String? get uid => db.auth.currentUser?.id;
   Map<String, dynamic>? profile;
+  Uint8List? _avatarBytes;
+  String? _loadedActor;
+  void _clearAvatar(){
+    final old=_avatarBytes;
+    _avatarBytes=null;
+    if(old!=null)MemoryImage(old).evict();
+  }
+  @override
+  void dispose(){_clearAvatar();super.dispose();}
   List<Map<String, dynamic>> addresses = [], badges = [], events = [], thresholds = [];
   bool loading = true, saving = false;
   String? error;
@@ -64,7 +85,7 @@ class _ShitreedProfilePageState extends State<ShitreedProfilePage> {
       if (mounted) setState(() { error = 'سجّل الدخول أولاً'; loading = false; });
       return;
     }
-    if (mounted) setState(() { loading = true; error = null; });
+    if (mounted) setState(() { _clearAvatar(); loading = true; error = null; });
     try {
       final p = await db.from('shitreed_profiles')
           .select('user_id,display_name,bio,city,avatar_url')
@@ -81,7 +102,18 @@ class _ShitreedProfilePageState extends State<ShitreedProfilePage> {
       final lifetimeXp = await db.rpc('shitreed_my_xp_total');
       final t = await db.from('shitreed_level_thresholds')
           .select('level,min_xp').order('level');
-      if (mounted) setState(() {
+      Uint8List? avatar;
+      final path=AlAniAvatarPath.ownPath((p?['avatar_url']??'').toString(),user,
+        projectUrl:const String.fromEnvironment('SUPABASE_URL'));
+      if(path!=null && uid==user){
+        try{
+          final data=await db.storage.from('shitreed-avatars').download(path);
+          if(data.isNotEmpty && data.lengthInBytes<=2097152)avatar=data;
+        }catch(_){ /* Missing or unauthorized image must not block the profile. */ }
+      }
+      if (mounted && uid==user) setState(() {
+        _loadedActor=user;
+        _avatarBytes=avatar;
         profile = p;
         addresses = a;
         badges = b;
@@ -197,9 +229,10 @@ class _ShitreedProfilePageState extends State<ShitreedProfilePage> {
       return;
     }
     try {
+      final actor=uid;
       final picked = await ImagePicker().pickImage(
           source: ImageSource.gallery, imageQuality: 80, maxWidth: 800);
-      if (picked == null) return;
+      if (picked == null || !mounted || actor==null || uid!=actor) return;
       final bytes = await picked.readAsBytes();
       if (bytes.isEmpty || bytes.lengthInBytes > 2097152) {
         notice('حجم الصورة لازم يكون أقل من 2 ميگابايت.');
@@ -210,13 +243,16 @@ class _ShitreedProfilePageState extends State<ShitreedProfilePage> {
           lower.endsWith('.webp') ? 'webp' : 'jpg';
       final mime = ext == 'png' ? 'image/png' :
           ext == 'webp' ? 'image/webp' : 'image/jpeg';
+      if(!mounted || uid!=actor)return;
       setState(() => saving = true);
-      final path = uid! + '/avatar.' + ext;
+      final path = actor + '/avatar.' + ext;
       await db.storage.from('shitreed-avatars').uploadBinary(
-        path, bytes, fileOptions: FileOptions(contentType: mime, upsert: true));
-      final publicUrl = db.storage.from('shitreed-avatars').getPublicUrl(path);
-      await db.from('shitreed_profiles').update({'avatar_url': publicUrl})
-          .eq('user_id', uid!);
+        path, bytes, fileOptions: FileOptions(contentType: mime, upsert: true, cacheControl: '0'));
+      if(!mounted || uid!=actor)return;
+      // Legacy database locator; the app never fetches its public URL.
+      final locator = db.storage.from('shitreed-avatars').getPublicUrl(path);
+      await db.from('shitreed_profiles').update({'avatar_url': locator})
+          .eq('user_id', actor);
       await refresh();
       notice('تم تحديث صورة الحساب');
     } catch (_) {
@@ -317,7 +353,7 @@ class _ShitreedProfilePageState extends State<ShitreedProfilePage> {
     final xp = totalXp, start = levelStart, end = levelEnd;
     final progress = end > start
         ? ((xp - start) / (end - start)).clamp(0.0, 1.0).toDouble() : 1.0;
-    final image = (profile?['avatar_url'] ?? '').toString();
+    final image = _loadedActor==uid?_avatarBytes:null;
     final visibleBadges = badges.where((b) {
       final expiry = DateTime.tryParse((b['expires_at'] ?? '').toString());
       return expiry == null || expiry.isAfter(DateTime.now());
@@ -331,7 +367,7 @@ class _ShitreedProfilePageState extends State<ShitreedProfilePage> {
             gradient: const LinearGradient(colors: [_dark, _green])),
           child: Column(children: [
             ShitreedAvatarButton(
-              imageUrl: image, onTap: saving ? null : uploadAvatar),
+              imageUrl: '', imageBytes:image, onTap: saving ? null : uploadAvatar),
             const SizedBox(height: 9),
             Text(displayName, textAlign: TextAlign.center,
               style: const TextStyle(fontSize: 24, color: Colors.white,

@@ -65,7 +65,7 @@ class _AdminGateState extends State<AdminGate> {
       _subscription = AdminApi.client.auth.onAuthStateChange.listen((state) {
         // Keep the one-time enrollment key in memory during normal token refresh.
         if (state.event == AuthChangeEvent.tokenRefreshed &&
-            role == 'super_admin' && AdminMfaPolicy.requiresSetupOrChallenge) {
+            role != null && AdminMfaPolicy.requiresSetupOrChallenge) {
           return;
         }
         unawaited(checkAccess());
@@ -148,7 +148,7 @@ class _AdminGateState extends State<AdminGate> {
         )),
       );
     }
-    if (role == 'super_admin' && AdminMfaPolicy.requiresSetupOrChallenge) {
+    if (AdminMfaPolicy.requiresSetupOrChallenge) {
       return AdminMfaPage(
         key: ValueKey(AdminApi.client.auth.currentUser!.id),
         onVerified: checkAccess,
